@@ -1,5 +1,6 @@
 import * as React from "react";
 
+import { MobileKeyboardFix } from "@/components/layout/mobile-keyboard-fix";
 import { Sidebar } from "@/components/layout/sidebar";
 import { Topbar } from "@/components/layout/topbar";
 import { DateRangeProvider } from "@/contexts/date-range-context";
@@ -20,7 +21,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     <SidebarProvider>
       <UnsavedNavigationProvider>
       <DateRangeProvider>
-        <div className="flex min-h-screen w-full max-w-[100vw] overflow-x-clip bg-background print:block print:bg-white print:min-h-0">
+        <MobileKeyboardFix />
+        <div className="flex min-h-[100dvh] min-h-[var(--vvh,100dvh)] w-full max-w-[100vw] overflow-x-clip bg-background print:block print:min-h-0 print:bg-white">
           <div className="print:hidden">
             <Sidebar />
           </div>

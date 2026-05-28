@@ -30,6 +30,8 @@ export const viewport: Viewport = {
   themeColor: "#1d4ed8",
   width: "device-width",
   initialScale: 1,
+  /** Réduit le « zoom bloqué » quand le clavier se ferme (Chrome Android). */
+  interactiveWidget: "resizes-content",
 };
 
 export default function RootLayout({

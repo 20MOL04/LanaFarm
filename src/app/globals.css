@@ -132,11 +132,25 @@
   border-color: var(--color-border);
 }
 
+html {
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
 html,
 body {
   height: 100%;
   max-width: 100%;
   overflow-x: clip;
+}
+
+/* iOS : pas de zoom auto si police < 16px sur les champs */
+@media (max-width: 767px) {
+  input,
+  textarea,
+  select {
+    font-size: 16px !important;
+  }
 }
 
 body {

@@ -2,10 +2,12 @@ import { Suspense } from "react";
 
 import { LoginForm } from "@/components/auth/login-form";
 import { BrandLogo } from "@/components/brand/brand-logo";
+import { MobileKeyboardFix } from "@/components/layout/mobile-keyboard-fix";
 
 export default function LoginPage() {
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center bg-background px-4 py-8">
+    <div className="flex min-h-[100dvh] min-h-[var(--vvh,100dvh)] flex-col items-center justify-center bg-background px-4 py-8">
+      <MobileKeyboardFix />
       <div className="w-full max-w-[380px] text-center">
         <div className="flex justify-center">
           <BrandLogo variant="login" size="lg" priority className="drop-shadow-sm" />

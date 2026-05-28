@@ -11,7 +11,7 @@ const Textarea = React.forwardRef<HTMLTextAreaElement, TextareaProps>(
         ref={ref}
         rows={rows}
         className={cn(
-          "w-full rounded-input bg-card px-3 py-2 text-sm",
+          "w-full rounded-input bg-card px-3 py-2 text-base md:text-sm",
           "border border-border text-foreground placeholder:text-muted-foreground",
           "transition-colors resize-none",
           "focus:outline-none focus:border-accent-blue focus:ring-2 focus:ring-accent-blue/15",
