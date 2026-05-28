@@ -2,18 +2,14 @@
 
 import * as React from "react";
 import { format, startOfDay } from "date-fns";
-import {
-  PackageCheck,
-  ShoppingCart,
-  TrendingDown,
-  Warehouse,
-} from "lucide-react";
+import { ShoppingCart, TrendingDown, Warehouse } from "lucide-react";
 
 import { DateInput } from "@/components/shared/date-input";
 import { FormField } from "@/components/shared/form-field";
 import { MultiDayConflictDialog } from "@/components/shared/multi-day-conflict-dialog";
 import { MultiDayModeToggle } from "@/components/shared/multi-day-mode-toggle";
 import { MultiDayPeriodPicker } from "@/components/shared/multi-day-period-picker";
+import { ProductionPreviewPanel } from "@/components/shared/production-preview-panel";
 import { StoreErrorBanner } from "@/components/shared/store-error-banner";
 import { Button } from "@/components/ui/button";
 import {
@@ -32,13 +28,11 @@ import { formatNumber } from "@/lib/format";
 import {
   type ProductionUiDraft,
   type ProductionFormErrors,
-  calcAlveolesRestantesJour,
   productionUiToStorageDraft,
   validateProductionUiDraft,
 } from "@/lib/production-calc";
-import { stockFermeDisponiblePourEnvoi } from "@/lib/transfers-calc";
-import { FIELD_LABEL, FIELD_HINT, KPI_LABEL, eggsToTrays } from "@/lib/terminology";
-import { traysToEggs } from "@/lib/units";
+import { computeProductionPreview } from "@/lib/production-preview";
+import { FIELD_LABEL, FIELD_HINT, eggsToTrays } from "@/lib/terminology";
 import { cn } from "@/lib/utils";
 import {
   clampMultiDayPeriod,
@@ -193,77 +187,29 @@ export function AddProductionDialog({ open, onOpenChange, editEntry = null }: Pr
   }, [draft.jourISO]);
 
   const preview = React.useMemo(() => {
-    const eggsProd = traysToEggs(draft.alveolesRamassees, cap);
-    const eggsEnv = traysToEggs(draft.alveolesMisesEnVente, cap);
-    const restantesJour = calcAlveolesRestantesJour(
-      { production: eggsProd, envoyesVente: eggsEnv },
-      cap
-    );
-
-    const today = new Date();
     const transferts = getAllTransfers();
-    const stockAvantOeufs = stockFermeDisponiblePourEnvoi(
-      state.productions,
-      transferts,
-      today
-    );
-
-    const storage = productionUiToStorageDraft(draft, cap);
-    const jourKey = dayDate ? startOfDay(dayDate).getTime() : null;
-    const hasDraftValues =
-      draft.alveolesRamassees > 0 || draft.alveolesMisesEnVente > 0;
-
-    let productionsSim = state.productions.filter((p) => p.statut === "actif");
-    if (isEditMode && editEntry) {
-      productionsSim = productionsSim.map((p) =>
-        p.id === editEntry.id
-          ? {
-              ...p,
-              jourISO: dayDate?.toISOString() ?? p.jourISO,
-              production: storage.production,
-              casses: storage.casses,
-              envoyesVente: storage.envoyesVente,
-            }
-          : p
-      );
-    } else if (jourKey != null && hasDraftValues) {
-      productionsSim = productionsSim.filter(
-        (p) => startOfDay(new Date(p.jourISO)).getTime() !== jourKey
-      );
-      productionsSim = [
-        ...productionsSim,
-        {
-          id: "__preview__",
-          jourISO: dayDate!.toISOString(),
-          production: storage.production,
-          casses: storage.casses,
-          envoyesVente: storage.envoyesVente,
-          statut: "actif" as const,
-          createdAt: "",
-          updatedAt: "",
-        },
-      ];
+    if (multiMode && !isEditMode) {
+      return computeProductionPreview(state.productions, transferts, cap, {
+        mode: "multi",
+        lines: multiLines,
+      });
     }
-
-    const stockApresOeufs = stockFermeDisponiblePourEnvoi(
-      productionsSim,
-      transferts,
-      today
-    );
-
-    return {
-      restantesJour,
-      stockAvant: eggsToTrays(stockAvantOeufs, cap),
-      stockApres: eggsToTrays(stockApresOeufs, cap),
-    };
+    return computeProductionPreview(state.productions, transferts, cap, {
+      mode: "day",
+      draft,
+      dayDate,
+      editEntryId: editEntry?.id,
+    });
   }, [
+    multiMode,
+    isEditMode,
+    multiLines,
     draft,
-    cap,
     dayDate,
+    editEntry?.id,
     state.productions,
     getAllTransfers,
-    isEditMode,
-    editEntry,
+    cap,
   ]);
 
   const hasErrors = Object.keys(errors).length > 0;
@@ -381,7 +327,7 @@ export function AddProductionDialog({ open, onOpenChange, editEntry = null }: Pr
   return (
     <>
       <Dialog open={open} onOpenChange={unsaved.dialogProps.onOpenChange}>
-        <DialogContent className={cn(multiMode && !isEditMode && "sm:max-w-2xl")}>
+        <DialogContent>
           <DialogHeader>
             <div className="flex items-start justify-between gap-2">
               <DialogTitle>
@@ -412,6 +358,12 @@ export function AddProductionDialog({ open, onOpenChange, editEntry = null }: Pr
                     lines={multiLines}
                     productions={state.productions}
                     onChange={setMultiLines}
+                  />
+                  <ProductionPreviewPanel
+                    restantesJour={preview.restantesJour}
+                    stockAvant={preview.stockAvant}
+                    stockApres={preview.stockApres}
+                    restantesLabel={preview.restantesLabel}
                   />
                 </>
               ) : (
@@ -486,6 +438,7 @@ export function AddProductionDialog({ open, onOpenChange, editEntry = null }: Pr
               restantesJour={preview.restantesJour}
               stockAvant={preview.stockAvant}
               stockApres={preview.stockApres}
+              restantesLabel={preview.restantesLabel}
             />
                 </>
               )}
@@ -622,95 +575,5 @@ function NumberField({
         />
       </div>
     </FormField>
-  );
-}
-
-function ProductionPreviewPanel({
-  restantesJour,
-  stockAvant,
-  stockApres,
-}: {
-  restantesJour: number;
-  stockAvant: number;
-  stockApres: number;
-}) {
-  const restantesNegative = restantesJour < 0;
-  const restantesPositive = restantesJour > 0;
-  const delta = stockApres - stockAvant;
-
-  return (
-    <div className="space-y-2 rounded-card border border-border bg-card-muted px-3 py-2.5">
-      <PreviewRow
-        label="Restantes ce jour"
-        value={formatNumber(restantesJour)}
-        suffix="alv."
-        tone={
-          restantesNegative ? "danger" : restantesPositive ? "success" : "neutral"
-        }
-      />
-      <div className="border-t border-border pt-2">
-        <p className="mb-1.5 text-[10px] font-medium uppercase tracking-wide text-muted">
-          {KPI_LABEL.alveolesRestantes}
-        </p>
-        <div className="flex items-center justify-between gap-2 text-sm tabular-nums">
-          <span className="text-muted">{formatNumber(stockAvant)} alv.</span>
-          <span className="text-muted">→</span>
-          <span
-            className={cn(
-              "font-semibold",
-              delta > 0 && "text-success",
-              delta < 0 && "text-danger",
-              delta === 0 && "text-foreground"
-            )}
-          >
-            {formatNumber(stockApres)} alv.
-          </span>
-        </div>
-        {delta !== 0 ? (
-          <p className="mt-0.5 text-[10px] text-muted tabular-nums">
-            {delta > 0 ? "+" : ""}
-            {formatNumber(delta)} alv. après enregistrement
-          </p>
-        ) : null}
-      </div>
-    </div>
-  );
-}
-
-function PreviewRow({
-  label,
-  value,
-  suffix,
-  tone,
-}: {
-  label: string;
-  value: string;
-  suffix: string;
-  tone: "neutral" | "success" | "danger";
-}) {
-  return (
-    <div className="flex items-center justify-between gap-2">
-      <div className="flex items-center gap-2">
-        <PackageCheck
-          className={cn(
-            "h-3.5 w-3.5",
-            tone === "success" && "text-success",
-            tone === "danger" && "text-danger",
-            tone === "neutral" && "text-muted"
-          )}
-        />
-        <p className="text-[11px] text-muted">{label}</p>
-      </div>
-      <span
-        className={cn(
-          "text-sm font-semibold tabular-nums",
-          tone === "success" && "text-success",
-          tone === "danger" && "text-danger",
-          tone === "neutral" && "text-foreground"
-        )}
-      >
-        {value} {suffix}
-      </span>
-    </div>
   );
 }

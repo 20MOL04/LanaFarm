@@ -3,6 +3,7 @@
 import * as React from "react";
 
 import { Input } from "@/components/ui/input";
+import { Popover, PopoverAnchor, PopoverContent } from "@/components/ui/popover";
 import { formatGNF } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import { PRIX_SUGGERES_GNF } from "@/types/domain";
@@ -15,11 +16,11 @@ type PriceSelectProps = {
   defaultPrix?: number;
   suggestions?: number[];
   required?: boolean;
+  className?: string;
 };
 
 /**
- * Prix : un seul champ numérique + pastilles de suggestion.
- * « Autre prix » = focus clavier sur le même champ (pas de 2e input).
+ * Un seul champ prix : saisie libre + menu de suggestions au focus (pas de 2e champ ni pastilles).
  */
 export function PriceSelect({
   id = "price-input",
@@ -29,7 +30,9 @@ export function PriceSelect({
   defaultPrix,
   suggestions = PRIX_SUGGERES_GNF,
   required,
+  className,
 }: PriceSelectProps) {
+  const [open, setOpen] = React.useState(false);
   const inputRef = React.useRef<HTMLInputElement>(null);
 
   const priceOptions = React.useMemo(() => {
@@ -41,63 +44,75 @@ export function PriceSelect({
     return [...set].sort((a, b) => a - b);
   }, [defaultPrix, suggestions]);
 
-  return (
-    <div className="min-w-0 space-y-2">
-      <Input
-        ref={inputRef}
-        id={id}
-        type="number"
-        inputMode="numeric"
-        min={0}
-        step={500}
-        required={required}
-        value={Number.isFinite(value) && value > 0 ? value : ""}
-        onChange={(e) => {
-          const raw = e.target.value.trim();
-          if (raw === "") {
-            onChange(0);
-            return;
-          }
-          const n = parseInt(raw, 10);
-          onChange(Number.isNaN(n) ? 0 : Math.max(0, n));
-        }}
-        onBlur={onBlur}
-        onFocus={(e) => e.currentTarget.select()}
-        placeholder="Prix casier (GNF)"
-        aria-label="Prix casier en GNF"
-        className="h-9 w-full min-w-0 tabular-nums"
-      />
+  const pickPrice = (p: number) => {
+    onChange(p);
+    setOpen(false);
+    inputRef.current?.focus();
+  };
 
-      <div className="flex min-w-0 flex-wrap gap-1.5">
-        {priceOptions.map((p) => {
-          const active = value === p;
-          return (
-            <button
-              key={p}
-              type="button"
-              onClick={() => {
-                onChange(p);
-                inputRef.current?.focus();
-              }}
-              className={cn(
-                "rounded-pill border px-2 py-0.5 text-[11px] font-medium tabular-nums transition-colors",
-                active
-                  ? "border-accent-blue bg-accent-blue text-white"
-                  : "border-border bg-card text-foreground hover:bg-card-muted"
-              )}
-            >
-              {formatGNF(p)}
-            </button>
-          );
-        })}
-        <button
-          type="button"
-          onClick={() => inputRef.current?.focus()}
-          className="rounded-pill border border-dashed border-border px-2 py-0.5 text-[11px] font-medium text-muted hover:border-accent-blue hover:text-accent-blue"
-        >
-          Autre prix
-        </button>
-      </div>
-    </div>
+  return (
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverAnchor asChild>
+        <Input
+          ref={inputRef}
+          id={id}
+          type="number"
+          inputMode="numeric"
+          min={0}
+          step={500}
+          required={required}
+          value={Number.isFinite(value) && value > 0 ? value : ""}
+          onChange={(e) => {
+            const raw = e.target.value.trim();
+            if (raw === "") {
+              onChange(0);
+              return;
+            }
+            const n = parseInt(raw, 10);
+            onChange(Number.isNaN(n) ? 0 : Math.max(0, n));
+          }}
+          onBlur={(e) => {
+            onBlur?.();
+            window.setTimeout(() => {
+              if (!inputRef.current?.matches(":focus")) setOpen(false);
+            }, 120);
+          }}
+          onFocus={() => setOpen(true)}
+          onClick={() => setOpen(true)}
+          placeholder="GNF"
+          aria-label="Prix casier en GNF"
+          aria-expanded={open}
+          aria-haspopup="listbox"
+          className={cn("h-8 w-full min-w-0 tabular-nums", className)}
+        />
+      </PopoverAnchor>
+      <PopoverContent
+        className="w-[min(100vw-2rem,var(--radix-popover-trigger-width,12rem))] p-1"
+        align="start"
+        side="bottom"
+        onOpenAutoFocus={(e) => e.preventDefault()}
+      >
+        <ul role="listbox" className="max-h-48 overflow-y-auto">
+          {priceOptions.map((p) => (
+            <li key={p}>
+              <button
+                type="button"
+                role="option"
+                aria-selected={value === p}
+                onMouseDown={(e) => e.preventDefault()}
+                onClick={() => pickPrice(p)}
+                className={cn(
+                  "flex w-full rounded-sm px-2.5 py-1.5 text-left text-sm tabular-nums",
+                  "hover:bg-card-muted",
+                  value === p && "bg-card-muted font-medium"
+                )}
+              >
+                {formatGNF(p)}
+              </button>
+            </li>
+          ))}
+        </ul>
+      </PopoverContent>
+    </Popover>
   );
 }

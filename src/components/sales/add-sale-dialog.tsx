@@ -38,9 +38,10 @@ import {
   useSalesStore,
   useTransfersStore,
 } from "@/contexts/farm-store";
+import { StockPreviewPanel } from "@/components/shared/stock-preview-panel";
 import { formatDay } from "@/lib/date-ranges";
 import { formatGNF, formatNumber } from "@/lib/format";
-import { stockMagasinInstantane } from "@/lib/lanafarm-core";
+import { computeSalesPreview } from "@/lib/sales-preview";
 import {
   type SaleDayUiDraft,
   type SaleDayFormErrors,
@@ -311,31 +312,27 @@ export function AddSaleDialog({ open, onOpenChange, editEntry = null }: Props) {
     editEntry?.id,
   ]);
 
-  const batchPreview = React.useMemo(() => {
-    if (isEditMode || !dayDate) return null;
-    const stockDisponible = stockMagasinInstantane(
-      getAllTransfers(),
-      salesState.ventes,
-      dayDate
-    );
-    let alveolesTotales = 0;
-    let montantTotal = 0;
-    for (const l of draft.lignes) {
-      if (l.alveoles <= 0) continue;
-      alveolesTotales += l.alveoles;
-      montantTotal += l.alveoles * l.prix;
-    }
-    const sortieOeufs =
-      traysToEggs(alveolesTotales, cap) + traysToEggs(draft.cassesAlveoles, cap);
-    const stockApres = stockDisponible - sortieOeufs;
-    return {
-      stockDisponibleAlv: eggsToTrays(stockDisponible, cap),
-      stockApresAlv: eggsToTrays(Math.max(0, stockApres), cap),
-      deltaAlv: eggsToTrays(stockApres, cap) - eggsToTrays(stockDisponible, cap),
-      montantTotal,
-      stockNegatif: stockApres < 0,
-    };
-  }, [isEditMode, draft, dayDate, getAllTransfers, salesState.ventes, cap]);
+  const dayPreview = React.useMemo(
+    () =>
+      computeSalesPreview(salesState.ventes, getAllTransfers(), cap, {
+        mode: "day",
+        dayDate,
+        lignes: draft.lignes,
+        cassesAlveoles: draft.cassesAlveoles,
+      }),
+    [salesState.ventes, getAllTransfers, cap, dayDate, draft.lignes, draft.cassesAlveoles]
+  );
+
+  const multiPreview = React.useMemo(
+    () =>
+      multiMode && !isEditMode
+        ? computeSalesPreview(salesState.ventes, getAllTransfers(), cap, {
+            mode: "multi",
+            lines: multiLines,
+          })
+        : null,
+    [multiMode, isEditMode, multiLines, salesState.ventes, getAllTransfers, cap]
+  );
 
   const editErrors: SaleFormErrors = editValidation?.errors ?? {};
   const dayErrors: SaleDayFormErrors = dayValidation?.errors ?? {};
@@ -352,7 +349,7 @@ export function AddSaleDialog({ open, onOpenChange, editEntry = null }: Props) {
     !!dayDate &&
     hasActiveLine &&
     !hasErrors &&
-    !(batchPreview?.stockNegatif ?? false);
+    !(dayPreview?.stockNegatif ?? false);
 
   const multiDayISOs = React.useMemo(
     () => enumerateDayISOs(periodFrom, periodTo),
@@ -373,7 +370,10 @@ export function AddSaleDialog({ open, onOpenChange, editEntry = null }: Props) {
     [multiLines]
   );
 
-  const canSubmitMulti = multiDayISOs.length > 0 && filledMultiLines.length > 0;
+  const canSubmitMulti =
+    multiDayISOs.length > 0 &&
+    filledMultiLines.length > 0 &&
+    !(multiPreview?.stockNegatif ?? false);
 
   const multiLineToStorageDrafts = React.useCallback(
     (line: SalesMultiDayLine) =>
@@ -482,7 +482,7 @@ export function AddSaleDialog({ open, onOpenChange, editEntry = null }: Props) {
   return (
     <>
       <Dialog open={open} onOpenChange={unsaved.dialogProps.onOpenChange}>
-        <DialogContent className={cn(multiMode && !isEditMode && "sm:max-w-2xl")}>
+        <DialogContent>
           <DialogHeader>
             <div className="flex items-start justify-between gap-2">
               <DialogTitle>
@@ -515,6 +515,16 @@ export function AddSaleDialog({ open, onOpenChange, editEntry = null }: Props) {
                     defaultPrix={defaultPrix}
                     onChange={setMultiLines}
                   />
+                  {multiPreview ? (
+                    <StockPreviewPanel
+                      stockDisponible={multiPreview.stockDisponibleAlv}
+                      stockApres={multiPreview.stockApresAlv}
+                      montant={multiPreview.montantTotal}
+                      stockNegatif={multiPreview.stockNegatif}
+                      deltaAlv={multiPreview.deltaAlv}
+                      caLabel={multiPreview.caLabel}
+                    />
+                  ) : null}
                 </>
               ) : (
                 <>
@@ -650,13 +660,14 @@ export function AddSaleDialog({ open, onOpenChange, editEntry = null }: Props) {
               />
             ) : null}
 
-            {!isEditMode && batchPreview ? (
+            {!isEditMode && dayPreview ? (
               <StockPreviewPanel
-                stockDisponible={batchPreview.stockDisponibleAlv}
-                stockApres={batchPreview.stockApresAlv}
-                montant={batchPreview.montantTotal}
-                stockNegatif={batchPreview.stockNegatif}
-                deltaAlv={batchPreview.deltaAlv}
+                stockDisponible={dayPreview.stockDisponibleAlv}
+                stockApres={dayPreview.stockApresAlv}
+                montant={dayPreview.montantTotal}
+                stockNegatif={dayPreview.stockNegatif}
+                deltaAlv={dayPreview.deltaAlv}
+                caLabel={dayPreview.caLabel}
               />
             ) : null}
 
@@ -838,71 +849,6 @@ function SaleLineCard({
           </Button>
         ) : null}
       </div>
-    </div>
-  );
-}
-
-function StockPreviewPanel({
-  stockDisponible,
-  stockApres,
-  montant,
-  stockNegatif,
-  deltaAlv,
-}: {
-  stockDisponible: number;
-  stockApres: number;
-  montant: number;
-  stockNegatif: boolean;
-  deltaAlv?: number;
-}) {
-  return (
-    <div
-      className={cn(
-        "rounded-card border px-3 py-2.5",
-        stockNegatif ? "border-danger/30 bg-danger-soft/60" : "border-border bg-card-muted"
-      )}
-    >
-      <div className="grid grid-cols-3 gap-2 text-sm">
-        <PreviewCell label="Stock disponible" value={`${formatNumber(stockDisponible)} alv.`} />
-        <PreviewCell
-          label="Après vente"
-          value={`${formatNumber(stockApres)} alv.`}
-          sub={
-            deltaAlv != null && deltaAlv !== 0
-              ? `(${deltaAlv > 0 ? "+" : ""}${formatNumber(deltaAlv)})`
-              : undefined
-          }
-          tone={stockNegatif ? "danger" : undefined}
-        />
-        <PreviewCell label="CA du jour" value={formatGNF(montant)} />
-      </div>
-    </div>
-  );
-}
-
-function PreviewCell({
-  label,
-  value,
-  sub,
-  tone,
-}: {
-  label: string;
-  value: string;
-  sub?: string;
-  tone?: "danger";
-}) {
-  return (
-    <div className="min-w-0">
-      <p className="text-[9.5px] font-medium uppercase tracking-wide text-muted">{label}</p>
-      <p
-        className={cn(
-          "font-semibold tabular-nums",
-          tone === "danger" ? "text-danger" : "text-foreground"
-        )}
-      >
-        {value}
-      </p>
-      {sub ? <p className="text-[10px] text-muted tabular-nums">{sub}</p> : null}
     </div>
   );
 }
