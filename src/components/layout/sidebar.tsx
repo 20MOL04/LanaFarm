@@ -40,16 +40,13 @@ export function Sidebar() {
       <aside
         aria-label="Navigation principale"
         className={cn(
-          // base
-          "fixed inset-y-0 left-0 z-50 flex h-screen flex-col",
+          "fixed inset-y-0 left-0 z-50 flex max-h-[100dvh] flex-col",
           "bg-sidebar text-sidebar-foreground shadow-sidebar",
-          "border-r border-sidebar-border",
+          "border-0 outline-none",
           "transition-[width,transform] duration-200 ease-out",
-          // mobile : drawer slide
-          "w-[232px] -translate-x-full md:translate-x-0",
+          "w-[min(280px,100vw)] -translate-x-full md:translate-x-0",
           mobileOpen && "translate-x-0",
-          // desktop : sticky + width conditionnelle
-          "md:sticky md:top-0",
+          "md:sticky md:top-0 md:max-h-screen md:h-screen",
           collapsed ? "md:w-[var(--sidebar-width-collapsed)]" : "md:w-[var(--sidebar-width)]"
         )}
       >
@@ -59,7 +56,7 @@ export function Sidebar() {
           onToggleCollapsed={toggleCollapsed}
         />
         <SidebarNav pathname={pathname} collapsed={collapsed} onNavigate={closeMobile} />
-        <SidebarLogoutButton collapsed={collapsed} />
+        <SidebarLogoutButton collapsed={collapsed && !mobileOpen} />
       </aside>
     </>
   );
@@ -81,7 +78,7 @@ function SidebarHeader({
   return (
     <div
       className={cn(
-        "flex border-b border-sidebar-border shrink-0",
+        "flex shrink-0 border-0",
         "h-[var(--topbar-height)]",
         collapsed
           ? "flex-col items-center justify-center gap-0.5 px-1 md:gap-1"
@@ -157,8 +154,8 @@ function SidebarNav({
   return (
     <nav
       className={cn(
-        "flex-1 overflow-y-auto",
-        collapsed ? "px-2 py-3" : "px-2 py-3"
+        "min-h-0 flex-1 overflow-y-auto overscroll-contain",
+        "px-2 py-3"
       )}
     >
       <ul className="space-y-4">

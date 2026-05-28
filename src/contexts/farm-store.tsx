@@ -2012,11 +2012,7 @@ function createEmptyState(): State {
 
 export function FarmStoreProvider({ children }: { children: React.ReactNode }) {
   const remote = isFarmDataRemote();
-  const [state, dispatch] = React.useReducer(
-    reducer,
-    undefined,
-    remote ? createEmptyState : seedInitialState
-  );
+  const [state, dispatch] = React.useReducer(reducer, undefined, createEmptyState);
   const [remoteReady, setRemoteReady] = React.useState(!remote);
   const skipSave = React.useRef(true);
 

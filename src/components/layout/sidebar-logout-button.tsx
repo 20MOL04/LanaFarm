@@ -27,7 +27,12 @@ export function SidebarLogoutButton({ collapsed }: Props) {
   };
 
   return (
-    <div className="shrink-0 border-t border-sidebar-border p-2">
+    <div
+      className={cn(
+        "shrink-0 border-0 bg-sidebar p-2 pb-[max(0.5rem,env(safe-area-inset-bottom))]",
+        "md:pb-2"
+      )}
+    >
       {!collapsed ? (
         <p className="mb-1.5 px-2 text-[10px] text-sidebar-muted">Session active</p>
       ) : null}
@@ -36,12 +41,14 @@ export function SidebarLogoutButton({ collapsed }: Props) {
         onClick={handleLogout}
         disabled={loading}
         title="Se déconnecter"
+        aria-label="Se déconnecter"
         className={cn(
-          "flex w-full items-center gap-2 rounded-sm px-2 py-1.5 text-[12px]",
-          "text-sidebar-muted transition-colors",
-          "hover:bg-sidebar-hover hover:text-white",
+          "flex w-full items-center gap-2 rounded-sm px-2 text-[13px] font-medium",
+          "min-h-11 md:min-h-0 md:py-1.5",
+          "text-white/90 transition-colors",
+          "bg-white/10 hover:bg-white/20 hover:text-white",
           "disabled:opacity-50",
-          collapsed && "justify-center"
+          collapsed && "justify-center md:min-h-0 md:bg-transparent md:hover:bg-sidebar-hover"
         )}
       >
         <LogOut className="h-4 w-4 shrink-0" />
