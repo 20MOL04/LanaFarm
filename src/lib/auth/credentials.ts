@@ -3,11 +3,11 @@ import { getAuthConfig } from "@/lib/auth/config";
 /** Comparaison à durée constante (évite les fuites par timing). */
 export function verifyCredentials(email: string, password: string): boolean {
   const cfg = getAuthConfig();
-  if (!cfg.email || !cfg.password) return false;
+  if (cfg.allowedEmails.length === 0 || !cfg.password) return false;
 
-  const emailOk = safeEqual(
-    normalizeEmail(email),
-    normalizeEmail(cfg.email)
+  const normalized = normalizeEmail(email);
+  const emailOk = cfg.allowedEmails.some((allowed) =>
+    safeEqual(normalized, allowed)
   );
   const passwordOk = safeEqual(password, cfg.password);
   return emailOk && passwordOk;

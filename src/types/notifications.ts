@@ -65,4 +65,7 @@ export function isActiveNotification(n: AppNotification): boolean {
   return !n.dismissedAt && !n.resolvedAt;
 }
 
-export const DEFAULT_FARM_ID = "local-farm-v1";
+import { getPublicFarmId } from "@/lib/farm-id";
+
+/** Identifiant ferme courant (local dev ou UUID Supabase en prod). */
+export const DEFAULT_FARM_ID = getPublicFarmId();

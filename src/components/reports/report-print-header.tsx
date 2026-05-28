@@ -1,5 +1,7 @@
 "use client";
 
+import Image from "next/image";
+
 import { site } from "@/config/site";
 import { formatTextForExport } from "@/lib/format-export";
 
@@ -23,9 +25,18 @@ export function ReportPrintHeader({
 
   return (
     <header className="mb-5 hidden border-b border-border pb-4 print:block">
-      <h1 className="text-[28pt] font-bold leading-none tracking-tight text-accent-blue">
-        {site.name}
-      </h1>
+      <div className="flex items-center gap-3">
+        <Image
+          src={site.logoSrc}
+          alt={site.name}
+          width={56}
+          height={56}
+          className="h-14 w-14 rounded-lg object-contain"
+        />
+        <h1 className="text-[28pt] font-bold leading-none tracking-tight text-accent-blue">
+          {site.name}
+        </h1>
+      </div>
       <p className="mt-2 text-[12pt] font-semibold text-foreground">
         Rapport — {formatTextForExport(periodLabel)}
       </p>

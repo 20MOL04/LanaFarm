@@ -5,6 +5,7 @@
 export const site = {
   name: "LanaFarm",
   shortName: "LanaFarm",
+  logoSrc: "/logo.png",
   tagline: "Gestion intelligente de ferme avicole",
   description:
     "LanaFarm — Plateforme de gestion intelligente de ferme avicole. Productions, ventes, dépenses, trésorerie et rapports — pensée pour le terrain.",

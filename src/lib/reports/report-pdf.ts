@@ -1,6 +1,7 @@
 import { jsPDF } from "jspdf";
 import autoTable from "jspdf-autotable";
 
+import { loadBrandLogoForExport } from "@/lib/brand/load-logo-export";
 import { site } from "@/config/site";
 import {
   formatAlveolesForExport,
@@ -22,20 +23,26 @@ export function reportPdfFilename(p: ReportPayload): string {
   return `LanaFarm_Rapport_${p.type}_${from}_${to}.pdf`;
 }
 
+const LOGO_MM = 14;
+
 function drawBrandHeader(
   doc: jsPDF,
   periodLabel: string,
-  generatedAt: string
+  generatedAt: string,
+  logoDataUrl: string
 ): number {
   const x = PDF_PAGE.margin;
-  let y = 16;
+  let y = 14;
 
+  doc.addImage(logoDataUrl, "PNG", x, y - 2, LOGO_MM, LOGO_MM);
+
+  const textX = x + LOGO_MM + 4;
   doc.setFont("helvetica", "bold");
-  doc.setFontSize(24);
+  doc.setFontSize(22);
   doc.setTextColor(...PDF_BRAND_RGB);
-  doc.text(site.name, x, y);
+  doc.text(site.name, textX, y + 5);
 
-  y += 10;
+  y += LOGO_MM + 4;
   doc.setFont("helvetica", "normal");
   doc.setFontSize(11);
   doc.setTextColor(30, 41, 59);
@@ -49,7 +56,8 @@ function drawBrandHeader(
   return y + 10;
 }
 
-export function downloadReportPdf(payload: ReportPayload): void {
+export async function downloadReportPdf(payload: ReportPayload): Promise<void> {
+  const { dataUrl: logoDataUrl } = await loadBrandLogoForExport();
   const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
   const k = payload.kpis;
   const generatedLabel = `Genere le ${new Date(payload.generatedAt).toLocaleString("fr-FR", {
@@ -61,7 +69,7 @@ export function downloadReportPdf(payload: ReportPayload): void {
     second: "2-digit",
   })}`;
 
-  let y = drawBrandHeader(doc, payload.periodLabel, generatedLabel);
+  let y = drawBrandHeader(doc, payload.periodLabel, generatedLabel, logoDataUrl);
 
   autoTable(doc, {
     ...pdfTableBase(),
@@ -120,6 +128,8 @@ export function downloadReportPdf(payload: ReportPayload): void {
   if (y > 248 && payload.detail.ventes.length > 0) {
     doc.addPage();
     y = PDF_PAGE.margin;
+    doc.addImage(logoDataUrl, "PNG", PDF_PAGE.margin, y - 2, 10, 10);
+    y += 12;
   }
 
   if (payload.detail.ventes.length > 0) {
@@ -146,6 +156,19 @@ export function downloadReportPdf(payload: ReportPayload): void {
         3: { cellWidth: PDF_CONTENT_WIDTH - 58 - 28 - 52, halign: "center" },
       },
     });
+  }
+
+  const pageCount = doc.getNumberOfPages();
+  for (let i = 1; i <= pageCount; i += 1) {
+    doc.setPage(i);
+    doc.setFontSize(8);
+    doc.setTextColor(148, 163, 184);
+    doc.text(
+      `${site.name} — Page ${i}/${pageCount}`,
+      PDF_PAGE.width - PDF_PAGE.margin,
+      289,
+      { align: "right" }
+    );
   }
 
   doc.save(reportPdfFilename(payload));

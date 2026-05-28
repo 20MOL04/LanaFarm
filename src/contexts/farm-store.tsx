@@ -38,10 +38,12 @@ import { eggsToTrays, traysToEggs } from "@/lib/units";
 import { evaluateNotificationRules } from "@/lib/notifications/notification-rules";
 import { getNotificationRepository } from "@/lib/notifications/notification-storage";
 import { mergeNotificationSync } from "@/lib/notifications/notification-sync";
+import { isFarmDataRemote } from "@/lib/farm-id";
 import {
   type AppNotification,
   DEFAULT_FARM_ID,
 } from "@/types/notifications";
+import type { FarmStatePayload } from "@/lib/supabase/farm-mappers";
 import {
   CATEGORIES_DEPENSES,
   METHODES_TRESORERIE,
@@ -245,6 +247,7 @@ type Action =
     }
   | { type: "config/methode/add"; payload: { label: string } }
   | { type: "config/methode/toggle"; payload: { id: string } }
+  | { type: "farm/bootstrap"; payload: FarmStatePayload }
   | { type: "notifications/hydrate"; payload: { items: AppNotification[] } }
   | { type: "notifications/set"; payload: { items: AppNotification[] } }
   | { type: "notifications/markRead"; payload: { id: string; readAt: string } }
@@ -1663,6 +1666,19 @@ function reducer(state: State, action: Action): State {
         }
       );
     }
+    case "farm/bootstrap":
+      return {
+        ...state,
+        productions: action.payload.productions,
+        ventes: action.payload.ventes,
+        depenses: action.payload.depenses,
+        tresorerie: action.payload.tresorerie,
+        transferts: action.payload.transferts,
+        actions: action.payload.actions,
+        config: action.payload.config,
+        errors: null,
+      };
+
     case "notifications/hydrate":
       return { ...state, notifications: action.payload.items };
 
@@ -1980,8 +1996,94 @@ function FarmNotificationEffects() {
   return null;
 }
 
+function createEmptyState(): State {
+  return {
+    productions: [],
+    ventes: [],
+    depenses: [],
+    tresorerie: [],
+    transferts: [],
+    actions: [],
+    config: DEFAULT_FARM_CONFIG,
+    errors: null,
+    notifications: [],
+  };
+}
+
 export function FarmStoreProvider({ children }: { children: React.ReactNode }) {
-  const [state, dispatch] = React.useReducer(reducer, undefined, seedInitialState);
+  const remote = isFarmDataRemote();
+  const [state, dispatch] = React.useReducer(
+    reducer,
+    undefined,
+    remote ? createEmptyState : seedInitialState
+  );
+  const [remoteReady, setRemoteReady] = React.useState(!remote);
+  const skipSave = React.useRef(true);
+
+  React.useEffect(() => {
+    if (!remote) return;
+    let cancelled = false;
+    void fetch("/api/farm/state", { credentials: "include" })
+      .then(async (res) => {
+        if (!res.ok) throw new Error(String(res.status));
+        return res.json() as Promise<FarmStatePayload>;
+      })
+      .then((payload) => {
+        if (cancelled) return;
+        dispatch({ type: "farm/bootstrap", payload });
+        skipSave.current = false;
+        setRemoteReady(true);
+      })
+      .catch((err) => {
+        console.error("[FarmStoreProvider] chargement Supabase", err);
+        skipSave.current = false;
+        setRemoteReady(true);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [remote]);
+
+  React.useEffect(() => {
+    if (!remote || !remoteReady || skipSave.current) return;
+    const t = window.setTimeout(() => {
+      const payload: FarmStatePayload = {
+        productions: state.productions,
+        ventes: state.ventes,
+        depenses: state.depenses,
+        tresorerie: state.tresorerie,
+        transferts: state.transferts,
+        actions: state.actions,
+        config: state.config,
+      };
+      void fetch("/api/farm/state", {
+        method: "PUT",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      }).catch((err) => console.error("[FarmStoreProvider] sauvegarde", err));
+    }, 900);
+    return () => window.clearTimeout(t);
+  }, [
+    remote,
+    remoteReady,
+    state.productions,
+    state.ventes,
+    state.depenses,
+    state.tresorerie,
+    state.transferts,
+    state.actions,
+    state.config,
+  ]);
+
+  if (remote && !remoteReady) {
+    return (
+      <div className="flex min-h-screen items-center justify-center text-sm text-muted-foreground">
+        Chargement des données LanaFarm…
+      </div>
+    );
+  }
+
   return (
     <FarmStateContext.Provider value={state}>
       <FarmDispatchContext.Provider value={dispatch}>

@@ -3,11 +3,11 @@
 import * as React from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { ChevronsLeft, ChevronsRight, Sprout, X } from "lucide-react";
+import { ChevronsRight, X } from "lucide-react";
 
+import { BrandLogo } from "@/components/brand/brand-logo";
 import { SidebarLogoutButton } from "@/components/layout/sidebar-logout-button";
 import { navigation, type NavItem } from "@/config/navigation";
-import { site } from "@/config/site";
 import { useSidebar } from "@/contexts/sidebar-context";
 import { useUnsavedNavigation } from "@/contexts/unsaved-navigation-context";
 import { cn } from "@/lib/utils";
@@ -81,13 +81,18 @@ function SidebarHeader({
   return (
     <div
       className={cn(
-        "flex items-center gap-2 border-b border-sidebar-border",
-        "h-[var(--topbar-height)] shrink-0",
-        collapsed ? "justify-center px-2" : "px-2"
+        "flex border-b border-sidebar-border shrink-0",
+        "h-[var(--topbar-height)]",
+        collapsed
+          ? "flex-col items-center justify-center gap-0.5 px-1 md:gap-1"
+          : "items-center gap-2 px-2"
       )}
     >
       {!collapsed ? (
         <>
+          <div className="flex min-w-0 flex-1 items-center justify-start text-white">
+            <BrandLogo size="sm" showWordmark className="[&_span]:text-white" />
+          </div>
           <button
             type="button"
             onClick={onToggleCollapsed}
@@ -98,14 +103,8 @@ function SidebarHeader({
               "text-sidebar-muted hover:bg-sidebar-hover hover:text-white"
             )}
           >
-            <ChevronsLeft className="h-4 w-4" />
+            <ChevronsRight className="h-4 w-4" />
           </button>
-          <p className="flex min-w-0 flex-1 items-center gap-2 truncate text-sm font-semibold text-white">
-            <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-sm bg-white/15">
-              <Sprout className="h-4 w-4" />
-            </span>
-            <span className="truncate">{site.name}</span>
-          </p>
         </>
       ) : (
         <>
@@ -115,15 +114,14 @@ function SidebarHeader({
             aria-label="Déplier le menu"
             title="Déplier"
             className={cn(
-              "relative z-10 hidden h-8 w-8 shrink-0 items-center justify-center rounded-sm md:flex",
+              "relative hidden flex-col items-center justify-center gap-0.5 rounded-sm p-1 md:flex",
               "text-sidebar-muted hover:bg-sidebar-hover hover:text-white"
             )}
           >
-            <ChevronsRight className="h-4 w-4" />
+            <BrandLogo size="xs" />
+            <ChevronsRight className="h-3.5 w-3.5 shrink-0" />
           </button>
-          <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-sm bg-white/15 text-white md:hidden">
-            <Sprout className="h-4 w-4" />
-          </span>
+          <BrandLogo size="sm" className="md:hidden" />
         </>
       )}
       <button

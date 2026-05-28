@@ -4,7 +4,9 @@
  */
 
 export type AuthConfig = {
+  /** @deprecated Utiliser allowedEmails — premier e-mail si AUTH_EMAIL seul. */
   email: string;
+  allowedEmails: string[];
   password: string;
   sessionToken: string;
 };
@@ -15,9 +17,25 @@ function devFallback<T>(value: string | undefined, fallback: T): string | T {
   return "";
 }
 
+function parseAllowedEmails(): string[] {
+  const list = process.env.AUTH_ALLOWED_EMAILS?.trim();
+  if (list) {
+    return list
+      .split(",")
+      .map((e) => e.trim().toLowerCase())
+      .filter(Boolean);
+  }
+  const single = process.env.AUTH_EMAIL?.trim();
+  if (single) return [single.toLowerCase()];
+  const dev = devFallback(undefined, "admin@lanafarm.local") as string;
+  return dev ? [dev.toLowerCase()] : [];
+}
+
 export function getAuthConfig(): AuthConfig {
+  const allowedEmails = parseAllowedEmails();
   return {
-    email: devFallback(process.env.AUTH_EMAIL, "admin@lanafarm.local"),
+    email: allowedEmails[0] ?? "",
+    allowedEmails,
     password: devFallback(process.env.AUTH_PASSWORD, "lanafarm2026"),
     sessionToken: devFallback(
       process.env.AUTH_SESSION_TOKEN,
@@ -27,6 +45,6 @@ export function getAuthConfig(): AuthConfig {
 }
 
 export function isAuthConfigured(): boolean {
-  const { email, password, sessionToken } = getAuthConfig();
-  return Boolean(email && password && sessionToken);
+  const { allowedEmails, password, sessionToken } = getAuthConfig();
+  return Boolean(allowedEmails.length > 0 && password && sessionToken);
 }

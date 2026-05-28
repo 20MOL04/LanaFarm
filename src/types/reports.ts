@@ -9,7 +9,9 @@ import type {
 
 export type { ReportPayload, ReportType };
 
-export const DEFAULT_FARM_ID = "local-farm-v1";
+import { getPublicFarmId } from "@/lib/farm-id";
+
+export const DEFAULT_FARM_ID = getPublicFarmId();
 
 export type ReportDocument = {
   id: string;

@@ -238,24 +238,6 @@ a {
 }
 
 /* ===========================================================
-   Page connexion — titre hors styles globaux h1
-   =========================================================== */
-.login-hero-title {
-  font-size: clamp(2.5rem, 10vw, 3.75rem) !important;
-  font-weight: 700 !important;
-  line-height: 0.95 !important;
-  letter-spacing: -0.03em !important;
-}
-
-.login-hero-title .login-hero-lana {
-  color: #0f172a;
-}
-
-.login-hero-title .login-hero-farm {
-  color: var(--color-accent-blue);
-}
-
-/* ===========================================================
    Mode impression (module Rapports — pages A4)
    -----------------------------------------------------------
    La chrome (sidebar, topbar, actions) est masquée

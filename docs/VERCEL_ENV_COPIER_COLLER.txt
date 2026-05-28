@@ -1,0 +1,18 @@
+# ============================================================
+# LanaFarm — Variables Vercel (Production + Preview)
+# Copier chaque ligne KEY=VALUE dans Vercel → Settings → Environment Variables
+# ============================================================
+
+AUTH_ALLOWED_EMAILS=papa@example.com,admin@example.com
+AUTH_PASSWORD=<mot de passe partagé>
+AUTH_SESSION_TOKEN=<secret long aléatoire>
+
+NEXT_PUBLIC_SUPABASE_URL=https://pcspcipylapakchghwvp.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=<clé anon Supabase>
+SUPABASE_SERVICE_ROLE_KEY=<clé service_role Supabase>
+
+LANAFARM_FARM_ID=f47ac10b-58cc-4372-a567-0e02b2c3d479
+NEXT_PUBLIC_LANAFARM_FARM_ID=f47ac10b-58cc-4372-a567-0e02b2c3d479
+NEXT_PUBLIC_LANAFARM_DATA_REMOTE=true
+
+# Après ajout : Redeploy obligatoire

@@ -1,17 +1,46 @@
-import * as XLSX from "xlsx";
+import ExcelJS from "exceljs";
 
+import { loadBrandLogoForExport } from "@/lib/brand/load-logo-export";
 import { site } from "@/config/site";
 import { formatGNFForExport } from "@/lib/format-export";
 import type { ReportPayload } from "@/lib/reports-calc";
 import { KPI_LABEL } from "@/lib/terminology";
 
-function sheetFromAoa(data: string[][]): XLSX.WorkSheet {
-  return XLSX.utils.aoa_to_sheet(data);
+const LOGO_PX = 56;
+const HEADER_ROWS = 5;
+
+function addLogoToSheet(
+  workbook: ExcelJS.Workbook,
+  sheet: ExcelJS.Worksheet,
+  logoBase64: string
+): number {
+  const imageId = workbook.addImage({
+    base64: logoBase64,
+    extension: "png",
+  });
+  sheet.addImage(imageId, {
+    tl: { col: 0, row: 0 },
+    ext: { width: LOGO_PX, height: LOGO_PX },
+  });
+  sheet.getRow(1).height = 44;
+  return HEADER_ROWS;
 }
 
-function buildSynthèseSheet(p: ReportPayload): XLSX.WorkSheet {
+function writeRows(
+  sheet: ExcelJS.Worksheet,
+  startRow: number,
+  rows: (string | number)[][]
+): void {
+  rows.forEach((row, ri) => {
+    row.forEach((cell, ci) => {
+      sheet.getCell(startRow + ri, ci + 1).value = cell;
+    });
+  });
+}
+
+function buildSynthèseRows(p: ReportPayload): (string | number)[][] {
   const k = p.kpis;
-  const header: string[][] = [
+  return [
     [site.name],
     [p.periodLabel.replace(/\s*→\s*/g, " au ")],
     [
@@ -22,18 +51,15 @@ function buildSynthèseSheet(p: ReportPayload): XLSX.WorkSheet {
     ],
     [],
     ["KPI", "Valeur"],
-    [KPI_LABEL.alveolesRamassees, String(Math.round(k.alveolesRamassees))],
-    [KPI_LABEL.alveolesMisesEnVente, String(Math.round(k.alveolesMisesEnVente))],
+    [KPI_LABEL.alveolesRamassees, Math.round(k.alveolesRamassees)],
+    [KPI_LABEL.alveolesMisesEnVente, Math.round(k.alveolesMisesEnVente)],
     ["Chiffre d'affaires", formatGNFForExport(k.chiffreAffaires)],
     ["Total depenses", formatGNFForExport(k.totalDepenses)],
     ["Profit", formatGNFForExport(k.profit)],
-    ["Pertes totales", String(k.pertesTotales)],
+    ["Pertes totales", k.pertesTotales],
     ["Montant remis", formatGNFForExport(k.montantRemis)],
     ["Reste a verser (periode)", formatGNFForExport(k.montantEnAttente)],
-    [
-      "Marge brute",
-      k.margeBrutePct != null ? `${k.margeBrutePct} %` : "—",
-    ],
+    ["Marge brute", k.margeBrutePct != null ? `${k.margeBrutePct} %` : "—"],
     [],
     ["Production", ""],
     ...p.productionRows.map((r) => [r.label, r.value]),
@@ -47,11 +73,34 @@ function buildSynthèseSheet(p: ReportPayload): XLSX.WorkSheet {
     ["Trésorerie", ""],
     ...p.treasuryRows.map((r) => [r.label, r.value]),
   ];
-  return sheetFromAoa(header);
 }
 
-function buildProductionSheet(p: ReportPayload): XLSX.WorkSheet {
-  const data: (string | number)[][] = [
+function styleSynthèseHeader(sheet: ExcelJS.Worksheet, startRow: number): void {
+  const title = sheet.getCell(startRow, 1);
+  title.font = { bold: true, size: 16, color: { argb: "FF1D4ED8" } };
+  sheet.getColumn(1).width = 28;
+  sheet.getColumn(2).width = 22;
+}
+
+export function reportExcelFilename(p: ReportPayload): string {
+  const from = p.fromISO.slice(0, 10);
+  const to = p.toISO.slice(0, 10);
+  return `LanaFarm_Rapport_${p.type}_${from}_${to}.xlsx`;
+}
+
+export async function exportReportToExcel(payload: ReportPayload): Promise<void> {
+  const { base64: logoBase64 } = await loadBrandLogoForExport();
+  const workbook = new ExcelJS.Workbook();
+  workbook.creator = site.name;
+
+  const synth = workbook.addWorksheet("Synthèse");
+  const synthStart = addLogoToSheet(workbook, synth, logoBase64);
+  writeRows(synth, synthStart, buildSynthèseRows(payload));
+  styleSynthèseHeader(synth, synthStart);
+
+  const prod = workbook.addWorksheet("Production");
+  const prodStart = addLogoToSheet(workbook, prod, logoBase64);
+  writeRows(prod, prodStart, [
     [
       "Jour",
       "Ramassées (alv.)",
@@ -62,7 +111,7 @@ function buildProductionSheet(p: ReportPayload): XLSX.WorkSheet {
       "Statut",
       "Notes",
     ],
-    ...p.detail.production.map((r) => [
+    ...payload.detail.production.map((r) => [
       r.jour,
       r.ramassees,
       r.misesVente,
@@ -72,12 +121,11 @@ function buildProductionSheet(p: ReportPayload): XLSX.WorkSheet {
       r.statut,
       r.notes,
     ]),
-  ];
-  return XLSX.utils.aoa_to_sheet(data);
-}
+  ]);
 
-function buildVentesSheet(p: ReportPayload): XLSX.WorkSheet {
-  const data: (string | number)[][] = [
+  const ventes = workbook.addWorksheet("Ventes");
+  const ventesStart = addLogoToSheet(workbook, ventes, logoBase64);
+  writeRows(ventes, ventesStart, [
     [
       "Jour",
       "Vendus (alv.)",
@@ -87,7 +135,7 @@ function buildVentesSheet(p: ReportPayload): XLSX.WorkSheet {
       "Client",
       "Statut",
     ],
-    ...p.detail.ventes.map((r) => [
+    ...payload.detail.ventes.map((r) => [
       r.jour,
       r.vendus,
       r.cassesVente,
@@ -96,36 +144,26 @@ function buildVentesSheet(p: ReportPayload): XLSX.WorkSheet {
       r.client,
       r.statut,
     ]),
-  ];
-  return XLSX.utils.aoa_to_sheet(data);
-}
+  ]);
 
-function buildDepensesSheet(p: ReportPayload): XLSX.WorkSheet {
-  const data: (string | number)[][] = [
+  const dep = workbook.addWorksheet("Dépenses");
+  const depStart = addLogoToSheet(workbook, dep, logoBase64);
+  writeRows(dep, depStart, [
     ["Jour", "Catégorie", "Montant GNF", "Description", "Statut"],
-    ...p.detail.depenses.map((r) => [
+    ...payload.detail.depenses.map((r) => [
       r.jour,
       r.categorie,
       r.montant,
       r.description,
       r.statut,
     ]),
-  ];
-  return XLSX.utils.aoa_to_sheet(data);
-}
+  ]);
 
-function buildTresorerieSheet(p: ReportPayload): XLSX.WorkSheet {
-  const data: (string | number)[][] = [
-    [
-      "Jour",
-      "Reçu GNF",
-      "Versé GNF",
-      "Reste GNF",
-      "Méthode",
-      "Statut",
-      "Note",
-    ],
-    ...p.detail.tresorerie.map((r) => [
+  const tres = workbook.addWorksheet("Trésorerie");
+  const tresStart = addLogoToSheet(workbook, tres, logoBase64);
+  writeRows(tres, tresStart, [
+    ["Jour", "Reçu GNF", "Versé GNF", "Reste GNF", "Méthode", "Statut", "Note"],
+    ...payload.detail.tresorerie.map((r) => [
       r.jour,
       r.montantRecu,
       r.depose,
@@ -134,47 +172,32 @@ function buildTresorerieSheet(p: ReportPayload): XLSX.WorkSheet {
       r.statut,
       r.note,
     ]),
-  ];
-  return XLSX.utils.aoa_to_sheet(data);
-}
+  ]);
 
-function buildTransfertsSheet(p: ReportPayload): XLSX.WorkSheet {
-  const data: (string | number)[][] = [
-    [
-      "Jour",
-      "Envoyé (alv.)",
-      "Reçu (alv.)",
-      "Écart",
-      "Statut",
-      "Note",
-    ],
-    ...p.detail.transferts.map((r) => [
-      r.jour,
-      r.quantiteEnvoyee,
-      r.quantiteRecue ?? "",
-      r.ecart ?? "",
-      r.statut,
-      r.note,
-    ]),
-  ];
-  return XLSX.utils.aoa_to_sheet(data);
-}
-
-export function reportExcelFilename(p: ReportPayload): string {
-  const from = p.fromISO.slice(0, 10);
-  const to = p.toISO.slice(0, 10);
-  return `LanaFarm_Rapport_${p.type}_${from}_${to}.xlsx`;
-}
-
-export function exportReportToExcel(payload: ReportPayload): void {
-  const wb = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(wb, buildSynthèseSheet(payload), "Synthèse");
-  XLSX.utils.book_append_sheet(wb, buildProductionSheet(payload), "Production");
-  XLSX.utils.book_append_sheet(wb, buildVentesSheet(payload), "Ventes");
-  XLSX.utils.book_append_sheet(wb, buildDepensesSheet(payload), "Dépenses");
-  XLSX.utils.book_append_sheet(wb, buildTresorerieSheet(payload), "Trésorerie");
   if (payload.detail.transferts.length > 0) {
-    XLSX.utils.book_append_sheet(wb, buildTransfertsSheet(payload), "Transferts");
+    const tr = workbook.addWorksheet("Transferts");
+    const trStart = addLogoToSheet(workbook, tr, logoBase64);
+    writeRows(tr, trStart, [
+      ["Jour", "Envoyé (alv.)", "Reçu (alv.)", "Écart", "Statut", "Note"],
+      ...payload.detail.transferts.map((r) => [
+        r.jour,
+        r.quantiteEnvoyee,
+        r.quantiteRecue ?? "",
+        r.ecart ?? "",
+        r.statut,
+        r.note,
+      ]),
+    ]);
   }
-  XLSX.writeFile(wb, reportExcelFilename(payload));
+
+  const buffer = await workbook.xlsx.writeBuffer();
+  const blob = new Blob([buffer], {
+    type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+  });
+  const url = URL.createObjectURL(blob);
+  const anchor = document.createElement("a");
+  anchor.href = url;
+  anchor.download = reportExcelFilename(payload);
+  anchor.click();
+  URL.revokeObjectURL(url);
 }

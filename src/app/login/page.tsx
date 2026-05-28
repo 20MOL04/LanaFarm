@@ -1,22 +1,22 @@
 import { Suspense } from "react";
 
 import { LoginForm } from "@/components/auth/login-form";
+import { BrandLogo } from "@/components/brand/brand-logo";
 
 export default function LoginPage() {
   return (
-    <div className="flex min-h-screen items-center justify-center bg-background px-4 py-4">
-      <div className="w-full max-w-[360px] text-center">
-        <p className="login-hero-title" role="heading" aria-level={1}>
-          <span className="login-hero-lana">Lana</span>
-          <span className="login-hero-farm">Farm</span>
+    <div className="flex min-h-screen flex-col items-center justify-center bg-background px-4 py-8">
+      <div className="w-full max-w-[380px] text-center">
+        <div className="flex justify-center">
+          <BrandLogo variant="login" size="lg" priority className="drop-shadow-sm" />
+        </div>
+
+        <p className="mt-5 text-lg font-semibold text-foreground">Bienvenue</p>
+        <p className="mt-1.5 text-sm leading-relaxed text-muted">
+          Connectez-vous pour accéder à votre espace de gestion avicole.
         </p>
 
-        <p className="mt-2 text-base font-semibold text-foreground">Bienvenue</p>
-        <p className="mt-1 text-sm text-muted">
-          Connectez-vous pour accéder à votre espace de gestion.
-        </p>
-
-        <div className="mt-3 rounded-card border border-border bg-card p-5 shadow-card">
+        <div className="mt-6 rounded-card border border-border bg-card p-5 shadow-card">
           <Suspense
             fallback={
               <p className="py-4 text-center text-sm text-muted">Chargement…</p>
@@ -25,6 +25,10 @@ export default function LoginPage() {
             <LoginForm />
           </Suspense>
         </div>
+
+        <p className="mt-6 text-xs text-muted-foreground">
+          Production, ventes et trésorerie — tout votre suivi en un seul endroit.
+        </p>
       </div>
     </div>
   );

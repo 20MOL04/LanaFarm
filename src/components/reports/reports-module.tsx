@@ -235,8 +235,8 @@ export function ReportsModule() {
         archivedMode={!!archivedDoc}
         onGenerate={handleGenerate}
         onPrint={handlePrint}
-        onExcel={() => exportReportToExcel(exportPayload())}
-        onPdf={() => downloadReportPdf(exportPayload())}
+        onExcel={() => void exportReportToExcel(exportPayload())}
+        onPdf={() => void downloadReportPdf(exportPayload())}
       />
 
       <div id="print-zone" className="space-y-4 print:space-y-4">
@@ -278,8 +278,8 @@ export function ReportsModule() {
           items={recent}
           activeId={archivedDoc?.id ?? null}
           onSelect={handleSelectArchived}
-          onExportExcel={(doc) => exportReportToExcel(doc.payload)}
-          onExportPdf={(doc) => downloadReportPdf(doc.payload)}
+          onExportExcel={(doc) => void exportReportToExcel(doc.payload)}
+          onExportPdf={(doc) => void downloadReportPdf(doc.payload)}
           onPrint={(doc) => {
             setArchivedDoc(doc);
             setCustomRange({
