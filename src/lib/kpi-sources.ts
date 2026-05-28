@@ -160,6 +160,6 @@ export function kpiPertesTotales(
     prodRange,
     cap
   );
-  return prod.oeufsCasses + prod.oeufsPerdus + sales.casses;
+  return prod.oeufsCasses + sales.casses;
 }
 

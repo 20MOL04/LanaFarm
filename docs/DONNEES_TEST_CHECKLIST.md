@@ -1,92 +1,115 @@
 # Données de test manuelles — LanaFarm
 
-> Plus de seed automatique. Saisir ces valeurs dans l’app pour valider KPI, formulaires et exports.  
-> **Capacité plateau** : 30 œufs/alvéole (défaut config).
+> Saisir ces valeurs en **local** (`NEXT_PUBLIC_LANAFARM_DATA_REMOTE=false`).  
+> Calendrier global : **Personnalisé → 25 mai 2026 → 27 mai 2026** pour voir les KPI de la période test.  
+> **Capacité plateau** : 30 œufs/alvéole (défaut).  
+> **Œufs perdus** : fonction supprimée — ne plus saisir.
 
 ---
 
-## 1. Production (3 jours — lun, mar, mer de la semaine courante)
+## 1. Production
 
-| Jour | Ramassées (alv.) | Cassés (alv.) | Perdus (alv.) | Envoyées vente (alv.) |
-|------|------------------|---------------|---------------|------------------------|
-| Lun | 40 | 1 | 0 | 30 |
-| Mar | 36 | 0 | 1 | 28 |
-| Mer | 42 | 2 | 0 | 32 |
+| Date | Ramassées (alv.) | Œufs cassés | Mises en vente (alv.) |
+|------|------------------|-------------|------------------------|
+| **2026-05-25** (lun) | 40 | 30 | 30 |
+| **2026-05-26** (mar) | 36 | 0 | 28 |
+| **2026-05-27** (mer) | 42 | 60 | 32 |
 
-**À vérifier** : alvéoles entières uniquement, stock ferme, transfert auto « reçu » si envoyées > 0.
+**À vérifier** : alvéoles entières ; transfert auto « reçu » si mises en vente > 0 ; pas de colonne « Perdus ».
 
 ---
 
-## 2. Ventes (mêmes jours, après production)
+## 2. Ventes (après production)
 
-| Jour | Vendus (alv.) | Cassés vente (alv.) | Prix casier (GNF) |
-|------|---------------|---------------------|-------------------|
-| Lun | 25 | 0 | 37 000 |
-| Mar | 20 | 1 | 38 000 |
-| Mer | 28 | 0 | 37 000 |
+| Date | Vendus (alv.) | Cassés vente (alv.) | Prix casier (GNF) | Client (opt.) |
+|------|---------------|---------------------|-------------------|---------------|
+| 2026-05-25 | 25 | 0 | 37 000 | Marché A |
+| 2026-05-26 | 20 | 1 | 38 000 | Boutique B |
+| 2026-05-27 | 28 | 0 | 37 000 | Marché A |
 
-**À vérifier** : montant = vendus × prix, stock magasin cohérent, pas de vente > stock dispo.
+**Montants attendus par jour** : 925 000 · 760 000 · 1 036 000 GNF.
 
 ---
 
 ## 3. Dépenses
 
-| Jour | Catégorie | Montant (GNF) |
+| Date | Catégorie | Montant (GNF) |
 |------|-----------|---------------|
-| Lun | Alimentation animale | 450 000 |
-| Mar | Transport | 75 000 |
-| Mer | Main d'œuvre | 200 000 |
+| 2026-05-25 | Alimentation animale | 450 000 |
+| 2026-05-26 | Transport | 75 000 |
+| 2026-05-27 | Main d'œuvre | 200 000 |
 
 ---
 
 ## 4. Trésorerie
 
-| Jour | Reçu (GNF) | Versé (GNF) | Méthode |
+| Date | Reçu (GNF) | Versé (GNF) | Méthode |
 |------|------------|-------------|---------|
-| Lun | 900 000 | 500 000 | Espèces |
-| Mer | 1 050 000 | 1 050 000 | Orange Money |
-
-**À vérifier** : reste = reçu − versé.
+| 2026-05-25 | 900 000 | 500 000 | Espèces |
+| 2026-05-27 | 1 050 000 | 1 050 000 | Orange Money |
 
 ---
 
-## Checklist validation (cocher après test)
+## KPI attendus (plage 25 → 27 mai 2026)
 
-### Dashboard
-- [ ] KPI stock ferme / stock magasin affichés
-- [ ] Chiffre d’affaires, dépenses, profit cohérents
-- [ ] Graphique activité (7 jours) avec barres
+| KPI | Valeur attendue | Où le voir |
+|-----|-----------------|------------|
+| Chiffre d'affaires | **2 721 000 GNF** | Dashboard |
+| Dépenses | **725 000 GNF** | Dashboard |
+| Profit | **1 996 000 GNF** | Dashboard |
+| Alvéoles ramassées | **118 alv.** | Production |
+| Alvéoles mises en vente | **90 alv.** | Production |
+| Œufs cassés (ferme) | **90 œufs** | Production |
+| Stock ferme (instantané) | **28 alv.** | Dashboard / Production |
+| Stock magasin (instantané) | **16 alv.** | Dashboard / Ventes |
+| Montant versé (période) | **1 550 000 GNF** | Trésorerie |
+| Reste à verser (cumul) | **1 171 000 GNF** | Dashboard (CA cumul − versé) |
 
-### Production
-- [ ] Ajouter un jour (dialogue)
-- [ ] Modifier / annuler / restaurer
-- [ ] Multi-jours sans doublon même jour actif
-- [ ] Message erreur si 2 productions actives même jour
+### Détail calcul (contrôle)
 
-### Ventes
-- [ ] Ajouter vente, prix libre
-- [ ] Stock magasin diminue logiquement
+- **CA** = (25×37k) + (20×38k) + (28×37k) = **2 721 000**
+- **Dépenses** = 450k + 75k + 200k = **725 000**
+- **Profit** = CA − dépenses = **1 996 000**
+- **Stock ferme** = Σ(ramassé − envoyé vente) = (40−30)+(36−28)+(42−32) = **28 alv.**
+- **Stock magasin** = Σ reçus magasin − vendus − cassés vente = 90 − 73 − 1 = **16 alv.** (cassés vente = 1 alv. le 26)
 
-### Dépenses & Trésorerie
-- [ ] Catégories et méthodes depuis config
-- [ ] Totaux dashboard mis à jour
+---
 
-### Notifications (cloche)
-- [ ] Alertes générées si seuils dépassés (paramètres)
-- [ ] Lu / non lu, persistance après F5 (si Supabase remote)
+## Checklist avant livraison à papa
+
+### Données & calculs
+- [ ] Calendrier : **Cette semaine**, **Ce mois-ci**, **Personnalisé** (Du/Au) filtrent bien toutes les pages
+- [ ] Personnalisé 25–27 mai affiche les KPI du tableau ci-dessus
+- [ ] Aucune trace « œufs perdus » / colonne Perdus
+- [ ] F5 : données toujours là (local ou Supabase selon env)
+
+### Modules
+- [ ] Production : ajout, modification, multi-jours, conflit même jour
+- [ ] Ventes : prix pastilles + « Autre prix » (un seul champ, clavier)
+- [ ] Dépenses & Trésorerie : totaux cohérents
+- [ ] Dépôts / transferts : reçus auto après production
 
 ### Rapports
-- [ ] Générer rapport mensuel
-- [ ] Export PDF avec logo
-- [ ] Export Excel avec logo
-- [ ] Impression A4 lisible
+- [ ] Rapport période personnalisée
+- [ ] PDF / Excel sans colonne Perdus
+- [ ] Logo présent
 
 ### Mobile
-- [ ] Menu : pas de contour blanc, déconnexion visible en bas
-- [ ] Champs : pas de zoom bloqué après clavier
-- [ ] Formulaires dialogues utilisables
+- [ ] Dialogues : pas de scroll horizontal parasite
+- [ ] Champs date compacts
+- [ ] Menu : déconnexion visible
 
-### Auth & données
-- [ ] Login papa / toi
-- [ ] Données restent après F5 (Vercel + `DATA_REMOTE=true`)
-- [ ] Supabase Table Editor : lignes visibles après saisie
+### Prod (Vercel)
+- [ ] `DATA_REMOTE=true`, auth papa OK
+- [ ] Supabase : lignes visibles après saisie
+
+---
+
+## Ordre de saisie recommandé
+
+1. Production (3 jours)  
+2. Ventes (3 jours)  
+3. Dépenses  
+4. Trésorerie  
+5. Calendrier → Personnalisé 25–27 mai → contrôler dashboard  
+6. Rapports + exports

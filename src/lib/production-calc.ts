@@ -45,8 +45,6 @@ export type ProductionTotals = {
   alveolesRestantes: number;
   /** Σ œufs cassés ferme — pertes période. */
   oeufsCasses: number;
-  /** Σ œufs perdus ferme — pertes période. */
-  oeufsPerdus: number;
   saisies: number;
   /** Œufs bruts — compat transferts / ventes. */
   productionEggs: number;
@@ -64,7 +62,6 @@ export function aggregateProductions(
       acc.alveolesMisesEnVente += eggsToTrays(p.envoyesVente, capacitePlateau);
       acc.alveolesRestantes += calcAlveolesRestantesJour(p, capacitePlateau);
       acc.oeufsCasses += p.casses;
-      acc.oeufsPerdus += p.perdus ?? 0;
       acc.productionEggs += p.production;
       acc.envoyesVenteEggs += p.envoyesVente;
       acc.saisies += 1;
@@ -75,7 +72,6 @@ export function aggregateProductions(
       alveolesMisesEnVente: 0,
       alveolesRestantes: 0,
       oeufsCasses: 0,
-      oeufsPerdus: 0,
       saisies: 0,
       productionEggs: 0,
       envoyesVenteEggs: 0,
@@ -93,7 +89,6 @@ export type ProductionUiDraft = {
   alveolesRamassees: number;
   alveolesMisesEnVente: number;
   oeufsCasses: number;
-  oeufsPerdus?: number;
   notes?: string;
 };
 
@@ -102,7 +97,6 @@ export type ProductionDraft = {
   jourISO: string;
   production: number;
   casses: number;
-  perdus?: number;
   envoyesVente: number;
   notes?: string;
 };
@@ -112,7 +106,6 @@ export type ProductionFormErrors = Partial<{
   alveolesRamassees: string;
   alveolesMisesEnVente: string;
   oeufsCasses: string;
-  oeufsPerdus: string;
 }>;
 
 export function productionUiToStorageDraft(
@@ -125,7 +118,6 @@ export function productionUiToStorageDraft(
     jourISO: ui.jourISO,
     production: traysToEggs(ramasseesAlv, capacitePlateau),
     casses: Math.max(0, Math.floor(ui.oeufsCasses)),
-    perdus: Math.max(0, Math.floor(ui.oeufsPerdus ?? 0)),
     envoyesVente: traysToEggs(misesAlv, capacitePlateau),
     notes: ui.notes,
   };
@@ -157,10 +149,6 @@ export function validateProductionUiDraft(
   if (!Number.isFinite(draft.oeufsCasses) || draft.oeufsCasses < 0) {
     errors.oeufsCasses = "Quantité invalide.";
   }
-  const oeufsPerdus = draft.oeufsPerdus ?? 0;
-  if (!Number.isFinite(oeufsPerdus) || oeufsPerdus < 0) {
-    errors.oeufsPerdus = "Quantité invalide.";
-  }
 
   if (Object.keys(errors).length === 0) {
     if (draft.alveolesMisesEnVente > draft.alveolesRamassees) {
@@ -168,11 +156,8 @@ export function validateProductionUiDraft(
         "Les alvéoles mises en vente ne peuvent pas dépasser les alvéoles ramassées.";
     }
     const maxOeufs = draft.alveolesRamassees * capacitePlateau;
-    const pertesTotal = draft.oeufsCasses + oeufsPerdus;
-    if (pertesTotal > maxOeufs) {
-      const msg = `Cassés + perdus : maximum ${formatNumber(maxOeufs)} œufs pour ce volume ramassé.`;
-      errors.oeufsCasses = msg;
-      errors.oeufsPerdus = msg;
+    if (draft.oeufsCasses > maxOeufs) {
+      errors.oeufsCasses = `Cassés : maximum ${formatNumber(maxOeufs)} œufs pour ce volume ramassé.`;
     }
   }
 

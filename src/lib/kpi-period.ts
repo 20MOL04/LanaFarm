@@ -16,12 +16,8 @@ export type KpiPeriodKind = "flow" | "snapshot";
 
 /** Phrase temporelle courte (minuscule) — presets standards. */
 const PRESET_PERIOD_PHRASE: Record<Exclude<DateRangePresetId, "custom">, string> = {
-  today: "aujourd'hui",
   "this-week": "cette semaine",
   "this-month": "ce mois-ci",
-  "last-7": "7 derniers jours",
-  "last-30": "30 derniers jours",
-  "last-90": "90 derniers jours",
 };
 
 function flowPeriodPhrase(presetId: DateRangePresetId, range: DateRange): string {

@@ -1,58 +1,69 @@
 "use client";
 
 import * as React from "react";
+import { format, startOfDay } from "date-fns";
 import { Calendar, Check, ChevronDown } from "lucide-react";
 
+import { DateInput } from "@/components/shared/date-input";
+import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Separator } from "@/components/ui/separator";
 import { useDateRange } from "@/contexts/date-range-context";
-import { formatRange } from "@/lib/date-ranges";
+import { formatRange, rangeFromIsoDates, toIsoDate } from "@/lib/date-ranges";
 import { cn } from "@/lib/utils";
 
 /**
- * Sélecteur de plage de dates global.
- * Pilote l'ensemble de l'application via le DateRangeProvider.
+ * Sélecteur de plage global — presets courts + personnalisé (Du/Au).
  */
 export function GlobalDateRange({ className }: { className?: string }) {
-  const { range, presetId, presets, setPreset } = useDateRange();
+  const { range, presetId, presets, setPreset, setCustomRange } = useDateRange();
   const [open, setOpen] = React.useState(false);
-  const activePresetLabel =
-    presets.find((p) => p.id === presetId)?.label ?? "Plage";
+  const [customFrom, setCustomFrom] = React.useState(() => toIsoDate(range.from));
+  const [customTo, setCustomTo] = React.useState(() => toIsoDate(range.to));
+
+  React.useEffect(() => {
+    if (!open) return;
+    setCustomFrom(toIsoDate(range.from));
+    setCustomTo(toIsoDate(range.to));
+  }, [open, range.from, range.to]);
+
+  const applyCustom = () => {
+    if (!customFrom || !customTo) return;
+    setCustomRange(rangeFromIsoDates(customFrom, customTo));
+    setOpen(false);
+  };
+
+  const todayIso = format(startOfDay(new Date()), "yyyy-MM-dd");
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger
         className={cn(
-          "inline-flex h-9 max-w-full min-w-0 items-center gap-1.5 rounded-button border border-border bg-card px-2 text-[13px] text-foreground sm:gap-2 sm:px-3",
+          "inline-flex h-9 max-w-full min-w-0 items-center gap-1.5 rounded-button border border-border bg-card px-2.5 text-[13px] text-foreground sm:px-3",
           "hover:bg-card-muted transition-colors",
           "focus:outline-none focus:ring-2 focus:ring-accent-blue/40",
           className
         )}
       >
         <Calendar className="h-4 w-4 shrink-0 text-muted" />
-        <span className="hidden shrink-0 text-muted sm:inline">{activePresetLabel}</span>
         <span className="min-w-0 truncate font-medium">{formatRange(range)}</span>
         <ChevronDown className="h-4 w-4 shrink-0 text-muted" />
       </PopoverTrigger>
 
-      <PopoverContent className="w-64 p-0" align="end">
-        <div className="p-3">
-          <p className="text-[11px] font-medium uppercase tracking-wide text-muted">
-            Filtre global
-          </p>
-          <p className="mt-1 text-xs text-muted">
-            Modifie automatiquement toutes les pages.
-          </p>
-        </div>
-        <Separator />
+      <PopoverContent className="w-[min(100vw-1.5rem,18rem)] p-0" align="end">
         <ul className="p-1">
           {presets.map((preset) => {
             const active = preset.id === presetId;
+            const isCustom = preset.id === "custom";
             return (
               <li key={preset.id}>
                 <button
                   type="button"
                   onClick={() => {
+                    if (isCustom) {
+                      setPreset("custom");
+                      return;
+                    }
                     setPreset(preset.id);
                     setOpen(false);
                   }}
@@ -63,18 +74,46 @@ export function GlobalDateRange({ className }: { className?: string }) {
                   )}
                 >
                   <span>{preset.label}</span>
-                  {active ? (
-                    <Check className="h-4 w-4 text-accent-blue" />
-                  ) : null}
+                  {active ? <Check className="h-4 w-4 text-accent-blue" /> : null}
                 </button>
               </li>
             );
           })}
         </ul>
-        <Separator />
-        <div className="p-3 text-[11px] text-muted">
-          La sélection personnalisée sera disponible bientôt.
-        </div>
+
+        {presetId === "custom" ? (
+          <>
+            <Separator />
+            <div className="space-y-2 p-3">
+              <label className="block min-w-0 space-y-1">
+                <span className="text-[10px] font-medium uppercase text-muted">Du</span>
+                <DateInput
+                  value={customFrom}
+                  max={customTo || todayIso}
+                  onChange={(e) => setCustomFrom(e.target.value)}
+                />
+              </label>
+              <label className="block min-w-0 space-y-1">
+                <span className="text-[10px] font-medium uppercase text-muted">Au</span>
+                <DateInput
+                  value={customTo}
+                  min={customFrom}
+                  max={todayIso}
+                  onChange={(e) => setCustomTo(e.target.value)}
+                />
+              </label>
+              <Button
+                type="button"
+                variant="accent"
+                size="sm"
+                className="w-full"
+                onClick={applyCustom}
+              >
+                Appliquer
+              </Button>
+            </div>
+          </>
+        ) : null}
       </PopoverContent>
     </Popover>
   );

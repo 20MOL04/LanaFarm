@@ -99,7 +99,6 @@ export function ProductionTable({
       jour: (r) => new Date(r.jourISO),
       ramassees: (r) => r.production,
       casses: (r) => r.casses,
-      perdus: (r) => r.perdus ?? 0,
       mises: (r) => r.envoyesVente,
       restantes: (r) => calcAlveolesRestantesJour(r, cap),
     },
@@ -167,25 +166,6 @@ export function ProductionTable({
       sortable: true,
       hideBelow: "md",
       cell: (row) => <BrokenEggsMetric value={row.casses} showUnit={false} />,
-    },
-    {
-      key: "perdus",
-      header: "Perdus",
-      sortable: true,
-      hideBelow: "md",
-      cell: (row) => {
-        const perdus = row.perdus ?? 0;
-        return (
-          <AdaptiveMetric
-            value={perdus}
-            kind="number"
-            amountClassName={cn(
-              "tabular-nums",
-              perdus === 0 ? "text-muted" : "text-danger"
-            )}
-          />
-        );
-      },
     },
     {
       key: "statut",

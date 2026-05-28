@@ -251,7 +251,6 @@ export type ProductionDetailRow = {
   ramassees: number;
   misesVente: number;
   casses: number;
-  perdus: number;
   restantes: number;
   statut: string;
   notes: string;
@@ -313,7 +312,6 @@ export function buildProductionDetailRows(
       ramassees: Math.round(eggsToTrays(p.production, capacitePlateau)),
       misesVente: Math.round(eggsToTrays(p.envoyesVente, capacitePlateau)),
       casses: p.casses,
-      perdus: p.perdus ?? 0,
       restantes: Math.round(calcAlveolesRestantesJour(p, capacitePlateau)),
       statut: p.statut,
       notes: p.notes?.trim() ?? "",

@@ -33,9 +33,7 @@ type Props = {
 const QUICK_PERIODS: { id: DateRangePresetId; label: string }[] = [
   { id: "this-week", label: "Cette semaine" },
   { id: "this-month", label: "Ce mois" },
-  { id: "last-7", label: "7 jours" },
-  { id: "last-30", label: "30 jours" },
-  { id: "last-90", label: "90 jours" },
+  { id: "custom", label: "Personnalisé" },
 ];
 
 export function ReportFilters({

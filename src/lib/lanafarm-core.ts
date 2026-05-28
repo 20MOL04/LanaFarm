@@ -48,16 +48,6 @@ function eggsCollected(p: Production): number {
   return p.production;
 }
 
-/**
- * Œufs perdus hors cassés (D2) — excluent `casses`.
- * V1 : champ `perdus` absent de `domain.ts` → 0 tant qu'il n'est pas ajouté.
- */
-function eggsLost(p: Production): number {
-  const row = p as Production & { perdus?: number };
-  const lost = row.perdus ?? 0;
-  return Number.isFinite(lost) && lost > 0 ? lost : 0;
-}
-
 /** Œufs transférés vers le magasin — `Production.envoyesVente`. */
 function eggsTransferred(p: Production): number {
   return p.envoyesVente;
@@ -84,7 +74,7 @@ export function stockFermeInstantane(
   for (const p of productions) {
     if (p.statut !== "actif") continue;
     if (!isOnOrBeforeDay(p.jourISO, upToDate)) continue;
-    stock += eggsCollected(p) - eggsLost(p) - eggsTransferred(p);
+    stock += eggsCollected(p) - eggsTransferred(p);
   }
   return Math.max(0, stock);
 }
@@ -166,9 +156,7 @@ export function calculerBenefice(
  * Tests mentaux (validation manuelle) :
  *
  * stockFermeInstantane — D2 :
- *   100 ramassées, 10 cassées, 20 perdues, 30 envoyées → 50 œufs
- *   (nécessite Production.perdus = 20 ; casses ignorées)
- *   Avec schema V1 actuel (perdus absent) : 100 - 0 - 30 = 70 œufs
+ *   100 ramassées, 30 envoyées → 70 œufs (casses n'affectent pas le stock)
  *
  * stockMagasinInstantane :
  *   60 reçus - 40 vendus - 5 cassés vente = 15 → max(0,15) = 15

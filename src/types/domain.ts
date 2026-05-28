@@ -32,8 +32,6 @@ export type Production = {
   production: number;
   /** Œufs cassés à la ferme — pertes, unité secondaire. */
   casses: number;
-  /** Œufs perdus (introuvables, volés) — déduits du stock ferme. */
-  perdus?: number;
   /** Œufs transférés vers le magasin (équivalent alvéoles mises en vente). */
   envoyesVente: number;
   /** Note libre, optionnelle. */

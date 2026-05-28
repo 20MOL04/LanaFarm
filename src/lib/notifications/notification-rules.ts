@@ -253,7 +253,7 @@ export function evaluateNotificationRules(
     const t = new Date(p.jourISO).getTime();
     if (t >= sCur.start.getTime() && t <= sCur.end.getTime()) {
       productionDernier7j += p.production;
-      pertesDernier7j += p.casses + (p.perdus ?? 0);
+      pertesDernier7j += p.casses;
     }
   }
   for (const v of input.ventes) {

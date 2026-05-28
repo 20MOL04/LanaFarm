@@ -71,7 +71,6 @@ function emptyDraft(): ProductionUiDraft {
     alveolesRamassees: 0,
     alveolesMisesEnVente: 0,
     oeufsCasses: 0,
-    oeufsPerdus: 0,
     notes: "",
   };
 }
@@ -86,7 +85,6 @@ function draftFromProduction(entry: Production, cap: number): ProductionUiDraft 
     alveolesRamassees: eggsToTrays(entry.production, cap),
     alveolesMisesEnVente: eggsToTrays(entry.envoyesVente, cap),
     oeufsCasses: entry.casses,
-    oeufsPerdus: entry.perdus ?? 0,
     notes: entry.notes ?? "",
   };
 }
@@ -222,7 +220,6 @@ export function AddProductionDialog({ open, onOpenChange, editEntry = null }: Pr
               jourISO: dayDate?.toISOString() ?? p.jourISO,
               production: storage.production,
               casses: storage.casses,
-              perdus: storage.perdus ?? 0,
               envoyesVente: storage.envoyesVente,
             }
           : p
@@ -238,7 +235,6 @@ export function AddProductionDialog({ open, onOpenChange, editEntry = null }: Pr
           jourISO: dayDate!.toISOString(),
           production: storage.production,
           casses: storage.casses,
-          perdus: storage.perdus ?? 0,
           envoyesVente: storage.envoyesVente,
           statut: "actif" as const,
           createdAt: "",
@@ -297,7 +293,6 @@ export function AddProductionDialog({ open, onOpenChange, editEntry = null }: Pr
           alveolesRamassees: line.alveolesRamassees,
           alveolesMisesEnVente: line.alveolesMisesEnVente,
           oeufsCasses: line.oeufsCasses,
-          oeufsPerdus: 0,
           notes: "",
         },
         cap
@@ -306,7 +301,6 @@ export function AddProductionDialog({ open, onOpenChange, editEntry = null }: Pr
         jourISO: startOfDay(new Date(line.jourISO)).toISOString(),
         production: storage.production,
         casses: storage.casses,
-        perdus: storage.perdus,
         envoyesVente: storage.envoyesVente,
       };
     },
@@ -369,7 +363,6 @@ export function AddProductionDialog({ open, onOpenChange, editEntry = null }: Pr
       jourISO: dayDate.toISOString(),
       production: storage.production,
       casses: storage.casses,
-      perdus: storage.perdus,
       envoyesVente: storage.envoyesVente,
       notes: storage.notes?.trim() ? storage.notes.trim() : undefined,
     };

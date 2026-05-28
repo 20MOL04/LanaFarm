@@ -114,7 +114,7 @@ type Action =
       payload: {
         id: string;
         patch: Partial<
-          Pick<Production, "jourISO" | "production" | "casses" | "perdus" | "envoyesVente" | "notes">
+          Pick<Production, "jourISO" | "production" | "casses" | "envoyesVente" | "notes">
         >;
       };
     }
@@ -433,7 +433,7 @@ type ArchiveEntryResult<T extends ArchivableEntry> = {
 };
 
 const ARCHIVE_VALUE_KEYS: Record<ArchivableModule, readonly string[]> = {
-  production: ["production", "casses", "perdus", "envoyesVente", "notes"],
+  production: ["production", "casses", "envoyesVente", "notes"],
   vente: ["vendus", "cassesVente", "prix", "client"],
   depense: ["categorie", "montant", "description"],
   tresorerie: ["montantRecu", "depose", "methode", "note"],
@@ -635,7 +635,6 @@ function reducer(state: State, action: Action): State {
         {
           production: archive.production,
           casses: archive.casses,
-          perdus: archive.perdus,
           envoyesVente: archive.envoyesVente,
           notes: archive.notes,
         },
@@ -2116,7 +2115,7 @@ export type ProductionDraftInput = Omit<
   "id" | "semaineId" | "statut" | "createdAt" | "updatedAt"
 >;
 export type ProductionPatch = Partial<
-  Pick<Production, "jourISO" | "production" | "casses" | "perdus" | "envoyesVente" | "notes">
+  Pick<Production, "jourISO" | "production" | "casses" | "envoyesVente" | "notes">
 >;
 
 export type VenteDraftInput = Omit<

@@ -41,10 +41,6 @@ export function toProductionHistoryRows(
         value: `${formatNumber(eggsToTrays(v.envoyesVente, cap))} alv.`,
       },
       { label: "Cassés", value: `${formatNumber(v.casses)} œufs` },
-      {
-        label: "Perdus",
-        value: `${formatNumber(v.perdus ?? 0)} œufs`,
-      },
       ...(v.notes?.trim() ? [{ label: "Notes", value: v.notes.trim() }] : []),
     ],
   }));
