@@ -5,6 +5,23 @@ import type { Depense, Production, Vente } from "@/types/domain";
 
 export const MULTI_DAY_MAX = 31;
 
+/**
+ * Borne une période multi-jours à aujourd'hui (saisie impossible dans le futur).
+ * Évite le blocage HTML5 quand le calendrier global dépasse la date du jour.
+ */
+export function clampMultiDayPeriod(
+  fromIso: string,
+  toIso: string,
+  maxIso: string
+): { fromIso: string; toIso: string } {
+  let from = fromIso;
+  let to = toIso;
+  if (to > maxIso) to = maxIso;
+  if (from > maxIso) from = maxIso;
+  if (from > to) from = to;
+  return { fromIso: from, toIso: to };
+}
+
 export function dayKeyFromISO(iso: string): number {
   const d = new Date(iso);
   return Number.isNaN(d.getTime()) ? NaN : startOfDay(d).getTime();

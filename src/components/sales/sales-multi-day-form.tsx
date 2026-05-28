@@ -58,7 +58,7 @@ export function SalesMultiDayForm({ lines, ventes, defaultPrix, onChange }: Prop
               </div>
               <div className="grid min-w-0 grid-cols-2 gap-2">
                 <label className="col-span-2 min-w-0 space-y-1 sm:col-span-1">
-                  <span className="text-[10px] font-medium uppercase text-muted">Alvéoles</span>
+                  <span className="text-[10px] font-medium uppercase text-muted">Vendus (alv.)</span>
                   <Input
                     type="number"
                     min={0}
@@ -77,7 +77,7 @@ export function SalesMultiDayForm({ lines, ventes, defaultPrix, onChange }: Prop
                   />
                 </label>
                 <label className="col-span-2 min-w-0 space-y-1">
-                  <span className="text-[10px] font-medium uppercase text-muted">Prix</span>
+                  <span className="text-[10px] font-medium uppercase text-muted">Prix (GNF/alv.)</span>
                   <PriceSelect
                     id={`sale-multi-price-${index}`}
                     value={line.prix}
@@ -96,7 +96,7 @@ export function SalesMultiDayForm({ lines, ventes, defaultPrix, onChange }: Prop
                   />
                 </label>
                 <label className="min-w-0 space-y-1">
-                  <span className="text-[10px] font-medium uppercase text-muted">Cassés</span>
+                  <span className="text-[10px] font-medium uppercase text-muted">Cassés vente (alv.)</span>
                   <Input
                     type="number"
                     min={0}
@@ -124,10 +124,10 @@ export function SalesMultiDayForm({ lines, ventes, defaultPrix, onChange }: Prop
           <thead>
             <tr className="border-b border-border bg-card-muted text-[10px] font-medium uppercase tracking-wide text-muted">
               <th className="px-2 py-2">Jour</th>
-              <th className="px-2 py-2">Alvéoles</th>
-              <th className="px-2 py-2">Prix</th>
+              <th className="px-2 py-2">Vendus (alv.)</th>
+              <th className="px-2 py-2">Prix (GNF/alv.)</th>
               <th className="px-2 py-2">Client</th>
-              <th className="px-2 py-2">Cassés</th>
+              <th className="px-2 py-2">Cassés vente (alv.)</th>
             </tr>
           </thead>
           <tbody>

@@ -41,6 +41,7 @@ import { FIELD_LABEL, FIELD_HINT, KPI_LABEL, eggsToTrays } from "@/lib/terminolo
 import { traysToEggs } from "@/lib/units";
 import { cn } from "@/lib/utils";
 import {
+  clampMultiDayPeriod,
   enumerateDayISOs,
   findActiveProductionForDay,
   syncLinesWithPeriod,
@@ -121,8 +122,9 @@ export function AddProductionDialog({ open, onOpenChange, editEntry = null }: Pr
       openSnapshotRef.current = null;
       return;
     }
-    const fromIso = format(startOfDay(range.from), "yyyy-MM-dd");
-    const toIso = format(startOfDay(range.to), "yyyy-MM-dd");
+    const rawFrom = format(startOfDay(range.from), "yyyy-MM-dd");
+    const rawTo = format(startOfDay(range.to), "yyyy-MM-dd");
+    const { fromIso, toIso } = clampMultiDayPeriod(rawFrom, rawTo, todayIso());
     const days = enumerateDayISOs(fromIso, toIso);
     const lines = days.map(emptyProductionMultiLine);
     const initialDraft = editEntry

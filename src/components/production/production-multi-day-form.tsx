@@ -78,13 +78,13 @@ export function ProductionMultiDayForm({ lines, productions, onChange }: Props) 
                 ) : null}
               </div>
               <div className="grid min-w-0 grid-cols-1 gap-2 sm:grid-cols-3">
-                {numberField("Ramassées", line.alveolesRamassees, (n) =>
+                {numberField("Ramassées (alv.)", line.alveolesRamassees, (n) =>
                   updateLine(index, { alveolesRamassees: n })
                 )}
-                {numberField("Mises en vente", line.alveolesMisesEnVente, (n) =>
+                {numberField("Mises en vente (alv.)", line.alveolesMisesEnVente, (n) =>
                   updateLine(index, { alveolesMisesEnVente: n })
                 )}
-                {numberField("Cassés", line.oeufsCasses, (n) =>
+                {numberField("Cassés (œufs)", line.oeufsCasses, (n) =>
                   updateLine(index, { oeufsCasses: n })
                 )}
               </div>
@@ -98,9 +98,9 @@ export function ProductionMultiDayForm({ lines, productions, onChange }: Props) 
           <thead>
             <tr className="border-b border-border bg-card-muted text-[10px] font-medium uppercase tracking-wide text-muted">
               <th className="px-2 py-2">Jour</th>
-              <th className="px-2 py-2">Ramassées</th>
-              <th className="px-2 py-2">Mises en vente</th>
-              <th className="px-2 py-2">Cassés</th>
+              <th className="px-2 py-2">Ramassées (alv.)</th>
+              <th className="px-2 py-2">Mises en vente (alv.)</th>
+              <th className="px-2 py-2">Cassés (œufs)</th>
             </tr>
           </thead>
           <tbody>

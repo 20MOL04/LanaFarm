@@ -1,9 +1,11 @@
 "use client";
 
+import * as React from "react";
+
 import { FormField } from "@/components/shared/form-field";
 import { DateInput } from "@/components/shared/date-input";
-import { formatRange, type DateRange } from "@/lib/date-ranges";
-import { enumerateDayISOs } from "@/lib/multi-day";
+import { formatRange, toIsoDate, type DateRange } from "@/lib/date-ranges";
+import { clampMultiDayPeriod, enumerateDayISOs } from "@/lib/multi-day";
 
 type Props = {
   fromIso: string;
@@ -22,8 +24,36 @@ export function MultiDayPeriodPicker({
   maxDateIso,
   hintRange,
 }: Props) {
-  const dayCount = enumerateDayISOs(fromIso, toIso).length;
+  const clamped = React.useMemo(
+    () => clampMultiDayPeriod(fromIso, toIso, maxDateIso),
+    [fromIso, toIso, maxDateIso]
+  );
+
+  React.useEffect(() => {
+    if (clamped.fromIso !== fromIso) onFromChange(clamped.fromIso);
+    if (clamped.toIso !== toIso) onToChange(clamped.toIso);
+  }, [clamped.fromIso, clamped.toIso, fromIso, toIso, onFromChange, onToChange]);
+
+  const dayCount = enumerateDayISOs(clamped.fromIso, clamped.toIso).length;
   const periodInvalid = dayCount === 0;
+
+  const applyFrom = (iso: string) => {
+    const next = clampMultiDayPeriod(iso, toIso, maxDateIso);
+    onFromChange(next.fromIso);
+    if (next.toIso !== toIso) onToChange(next.toIso);
+  };
+
+  const applyTo = (iso: string) => {
+    const next = clampMultiDayPeriod(fromIso, iso, maxDateIso);
+    onFromChange(next.fromIso);
+    onToChange(next.toIso);
+  };
+
+  const globalEndIso = hintRange ? toIsoDate(hintRange.to) : null;
+  const cappedByToday =
+    globalEndIso != null &&
+    globalEndIso > maxDateIso &&
+    clamped.toIso === maxDateIso;
 
   return (
     <div className="min-w-0 space-y-2 rounded-card border border-border bg-card-muted/50 p-3">
@@ -34,18 +64,17 @@ export function MultiDayPeriodPicker({
         <FormField label="Du" htmlFor="multi-from" required>
           <DateInput
             id="multi-from"
-            value={fromIso}
+            value={clamped.fromIso}
             max={maxDateIso}
-            onChange={(e) => onFromChange(e.target.value)}
+            onChange={(e) => applyFrom(e.target.value)}
           />
         </FormField>
         <FormField label="Au" htmlFor="multi-to" required>
           <DateInput
             id="multi-to"
-            value={toIso}
-            min={fromIso}
-            max={maxDateIso}
-            onChange={(e) => onToChange(e.target.value)}
+            value={clamped.toIso}
+            min={clamped.fromIso}
+            onChange={(e) => applyTo(e.target.value)}
           />
         </FormField>
       </div>
@@ -55,6 +84,12 @@ export function MultiDayPeriodPicker({
         <p className="text-[11px] text-muted">
           {dayCount} jour{dayCount > 1 ? "s" : ""}
           {hintRange ? ` · Calendrier global : ${formatRange(hintRange)}` : null}
+          {cappedByToday ? (
+            <span className="mt-0.5 block text-[10px] leading-snug">
+              Jusqu&apos;à aujourd&apos;hui uniquement — les jours futurs du calendrier global ne sont pas
+              saisissables.
+            </span>
+          ) : null}
         </p>
       )}
     </div>

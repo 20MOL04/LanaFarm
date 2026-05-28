@@ -55,6 +55,7 @@ import { SALES_LABEL, eggsToTrays } from "@/lib/terminology";
 import { traysToEggs } from "@/lib/units";
 import { cn } from "@/lib/utils";
 import {
+  clampMultiDayPeriod,
   enumerateDayISOs,
   getActiveVentesForDay,
   syncLinesWithPeriod,
@@ -181,8 +182,9 @@ export function AddSaleDialog({ open, onOpenChange, editEntry = null }: Props) {
       openSnapshotRef.current = null;
       return;
     }
-    const fromIso = format(startOfDay(range.from), "yyyy-MM-dd");
-    const toIso = format(startOfDay(range.to), "yyyy-MM-dd");
+    const rawFrom = format(startOfDay(range.from), "yyyy-MM-dd");
+    const rawTo = format(startOfDay(range.to), "yyyy-MM-dd");
+    const { fromIso, toIso } = clampMultiDayPeriod(rawFrom, rawTo, todayIso());
     const days = enumerateDayISOs(fromIso, toIso);
     const lines = days.map((d) => emptySalesMultiLine(d, defaultPrix));
     const edit = editEntry

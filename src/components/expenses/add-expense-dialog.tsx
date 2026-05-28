@@ -37,6 +37,7 @@ import {
 } from "@/lib/expenses-calc";
 import { cn } from "@/lib/utils";
 import {
+  clampMultiDayPeriod,
   enumerateDayISOs,
   getActiveDepensesForDay,
   hasActiveDepensesForDay,
@@ -164,8 +165,9 @@ export function AddExpenseDialog({ open, onOpenChange, editEntry = null }: Props
       openSnapshotRef.current = null;
       return;
     }
-    const fromIso = format(startOfDay(range.from), "yyyy-MM-dd");
-    const toIso = format(startOfDay(range.to), "yyyy-MM-dd");
+    const rawFrom = format(startOfDay(range.from), "yyyy-MM-dd");
+    const rawTo = format(startOfDay(range.to), "yyyy-MM-dd");
+    const { fromIso, toIso } = clampMultiDayPeriod(rawFrom, rawTo, todayIso());
     const days = enumerateDayISOs(fromIso, toIso);
     const blocks = days.map(emptyExpenseBlock);
     const edit = editEntry ? draftFromDepense(editEntry) : null;
