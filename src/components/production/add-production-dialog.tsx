@@ -24,7 +24,6 @@ import { Input } from "@/components/ui/input";
 import { useDateRange } from "@/contexts/date-range-context";
 import { useFarmConfig, useProductionStore, useTransfersStore } from "@/contexts/farm-store";
 import { formatDay } from "@/lib/date-ranges";
-import { formatNumber } from "@/lib/format";
 import {
   type ProductionUiDraft,
   type ProductionFormErrors,
@@ -33,7 +32,6 @@ import {
 } from "@/lib/production-calc";
 import { computeProductionPreview } from "@/lib/production-preview";
 import { FIELD_LABEL, FIELD_HINT, eggsToTrays } from "@/lib/terminology";
-import { cn } from "@/lib/utils";
 import {
   clampMultiDayPeriod,
   enumerateDayISOs,
