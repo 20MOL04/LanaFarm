@@ -1,9 +1,7 @@
 "use client";
 
-import { CalendarDays } from "lucide-react";
-
 import { FormField } from "@/components/shared/form-field";
-import { Input } from "@/components/ui/input";
+import { DateInput } from "@/components/shared/date-input";
 import { formatRange, type DateRange } from "@/lib/date-ranges";
 import { enumerateDayISOs } from "@/lib/multi-day";
 
@@ -28,37 +26,27 @@ export function MultiDayPeriodPicker({
   const periodInvalid = dayCount === 0;
 
   return (
-    <div className="space-y-2 rounded-card border border-border bg-card-muted/50 p-3">
+    <div className="min-w-0 space-y-2 rounded-card border border-border bg-card-muted/50 p-3">
       <p className="text-[11px] font-medium uppercase tracking-wide text-muted">
         Période
       </p>
-      <div className="grid grid-cols-2 gap-3">
+      <div className="grid min-w-0 grid-cols-1 gap-3 sm:grid-cols-2">
         <FormField label="Du" htmlFor="multi-from" required>
-          <div className="relative">
-            <CalendarDays className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted" />
-            <Input
-              id="multi-from"
-              type="date"
-              value={fromIso}
-              max={maxDateIso}
-              onChange={(e) => onFromChange(e.target.value)}
-              className="h-9 pl-9"
-            />
-          </div>
+          <DateInput
+            id="multi-from"
+            value={fromIso}
+            max={maxDateIso}
+            onChange={(e) => onFromChange(e.target.value)}
+          />
         </FormField>
         <FormField label="Au" htmlFor="multi-to" required>
-          <div className="relative">
-            <CalendarDays className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted" />
-            <Input
-              id="multi-to"
-              type="date"
-              value={toIso}
-              min={fromIso}
-              max={maxDateIso}
-              onChange={(e) => onToChange(e.target.value)}
-              className="h-9 pl-9"
-            />
-          </div>
+          <DateInput
+            id="multi-to"
+            value={toIso}
+            min={fromIso}
+            max={maxDateIso}
+            onChange={(e) => onToChange(e.target.value)}
+          />
         </FormField>
       </div>
       {periodInvalid ? (

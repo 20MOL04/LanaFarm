@@ -2,9 +2,10 @@
 
 import * as React from "react";
 import { format, startOfDay } from "date-fns";
-import { CalendarDays, Info, PiggyBank, Plus, Trash2 } from "lucide-react";
+import { Info, PiggyBank, Plus, Trash2 } from "lucide-react";
 
 import { ComboboxMethode } from "@/components/shared/combobox-methode";
+import { DateInput } from "@/components/shared/date-input";
 import { FormField } from "@/components/shared/form-field";
 import { Button } from "@/components/ui/button";
 import {
@@ -327,7 +328,7 @@ export function AddTresorerieDialog({ open, onOpenChange, editEntry = null }: Pr
   return (
     <>
     <Dialog open={open} onOpenChange={unsaved.dialogProps.onOpenChange}>
-      <DialogContent className="max-w-lg">
+      <DialogContent>
         <DialogHeader>
           <DialogTitle>
             {isEditMode ? "Modifier la saisie" : "Versements du jour"}
@@ -349,25 +350,20 @@ export function AddTresorerieDialog({ open, onOpenChange, editEntry = null }: Pr
               }
               hint={dayDate ? formatDay(dayDate) : undefined}
             >
-              <div className="relative">
-                <CalendarDays className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted" />
-                <Input
-                  id="treso-day"
-                  type="date"
-                  value={isEditMode ? editDraft.jourISO : dayDraft.jourISO}
-                  max={todayIso()}
-                  onChange={(e) => {
-                    const v = e.target.value;
-                    if (isEditMode) {
-                      setEditDraft((d) => ({ ...d, jourISO: v }));
-                    } else {
-                      setDayDraft((d) => ({ ...d, jourISO: v }));
-                    }
-                  }}
-                  className="pl-9"
-                  required
-                />
-              </div>
+              <DateInput
+                id="treso-day"
+                value={isEditMode ? editDraft.jourISO : dayDraft.jourISO}
+                max={todayIso()}
+                onChange={(e) => {
+                  const v = e.target.value;
+                  if (isEditMode) {
+                    setEditDraft((d) => ({ ...d, jourISO: v }));
+                  } else {
+                    setDayDraft((d) => ({ ...d, jourISO: v }));
+                  }
+                }}
+                required
+              />
             </FormField>
 
             {!isEditMode && weekFinance ? (

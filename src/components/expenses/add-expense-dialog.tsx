@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import { format, startOfDay } from "date-fns";
-import { CalendarDays, CircleDollarSign, Plus, Receipt, Trash2 } from "lucide-react";
+import { CircleDollarSign, Plus, Receipt, Trash2 } from "lucide-react";
 
 import { ComboboxCategorie } from "@/components/shared/combobox-categorie";
 import {
@@ -10,6 +10,7 @@ import {
   isExpenseBlockFilled,
   type ExpenseMultiDayBlock,
 } from "@/components/expenses/expenses-multi-day-form";
+import { DateInput } from "@/components/shared/date-input";
 import { FormField } from "@/components/shared/form-field";
 import { MultiDayConflictDialog } from "@/components/shared/multi-day-conflict-dialog";
 import { MultiDayModeToggle } from "@/components/shared/multi-day-mode-toggle";
@@ -386,7 +387,7 @@ export function AddExpenseDialog({ open, onOpenChange, editEntry = null }: Props
   return (
     <>
       <Dialog open={open} onOpenChange={unsaved.dialogProps.onOpenChange}>
-        <DialogContent className={cn("max-w-lg", multiMode && !isEditMode && "max-w-2xl")}>
+        <DialogContent className={cn(multiMode && !isEditMode && "sm:max-w-2xl")}>
           <DialogHeader>
             <div className="flex items-start justify-between gap-2">
               <DialogTitle>
@@ -435,25 +436,20 @@ export function AddExpenseDialog({ open, onOpenChange, editEntry = null }: Props
               }
               hint={dayDate ? formatDay(dayDate) : undefined}
             >
-              <div className="relative">
-                <CalendarDays className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted" />
-                <Input
-                  id="dep-day"
-                  type="date"
-                  value={isEditMode ? editDraft.jourISO : dayDraft.jourISO}
-                  max={todayIso()}
-                  onChange={(e) => {
-                    const v = e.target.value;
-                    if (isEditMode) {
-                      setEditDraft((d) => ({ ...d, jourISO: v }));
-                    } else {
-                      setDayDraft((d) => ({ ...d, jourISO: v }));
-                    }
-                  }}
-                  className="pl-9"
-                  required
-                />
-              </div>
+              <DateInput
+                id="dep-day"
+                value={isEditMode ? editDraft.jourISO : dayDraft.jourISO}
+                max={todayIso()}
+                onChange={(e) => {
+                  const v = e.target.value;
+                  if (isEditMode) {
+                    setEditDraft((d) => ({ ...d, jourISO: v }));
+                  } else {
+                    setDayDraft((d) => ({ ...d, jourISO: v }));
+                  }
+                }}
+                required
+              />
             </FormField>
 
             {isEditMode ? (

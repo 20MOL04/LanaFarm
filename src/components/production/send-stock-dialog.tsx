@@ -2,8 +2,9 @@
 
 import * as React from "react";
 import { format, startOfDay } from "date-fns";
-import { ArrowRight, CalendarDays, PackageCheck, Warehouse } from "lucide-react";
+import { ArrowRight, PackageCheck, Warehouse } from "lucide-react";
 
+import { DateInput } from "@/components/shared/date-input";
 import { FormField } from "@/components/shared/form-field";
 import { MetricValue } from "@/components/shared/metric-value";
 import { StoreErrorBanner } from "@/components/shared/store-error-banner";
@@ -141,7 +142,7 @@ export function SendStockDialog({ open, onOpenChange }: Props) {
   return (
     <>
       <Dialog open={open} onOpenChange={unsaved.dialogProps.onOpenChange}>
-        <DialogContent className="max-w-md">
+        <DialogContent>
           <DialogHeader>
             <DialogTitle>Envoyer au magasin</DialogTitle>
           </DialogHeader>
@@ -161,18 +162,13 @@ export function SendStockDialog({ open, onOpenChange }: Props) {
                   required
                   hint={dayDate ? formatDay(dayDate) : undefined}
                 >
-                  <div className="relative">
-                    <CalendarDays className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted" />
-                    <Input
-                      id="send-day"
-                      type="date"
-                      value={jourISO}
-                      max={todayIso()}
-                      onChange={(e) => setJourISO(e.target.value)}
-                      className="pl-9"
-                      required
-                    />
-                  </div>
+                  <DateInput
+                    id="send-day"
+                    value={jourISO}
+                    max={todayIso()}
+                    onChange={(e) => setJourISO(e.target.value)}
+                    required
+                  />
                 </FormField>
 
                 <FormField

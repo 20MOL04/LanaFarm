@@ -3,33 +3,23 @@
 import * as React from "react";
 
 import { Input } from "@/components/ui/input";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { formatGNF } from "@/lib/format";
+import { cn } from "@/lib/utils";
 import { PRIX_SUGGERES_GNF } from "@/types/domain";
-
-const CUSTOM_OPTION = "__custom__";
 
 type PriceSelectProps = {
   id?: string;
   value: number;
   onChange: (next: number) => void;
   onBlur?: () => void;
-  /** Prix par défaut (config) en tête de liste. */
   defaultPrix?: number;
-  /** Prix suggérés additionnels. */
   suggestions?: number[];
   required?: boolean;
 };
 
 /**
- * Sélecteur de prix compact : dropdown + option « Autre prix… »
- * avec saisie libre inline (B-UX1).
+ * Prix : un seul champ numérique + pastilles de suggestion.
+ * « Autre prix » = focus clavier sur le même champ (pas de 2e input).
  */
 export function PriceSelect({
   id = "price-input",
@@ -40,6 +30,8 @@ export function PriceSelect({
   suggestions = PRIX_SUGGERES_GNF,
   required,
 }: PriceSelectProps) {
+  const inputRef = React.useRef<HTMLInputElement>(null);
+
   const priceOptions = React.useMemo(() => {
     const set = new Set<number>();
     if (defaultPrix != null && defaultPrix > 0) set.add(defaultPrix);
@@ -49,63 +41,63 @@ export function PriceSelect({
     return [...set].sort((a, b) => a - b);
   }, [defaultPrix, suggestions]);
 
-  const isKnownPrice = value > 0 && priceOptions.includes(value);
-  const [customMode, setCustomMode] = React.useState(!isKnownPrice && value > 0);
-
-  React.useEffect(() => {
-    if (value > 0 && priceOptions.includes(value)) {
-      setCustomMode(false);
-    }
-  }, [value, priceOptions]);
-
-  const selectValue = customMode ? CUSTOM_OPTION : value > 0 ? String(value) : "";
-
-  const handleSelectChange = (v: string) => {
-    if (v === CUSTOM_OPTION) {
-      setCustomMode(true);
-      if (value <= 0 && defaultPrix) onChange(defaultPrix);
-      return;
-    }
-    setCustomMode(false);
-    const n = Number(v);
-    if (!Number.isNaN(n) && n > 0) onChange(n);
-  };
-
   return (
-    <div className="space-y-1.5">
-      <Select value={selectValue || undefined} onValueChange={handleSelectChange}>
-        <SelectTrigger id={id} className="h-9 tabular-nums">
-          <SelectValue placeholder="Prix casier (GNF)" />
-        </SelectTrigger>
-        <SelectContent>
-          {priceOptions.map((p) => (
-            <SelectItem key={p} value={String(p)}>
-              {formatGNF(p)}
-            </SelectItem>
-          ))}
-          <SelectItem value={CUSTOM_OPTION}>Autre prix…</SelectItem>
-        </SelectContent>
-      </Select>
+    <div className="min-w-0 space-y-2">
+      <Input
+        ref={inputRef}
+        id={id}
+        type="number"
+        inputMode="numeric"
+        min={0}
+        step={500}
+        required={required}
+        value={Number.isFinite(value) && value > 0 ? value : ""}
+        onChange={(e) => {
+          const raw = e.target.value.trim();
+          if (raw === "") {
+            onChange(0);
+            return;
+          }
+          const n = parseInt(raw, 10);
+          onChange(Number.isNaN(n) ? 0 : Math.max(0, n));
+        }}
+        onBlur={onBlur}
+        onFocus={(e) => e.currentTarget.select()}
+        placeholder="Prix casier (GNF)"
+        aria-label="Prix casier en GNF"
+        className="h-9 w-full min-w-0 tabular-nums"
+      />
 
-      {customMode ? (
-        <Input
-          type="number"
-          inputMode="numeric"
-          min={0}
-          step={500}
-          required={required}
-          value={Number.isFinite(value) ? value : 0}
-          onChange={(e) => {
-            const n = e.target.valueAsNumber;
-            onChange(Number.isNaN(n) ? 0 : Math.max(0, Math.floor(n)));
-          }}
-          onBlur={onBlur}
-          onFocus={(e) => e.currentTarget.select()}
-          className="h-9 tabular-nums"
-          placeholder="Autre montant..."
-          aria-label="Autre prix en GNF"
-        />
-      ) : null}
+      <div className="flex min-w-0 flex-wrap gap-1.5">
+        {priceOptions.map((p) => {
+          const active = value === p;
+          return (
+            <button
+              key={p}
+              type="button"
+              onClick={() => {
+                onChange(p);
+                inputRef.current?.focus();
+              }}
+              className={cn(
+                "rounded-pill border px-2 py-0.5 text-[11px] font-medium tabular-nums transition-colors",
+                active
+                  ? "border-accent-blue bg-accent-blue text-white"
+                  : "border-border bg-card text-foreground hover:bg-card-muted"
+              )}
+            >
+              {formatGNF(p)}
+            </button>
+          );
+        })}
+        <button
+          type="button"
+          onClick={() => inputRef.current?.focus()}
+          className="rounded-pill border border-dashed border-border px-2 py-0.5 text-[11px] font-medium text-muted hover:border-accent-blue hover:text-accent-blue"
+        >
+          Autre prix
+        </button>
+      </div>
     </div>
   );
 }

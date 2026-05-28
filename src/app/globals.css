@@ -331,3 +331,11 @@ a {
     font-variant-numeric: tabular-nums;
   }
 }
+
+/* Dialogues & champs date — mobile (évite débordement horizontal) */
+@media (max-width: 639px) {
+  input[type="date"] {
+    min-width: 0;
+    max-width: 100%;
+  }
+}

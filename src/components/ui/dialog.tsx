@@ -38,9 +38,8 @@ const DialogContent = React.forwardRef<
       ref={ref}
       className={cn(
         "fixed left-1/2 top-1/2 z-50 -translate-x-1/2 -translate-y-1/2",
-        "w-[calc(100%-1.5rem)] max-w-md max-h-[90vh] overflow-hidden",
-        "flex flex-col rounded-card bg-card shadow-modal",
-        "border border-border",
+        "flex w-[min(100vw-1rem,100%)] max-w-lg max-h-[min(92dvh,100%)] flex-col overflow-hidden",
+        "rounded-card border border-border bg-card shadow-modal",
         "data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=open]:zoom-in-95",
         "data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95",
         className
@@ -112,7 +111,10 @@ function DialogBody({
 }: React.HTMLAttributes<HTMLDivElement>) {
   return (
     <div
-      className={cn("flex-1 overflow-y-auto px-4 py-3", className)}
+      className={cn(
+        "min-h-0 flex-1 overflow-x-hidden overflow-y-auto overscroll-y-contain px-4 py-3",
+        className
+      )}
       {...props}
     />
   );

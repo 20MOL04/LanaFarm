@@ -3,13 +3,13 @@
 import * as React from "react";
 import { format, startOfDay } from "date-fns";
 import {
-  CalendarDays,
   PackageCheck,
   ShoppingCart,
   TrendingDown,
   Warehouse,
 } from "lucide-react";
 
+import { DateInput } from "@/components/shared/date-input";
 import { FormField } from "@/components/shared/form-field";
 import { MultiDayConflictDialog } from "@/components/shared/multi-day-conflict-dialog";
 import { MultiDayModeToggle } from "@/components/shared/multi-day-mode-toggle";
@@ -386,7 +386,7 @@ export function AddProductionDialog({ open, onOpenChange, editEntry = null }: Pr
   return (
     <>
       <Dialog open={open} onOpenChange={unsaved.dialogProps.onOpenChange}>
-        <DialogContent className={cn("max-w-md", multiMode && !isEditMode && "max-w-2xl")}>
+        <DialogContent className={cn(multiMode && !isEditMode && "sm:max-w-2xl")}>
           <DialogHeader>
             <div className="flex items-start justify-between gap-2">
               <DialogTitle>
@@ -428,22 +428,17 @@ export function AddProductionDialog({ open, onOpenChange, editEntry = null }: Pr
               error={touched.jourISO ? errors.jourISO : undefined}
               hint={dayDate ? formatDay(dayDate) : undefined}
             >
-              <div className="relative">
-                <CalendarDays className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted" />
-                <Input
-                  id="prod-day"
-                  type="date"
-                  value={draft.jourISO}
-                  max={todayIso()}
-                  onChange={(e) => setDraft((d) => ({ ...d, jourISO: e.target.value }))}
-                  onBlur={() => setTouched((t) => ({ ...t, jourISO: true }))}
-                  className="h-9 pl-9"
-                  required
-                />
-              </div>
+              <DateInput
+                id="prod-day"
+                value={draft.jourISO}
+                max={todayIso()}
+                onChange={(e) => setDraft((d) => ({ ...d, jourISO: e.target.value }))}
+                onBlur={() => setTouched((t) => ({ ...t, jourISO: true }))}
+                required
+              />
             </FormField>
 
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid min-w-0 grid-cols-1 gap-3 sm:grid-cols-2">
               <NumberField
                 id="prod-ramassees"
                 label={FIELD_LABEL.ramassees}

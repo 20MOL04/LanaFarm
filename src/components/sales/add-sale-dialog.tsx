@@ -3,7 +3,6 @@
 import * as React from "react";
 import { format, startOfDay } from "date-fns";
 import {
-  CalendarDays,
   Plus,
   ShoppingBag,
   Trash2,
@@ -17,6 +16,7 @@ import {
   SalesMultiDayForm,
   type SalesMultiDayLine,
 } from "@/components/sales/sales-multi-day-form";
+import { DateInput } from "@/components/shared/date-input";
 import { FormField } from "@/components/shared/form-field";
 import { MultiDayConflictDialog } from "@/components/shared/multi-day-conflict-dialog";
 import { MultiDayModeToggle } from "@/components/shared/multi-day-mode-toggle";
@@ -480,7 +480,7 @@ export function AddSaleDialog({ open, onOpenChange, editEntry = null }: Props) {
   return (
     <>
       <Dialog open={open} onOpenChange={unsaved.dialogProps.onOpenChange}>
-        <DialogContent className={cn("max-w-lg", multiMode && !isEditMode && "max-w-2xl")}>
+        <DialogContent className={cn(multiMode && !isEditMode && "sm:max-w-2xl")}>
           <DialogHeader>
             <div className="flex items-start justify-between gap-2">
               <DialogTitle>
@@ -529,25 +529,20 @@ export function AddSaleDialog({ open, onOpenChange, editEntry = null }: Props) {
               }
               hint={dayDate ? formatDay(dayDate) : undefined}
             >
-              <div className="relative">
-                <CalendarDays className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted" />
-                <Input
-                  id="sale-day"
-                  type="date"
-                  value={isEditMode ? editDraft.jourISO : draft.jourISO}
-                  max={todayIso()}
-                  onChange={(e) => {
-                    const v = e.target.value;
-                    if (isEditMode) {
-                      setEditDraft((d) => ({ ...d, jourISO: v }));
-                    } else {
-                      setDraft((d) => ({ ...d, jourISO: v }));
-                    }
-                  }}
-                  className="pl-9"
-                  required
-                />
-              </div>
+              <DateInput
+                id="sale-day"
+                value={isEditMode ? editDraft.jourISO : draft.jourISO}
+                max={todayIso()}
+                onChange={(e) => {
+                  const v = e.target.value;
+                  if (isEditMode) {
+                    setEditDraft((d) => ({ ...d, jourISO: v }));
+                  } else {
+                    setDraft((d) => ({ ...d, jourISO: v }));
+                  }
+                }}
+                required
+              />
             </FormField>
 
             {isEditMode ? (
