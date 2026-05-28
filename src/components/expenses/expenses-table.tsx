@@ -4,9 +4,8 @@ import * as React from "react";
 import { isSameDay, parseISO, startOfDay } from "date-fns";
 import { Receipt } from "lucide-react";
 
-import { CategoryBadge } from "@/components/expenses/category-badge";
-import { ExpensesRowActions } from "@/components/expenses/expenses-row-actions";
-import { EntryStatusBadge } from "@/components/shared/entry-status-badge";
+import { ExpensesDayGroupActions } from "@/components/expenses/expenses-day-group-actions";
+import { DayGroupStatusBadge } from "@/components/shared/entry-status-badge";
 import {
   DataTable,
   type DataTableColumn,
@@ -33,9 +32,16 @@ import {
   resolveCategorieLabel,
 } from "@/lib/config-defaults";
 import { formatDay } from "@/lib/date-ranges";
+import {
+  dayKeyFromISO,
+  formatCategoriesSummary,
+  groupExpensesByDay,
+  type ExpenseDayGroup,
+} from "@/lib/day-entry-grouping";
 import { AdaptiveMetric } from "@/components/shared/adaptive-metric";
+import { formatGNF } from "@/lib/format";
 import { cn } from "@/lib/utils";
-import type { Depense, EntreeStatut, FarmConfig } from "@/types/domain";
+import type { Depense, EntreeStatut } from "@/types/domain";
 
 type StatusFilter = "tous" | EntreeStatut;
 type CategoryFilter = "toutes" | string;
@@ -47,12 +53,6 @@ const STATUS_OPTIONS: { id: StatusFilter; label: string }[] = [
   { id: "tous", label: "Toutes" },
 ];
 
-type DayMeta = {
-  total: number;
-  count: number;
-  labels: string[];
-};
-
 type Props = {
   data: Depense[];
   headerActions?: React.ReactNode;
@@ -61,36 +61,6 @@ type Props = {
   initialJour?: string | null;
   initialCategorie?: string | null;
 };
-
-function expenseDayKey(row: Depense): string {
-  return startOfDay(new Date(row.jourISO)).toISOString();
-}
-
-function buildExpenseDayMeta(rows: Depense[], config: FarmConfig): Map<string, DayMeta> {
-  const map = new Map<string, DayMeta>();
-  for (const row of rows) {
-    const k = expenseDayKey(row);
-    const label = resolveCategorieLabel(row.categorie, config.listes.categoriesDepense);
-    const cur = map.get(k) ?? { total: 0, count: 0, labels: [] };
-    cur.total += row.montant;
-    cur.count += 1;
-    if (!cur.labels.includes(label)) cur.labels.push(label);
-    map.set(k, cur);
-  }
-  return map;
-}
-
-function formatCategoriesSummary(labels: string[]): string {
-  if (labels.length === 0) return "—";
-  if (labels.length === 1) return labels[0];
-  if (labels.length === 2) return `${labels[0]}, ${labels[1]}`;
-  return `${labels[0]}, ${labels[1]} (+${labels.length - 2})`;
-}
-
-function isFirstRowOfDay(rows: Depense[], index: number): boolean {
-  if (index <= 0) return true;
-  return expenseDayKey(rows[index - 1]) !== expenseDayKey(rows[index]);
-}
 
 export function ExpensesTable({
   data,
@@ -120,142 +90,113 @@ export function ExpensesTable({
     if (initialCategorie) setCategoryFilter(initialCategorie);
   }, [initialCategorie]);
 
-  const filters = React.useMemo(
-    () => [
-      (row: Depense) => statusFilter === "tous" || row.statut === statusFilter,
-      (row: Depense) =>
-        categoryFilter === "toutes" ||
-        resolveCategorieLabel(row.categorie, config.listes.categoriesDepense) ===
-          categoryFilter,
-      (row: Depense) => {
-        if (!initialJour) return true;
+  const dayGroups = React.useMemo(() => {
+    const visibleDayKeys = new Set<string>();
+    for (const row of data) {
+      if (statusFilter !== "tous" && row.statut !== statusFilter) continue;
+      if (
+        categoryFilter !== "toutes" &&
+        resolveCategorieLabel(row.categorie, config.listes.categoriesDepense) !==
+          categoryFilter
+      ) {
+        continue;
+      }
+      if (initialJour) {
         try {
-          return isSameDay(startOfDay(parseISO(initialJour)), new Date(row.jourISO));
+          if (!isSameDay(startOfDay(parseISO(initialJour)), new Date(row.jourISO))) {
+            continue;
+          }
         } catch {
-          return true;
+          /* ignore invalid deep link */
         }
-      },
-    ],
-    [statusFilter, categoryFilter, config, initialJour]
-  );
+      }
+      visibleDayKeys.add(dayKeyFromISO(row.jourISO));
+    }
+    const rowsForDays = data.filter((r) => visibleDayKeys.has(dayKeyFromISO(r.jourISO)));
+    return groupExpensesByDay(rowsForDays, config);
+  }, [data, statusFilter, categoryFilter, config, initialJour]);
 
-  const table = useDataTableState<Depense>({
-    data,
-    filters,
+  const table = useDataTableState<ExpenseDayGroup>({
+    data: dayGroups,
     searchAccessors: [
-      (r) => formatDay(new Date(r.jourISO)),
-      (r) => resolveCategorieLabel(r.categorie, config.listes.categoriesDepense),
-      (r) => r.description,
-      (r) => String(r.montant),
+      (g) => formatDay(new Date(g.jourISO)),
+      (g) => formatCategoriesSummary(g.categories),
+      (g) => formatGNF(g.totalMontant),
+      (g) => g.descriptionLabel,
+      (g) =>
+        g.entries
+          .map((e) => resolveCategorieLabel(e.categorie, config.listes.categoriesDepense))
+          .join(" "),
+      (g) => g.entries.map((e) => e.description ?? "").join(" "),
     ],
     sortAccessors: {
-      jour: (r) => new Date(r.jourISO),
-      categorie: (r) =>
-        resolveCategorieLabel(r.categorie, config.listes.categoriesDepense),
-      montant: (r) => r.montant,
+      jour: (g) => new Date(g.jourISO),
+      categorie: (g) => formatCategoriesSummary(g.categories),
+      montant: (g) => g.totalMontant,
     },
     initialSort: { key: "jour", direction: "desc" },
     pageSize: 10,
   });
 
-  const dayMeta = React.useMemo(
-    () => buildExpenseDayMeta(table.visible, config),
-    [table.visible, config]
-  );
-
-  const columns: DataTableColumn<Depense>[] = [
+  const columns: DataTableColumn<ExpenseDayGroup>[] = [
     {
       key: "jour",
       header: "Jour",
       sortable: true,
       primary: true,
       width: "28%",
-      cell: (row, index) => {
-        if (!isFirstRowOfDay(table.visible, index)) {
-          return <span className="text-muted" aria-hidden>·</span>;
-        }
-        const meta = dayMeta.get(expenseDayKey(row));
-        return (
-          <div className="min-w-0">
-            <span className="capitalize">{formatDay(new Date(row.jourISO))}</span>
-            {meta && meta.count > 1 ? (
-              <p className="text-[10px] text-muted">{meta.count} dépenses</p>
-            ) : null}
-          </div>
-        );
-      },
+      cell: (group) => (
+        <div className="min-w-0">
+          <span className="capitalize">{formatDay(new Date(group.jourISO))}</span>
+          {group.count > 1 ? (
+            <p className="text-[10px] text-muted">{group.count} dépenses</p>
+          ) : null}
+        </div>
+      ),
     },
     {
       key: "categorie",
       header: "Catégorie",
       sortable: true,
       hideBelow: "sm",
-      cell: (row, index) => {
-        const meta = dayMeta.get(expenseDayKey(row));
-        const isFirst = isFirstRowOfDay(table.visible, index);
-        if (isFirst && meta && meta.count > 1) {
-          return (
-            <span className="line-clamp-2 text-[12px] font-medium text-foreground">
-              {formatCategoriesSummary(meta.labels)}
-            </span>
-          );
-        }
-        return <CategoryBadge category={row.categorie} />;
-      },
+      cell: (group) => (
+        <span className="line-clamp-2 text-[12px] font-medium text-foreground">
+          {formatCategoriesSummary(group.categories)}
+        </span>
+      ),
     },
     {
       key: "montant",
       header: "Montant",
       sortable: true,
       width: "24%",
-      cell: (row, index) => {
-        const meta = dayMeta.get(expenseDayKey(row));
-        const isFirst = isFirstRowOfDay(table.visible, index);
-        if (isFirst && meta && meta.count > 1) {
-          return (
-            <AdaptiveMetric value={meta.total} kind="gnf" className="font-semibold" />
-          );
-        }
-        return <AdaptiveMetric value={row.montant} kind="gnf" className="font-semibold" />;
-      },
+      cell: (group) => (
+        <AdaptiveMetric value={group.totalMontant} kind="gnf" className="font-semibold" />
+      ),
     },
     {
       key: "description",
       header: "Description",
       hideBelow: "md",
-      cell: (row, index) => {
-        const meta = dayMeta.get(expenseDayKey(row));
-        const isFirst = isFirstRowOfDay(table.visible, index);
-        if (isFirst && meta && meta.count > 1) {
-          return <span className="text-muted">—</span>;
-        }
-        return row.description ? (
-          <span className="line-clamp-1 text-foreground">{row.description}</span>
+      cell: (group) =>
+        group.descriptionLabel !== "—" ? (
+          <span className="line-clamp-1 text-foreground">{group.descriptionLabel}</span>
         ) : (
           <span className="text-muted">—</span>
-        );
-      },
+        ),
     },
     {
       key: "statut",
       header: "Statut",
-      cell: (row, index) => {
-        const meta = dayMeta.get(expenseDayKey(row));
-        const isFirst = isFirstRowOfDay(table.visible, index);
-        if (isFirst && meta && meta.count > 1) return null;
-        return <EntryStatusBadge statut={row.statut} />;
-      },
+      cell: (group) => <DayGroupStatusBadge group={group} />,
     },
     {
       key: "actions",
       header: <span className="sr-only">Actions</span>,
       width: "56px",
-      cell: (row, index) => {
-        const meta = dayMeta.get(expenseDayKey(row));
-        const isFirst = isFirstRowOfDay(table.visible, index);
-        if (isFirst && meta && meta.count > 1) return null;
-        return <ExpensesRowActions entry={row} onRequestEdit={onRequestEdit} />;
-      },
+      cell: (group) => (
+        <ExpensesDayGroupActions group={group} onRequestEdit={onRequestEdit} />
+      ),
     },
   ];
 
@@ -305,22 +246,13 @@ export function ExpensesTable({
         </div>
 
         <div className="w-full min-w-0 max-w-full rounded-card border border-border shadow-card">
-          <DataTable<Depense>
+          <DataTable<ExpenseDayGroup>
             data={table.visible}
             columns={columns}
-            rowKey={(r) => r.id}
+            rowKey={(g) => g.dayKey}
             sort={table.sort}
             onSortChange={table.toggleSort}
-            rowClassName={(row, index) => {
-              const isFirst = isFirstRowOfDay(table.visible, index);
-              const meta = dayMeta.get(expenseDayKey(row));
-              const isGroupedChild = !isFirst && meta && meta.count > 1;
-              return cn(
-                row.statut === "annule" && "opacity-60",
-                isFirst && index > 0 && "border-t border-border",
-                isGroupedChild && "bg-card-muted/25"
-              );
-            }}
+            rowClassName={(group) => cn(group.statut === "annule" && "opacity-60")}
             emptyState={
               <EmptyState
                 icon={Receipt}
@@ -353,4 +285,3 @@ export function ExpensesTable({
     </SectionCard>
   );
 }
-

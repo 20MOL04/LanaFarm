@@ -1,4 +1,8 @@
 import { Badge } from "@/components/ui/badge";
+import {
+  formatAggregatedStatutTitle,
+  type DayGroupBase,
+} from "@/lib/day-entry-grouping";
 import { cn } from "@/lib/utils";
 import type { EntreeStatut } from "@/types/domain";
 
@@ -43,6 +47,47 @@ export function EntryStatusBadge({
     );
   }
   if (statut === "archive") {
+    return (
+      <Badge tone="outline" className={cn(sizeClass)}>
+        {labels.archive}
+      </Badge>
+    );
+  }
+  return null;
+}
+
+/** Badge statut agrégé d'un jour (mixte → Partiel). */
+export function DayGroupStatusBadge({
+  group,
+  masculine = false,
+  size = "default",
+}: {
+  group: DayGroupBase;
+  masculine?: boolean;
+  size?: "sm" | "default";
+}) {
+  const sizeClass = size === "sm" ? "text-[10px]" : undefined;
+  const labels = masculine ? MASCULINE_LABELS : DEFAULT_LABELS;
+
+  if (group.statut === "mixte") {
+    return (
+      <Badge
+        tone="warning"
+        className={cn(sizeClass)}
+        title={formatAggregatedStatutTitle(group)}
+      >
+        Partiel
+      </Badge>
+    );
+  }
+  if (group.statut === "annule") {
+    return (
+      <Badge tone="danger" className={cn(sizeClass)}>
+        {labels.annule}
+      </Badge>
+    );
+  }
+  if (group.statut === "archive") {
     return (
       <Badge tone="outline" className={cn(sizeClass)}>
         {labels.archive}

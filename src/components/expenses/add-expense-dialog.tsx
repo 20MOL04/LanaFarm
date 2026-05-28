@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import { format, startOfDay } from "date-fns";
-import { CircleDollarSign, Plus, Receipt, Trash2 } from "lucide-react";
+import { CircleDollarSign, Trash2 } from "lucide-react";
 
 import { ComboboxCategorie } from "@/components/shared/combobox-categorie";
 import {
@@ -10,32 +10,36 @@ import {
   isExpenseBlockFilled,
   type ExpenseMultiDayBlock,
 } from "@/components/expenses/expenses-multi-day-form";
+import { ExpensePreviewPanel } from "@/components/shared/expense-preview-panel";
 import { DateInput } from "@/components/shared/date-input";
 import { FormField } from "@/components/shared/form-field";
+import { DialogDayLinesToolbar } from "@/components/shared/dialog-day-lines-toolbar";
+import { DialogDateRow } from "@/components/shared/dialog-date-row";
+import { DialogFormShell } from "@/components/shared/dialog-form-shell";
 import { MultiDayConflictDialog } from "@/components/shared/multi-day-conflict-dialog";
 import { MultiDayModeToggle } from "@/components/shared/multi-day-mode-toggle";
 import { MultiDayPeriodPicker } from "@/components/shared/multi-day-period-picker";
 import { StoreErrorBanner } from "@/components/shared/store-error-banner";
-import { Button } from "@/components/ui/button";
 import {
-  Dialog,
-  DialogContent,
-  DialogBody,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+  DIALOG_SCROLL,
+  FORM_INPUT_MONTANT,
+  FORM_INPUT_TEXT,
+  FORM_LINE_CARD,
+  FORM_LINE_GRID_2,
+  FORM_LINE_ROW_END,
+} from "@/components/shared/form-dialog-styles";
+import { Button } from "@/components/ui/button";
+import { DialogScrollRegion } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { useDateRange } from "@/contexts/date-range-context";
 import { useExpensesStore, useFarmConfig } from "@/contexts/farm-store";
 import { formatDay } from "@/lib/date-ranges";
-import { formatGNF } from "@/lib/format";
+import { computeExpensesPreview } from "@/lib/expenses-preview";
 import {
   type ExpenseDraft,
   type ExpenseFormErrors,
   validateExpenseDraft,
 } from "@/lib/expenses-calc";
-import { cn } from "@/lib/utils";
 import {
   clampMultiDayPeriod,
   enumerateDayISOs,
@@ -259,13 +263,25 @@ export function AddExpenseDialog({ open, onOpenChange, editEntry = null }: Props
     return Number.isNaN(d.getTime()) ? null : d;
   }, [activeJourISO]);
 
-  const totalMontant = React.useMemo(() => {
-    if (isEditMode) return editDraft.montant;
-    return dayDraft.lignes.reduce((sum, l) => {
-      if (l.categorie.trim() && l.montant > 0) return sum + l.montant;
-      return sum;
-    }, 0);
-  }, [isEditMode, editDraft.montant, dayDraft.lignes]);
+  const expensesPreview = React.useMemo(() => {
+    if (multiMode && !isEditMode) {
+      return computeExpensesPreview({ mode: "multi", blocks: multiBlocks });
+    }
+    if (isEditMode) {
+      return computeExpensesPreview({
+        mode: "day",
+        lignes: [{ categorie: editDraft.categorie, montant: editDraft.montant }],
+      });
+    }
+    return computeExpensesPreview({ mode: "day", lignes: dayDraft.lignes });
+  }, [
+    multiMode,
+    isEditMode,
+    multiBlocks,
+    editDraft.categorie,
+    editDraft.montant,
+    dayDraft.lignes,
+  ]);
 
   const hasActiveLine = isEditMode
     ? editDraft.categorie.trim().length > 0 && editDraft.montant > 0
@@ -386,138 +402,136 @@ export function AddExpenseDialog({ open, onOpenChange, editEntry = null }: Props
     });
   };
 
+  const modeToggle = !isEditMode ? (
+    <MultiDayModeToggle multiMode={multiMode} onToggle={() => setMultiMode((m) => !m)} />
+  ) : null;
+
   return (
     <>
-      <Dialog open={open} onOpenChange={unsaved.dialogProps.onOpenChange}>
-        <DialogContent className={cn(multiMode && !isEditMode && "sm:max-w-2xl")}>
-          <DialogHeader>
-            <div className="flex items-start justify-between gap-2">
-              <DialogTitle>
-                {isEditMode ? "Modifier la dépense" : "Dépenses du jour"}
-              </DialogTitle>
-              {!isEditMode ? (
-                <MultiDayModeToggle
-                  multiMode={multiMode}
-                  onToggle={() => setMultiMode((m) => !m)}
-                />
-              ) : null}
-            </div>
-          </DialogHeader>
-
-          <form onSubmit={handleSubmit} className="flex flex-1 flex-col overflow-hidden">
-            <DialogBody className="space-y-3">
-              {multiMode && !isEditMode ? (
-                <>
+      <DialogFormShell
+        open={open}
+        onOpenChange={unsaved.dialogProps.onOpenChange}
+        title={isEditMode ? "Modifier la dépense" : "Dépenses du jour"}
+        onSubmit={handleSubmit}
+        body={
+          <>
+            {multiMode && !isEditMode ? (
+              <>
+                <DialogDateRow toggle={modeToggle}>
                   <MultiDayPeriodPicker
                     fromIso={periodFrom}
                     toIso={periodTo}
                     onFromChange={setPeriodFrom}
                     onToChange={setPeriodTo}
                     maxDateIso={todayIso()}
-                    hintRange={range}
                   />
+                </DialogDateRow>
+                <DialogScrollRegion className={DIALOG_SCROLL}>
                   <ExpensesMultiDayForm
                     blocks={multiBlocks}
                     depenses={state.depenses}
                     config={config}
                     onChange={setMultiBlocks}
                   />
-                </>
-              ) : (
-                <>
-            <FormField
-              label="Jour"
-              htmlFor="dep-day"
-              required
-              error={
-                touched
-                  ? isEditMode
-                    ? editErrors.jourISO
-                    : dayErrors.jourISO
-                  : undefined
-              }
-              hint={dayDate ? formatDay(dayDate) : undefined}
-            >
-              <DateInput
-                id="dep-day"
-                value={isEditMode ? editDraft.jourISO : dayDraft.jourISO}
-                max={todayIso()}
-                onChange={(e) => {
-                  const v = e.target.value;
-                  if (isEditMode) {
-                    setEditDraft((d) => ({ ...d, jourISO: v }));
-                  } else {
-                    setDayDraft((d) => ({ ...d, jourISO: v }));
-                  }
-                }}
-                required
-              />
-            </FormField>
-
-            {isEditMode ? (
-              <ExpenseLineCard
-                categorie={editDraft.categorie}
-                montant={editDraft.montant}
-                description={editDraft.description ?? ""}
-                categories={config.listes.categoriesDepense}
-                onCategorieChange={(v) => setEditDraft((d) => ({ ...d, categorie: v }))}
-                onMontantChange={(v) => setEditDraft((d) => ({ ...d, montant: v }))}
-                onDescriptionChange={(v) =>
-                  setEditDraft((d) => ({ ...d, description: v }))
-                }
-                errors={
-                  touched
-                    ? {
-                        categorie: editErrors.categorie,
-                        montant: editErrors.montant,
-                        description: editErrors.description,
-                      }
-                    : undefined
-                }
-                showDelete={false}
-              />
+                </DialogScrollRegion>
+              </>
             ) : (
-              <div className="space-y-2">
-                <div className="flex items-center justify-between gap-2">
-                  <p className="text-[11px] font-medium uppercase tracking-wide text-muted">
-                    Lignes de dépense
-                  </p>
-                  <Button type="button" variant="ghost" size="sm" onClick={addLine}>
-                    <Plus className="h-4 w-4" />
-                    Ajouter
-                  </Button>
-                </div>
-
-                {dayDraft.lignes.map((ligne, index) => (
-                  <ExpenseLineCard
-                    key={index}
-                    categorie={ligne.categorie}
-                    montant={ligne.montant}
-                    description={ligne.description}
-                    categories={config.listes.categoriesDepense}
-                    onCategorieChange={(v) => updateLine(index, { categorie: v })}
-                    onMontantChange={(v) => updateLine(index, { montant: v })}
-                    onDescriptionChange={(v) => updateLine(index, { description: v })}
-                    errors={touched ? dayErrors.lignes?.[index] : undefined}
-                    onDelete={() => removeLine(index)}
-                    deleteDisabled={dayDraft.lignes.length <= 1}
-                  />
-                ))}
-
-                {touched && dayErrors.form ? (
-                  <p className="text-[11px] text-danger">{dayErrors.form}</p>
-                ) : null}
-              </div>
+              <>
+                <DialogDateRow toggle={modeToggle}>
+                  <FormField
+                    label="Jour"
+                    htmlFor="dep-day"
+                    required
+                    error={
+                      touched
+                        ? isEditMode
+                          ? editErrors.jourISO
+                          : dayErrors.jourISO
+                        : undefined
+                    }
+                    hint={dayDate ? formatDay(dayDate) : undefined}
+                  >
+                    <DateInput
+                      id="dep-day"
+                      value={isEditMode ? editDraft.jourISO : dayDraft.jourISO}
+                      max={todayIso()}
+                      onChange={(e) => {
+                        const v = e.target.value;
+                        if (isEditMode) {
+                          setEditDraft((d) => ({ ...d, jourISO: v }));
+                        } else {
+                          setDayDraft((d) => ({ ...d, jourISO: v }));
+                        }
+                      }}
+                      required
+                    />
+                  </FormField>
+                </DialogDateRow>
+                <DialogScrollRegion className={DIALOG_SCROLL}>
+                  <div className="space-y-2">
+                    {isEditMode ? (
+                      <ExpenseLineCard
+                        categorie={editDraft.categorie}
+                        montant={editDraft.montant}
+                        description={editDraft.description ?? ""}
+                        categories={config.listes.categoriesDepense}
+                        onCategorieChange={(v) => setEditDraft((d) => ({ ...d, categorie: v }))}
+                        onMontantChange={(v) => setEditDraft((d) => ({ ...d, montant: v }))}
+                        onDescriptionChange={(v) =>
+                          setEditDraft((d) => ({ ...d, description: v }))
+                        }
+                        errors={
+                          touched
+                            ? {
+                                categorie: editErrors.categorie,
+                                montant: editErrors.montant,
+                                description: editErrors.description,
+                              }
+                            : undefined
+                        }
+                        showDelete={false}
+                      />
+                    ) : (
+                      <>
+                        <DialogDayLinesToolbar label="Lignes de dépense" onAdd={addLine} />
+                        {dayDraft.lignes.map((ligne, index) => (
+                          <ExpenseLineCard
+                            key={index}
+                            categorie={ligne.categorie}
+                            montant={ligne.montant}
+                            description={ligne.description}
+                            categories={config.listes.categoriesDepense}
+                            onCategorieChange={(v) => updateLine(index, { categorie: v })}
+                            onMontantChange={(v) => updateLine(index, { montant: v })}
+                            onDescriptionChange={(v) =>
+                              updateLine(index, { description: v })
+                            }
+                            errors={touched ? dayErrors.lignes?.[index] : undefined}
+                            onDelete={() => removeLine(index)}
+                            deleteDisabled={dayDraft.lignes.length <= 1}
+                          />
+                        ))}
+                        {touched && dayErrors.form ? (
+                          <p className="text-[11px] text-danger">{dayErrors.form}</p>
+                        ) : null}
+                      </>
+                    )}
+                  </div>
+                </DialogScrollRegion>
+              </>
             )}
-
-            <TotalPanel montant={totalMontant} />
-                </>
-              )}
-
             <StoreErrorBanner error={state.errors} />
-          </DialogBody>
-
-          <DialogFooter>
+          </>
+        }
+        preview={
+          <ExpensePreviewPanel
+            total={expensesPreview.total}
+            ligneCount={expensesPreview.ligneCount}
+            totalLabel={expensesPreview.totalLabel}
+          />
+        }
+        footer={
+          <>
             <Button type="button" variant="ghost" size="sm" onClick={unsaved.requestClose}>
               Annuler
             </Button>
@@ -529,10 +543,9 @@ export function AddExpenseDialog({ open, onOpenChange, editEntry = null }: Props
             >
               {isEditMode ? "Enregistrer les modifications" : "Enregistrer"}
             </Button>
-          </DialogFooter>
-        </form>
-      </DialogContent>
-    </Dialog>
+          </>
+        }
+      />
 
       <MultiDayConflictDialog
         open={conflictOpen}
@@ -612,8 +625,8 @@ function ExpenseLineCard({
   showDelete?: boolean;
 }) {
   return (
-    <div className="space-y-2 rounded-card border border-border bg-card-muted p-2.5">
-      <div className="grid gap-2 sm:grid-cols-2">
+    <div className={FORM_LINE_CARD}>
+      <div className={FORM_LINE_GRID_2}>
         <FormField
           label="Catégorie"
           htmlFor={`dep-cat-${categorie}-${montant}`}
@@ -624,7 +637,7 @@ function ExpenseLineCard({
             value={categorie}
             onChange={onCategorieChange}
             categories={categories}
-            placeholder="Choisir ou saisir…"
+            placeholder="Catégorie"
           />
         </FormField>
 
@@ -635,7 +648,7 @@ function ExpenseLineCard({
           error={errors?.montant}
         >
           <div className="relative">
-            <CircleDollarSign className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted" />
+            <CircleDollarSign className="pointer-events-none absolute left-2 top-1/2 h-4 w-4 -translate-y-1/2 text-muted" />
             <Input
               type="number"
               inputMode="numeric"
@@ -647,13 +660,13 @@ function ExpenseLineCard({
                 onMontantChange(Number.isNaN(n) ? 0 : Math.max(0, Math.floor(n)));
               }}
               onFocus={(e) => e.currentTarget.select()}
-              className="h-9 pl-9 tabular-nums"
+              className={FORM_INPUT_MONTANT}
             />
           </div>
         </FormField>
       </div>
 
-      <div className="flex items-end gap-2">
+      <div className={FORM_LINE_ROW_END}>
         <FormField
           label="Description (optionnel)"
           htmlFor={`dep-desc-${categorie}`}
@@ -664,9 +677,9 @@ function ExpenseLineCard({
             id={`dep-desc-${categorie}`}
             value={description}
             onChange={(e) => onDescriptionChange(e.target.value)}
-            placeholder="Ex : Livraison marché Madina"
+            placeholder="Optionnel"
             maxLength={240}
-            className="h-9"
+            className={FORM_INPUT_TEXT}
           />
         </FormField>
         {showDelete && onDelete ? (
@@ -683,22 +696,6 @@ function ExpenseLineCard({
           </Button>
         ) : null}
       </div>
-    </div>
-  );
-}
-
-function TotalPanel({ montant }: { montant: number }) {
-  return (
-    <div className="flex items-center justify-between gap-2 rounded-card border border-border bg-card-muted px-3 py-2.5">
-      <div className="flex items-center gap-2">
-        <Receipt className="h-3.5 w-3.5 text-muted" />
-        <p className="text-[11px] font-medium uppercase tracking-wide text-muted">
-          Total du jour
-        </p>
-      </div>
-      <p className="text-sm font-semibold tabular-nums text-foreground">
-        {formatGNF(montant)}
-      </p>
     </div>
   );
 }

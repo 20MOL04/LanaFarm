@@ -11,6 +11,7 @@
  * Jamais calculé inline dans un composant.
  */
 
+import { SHOW_VENTE_CASSES } from "@/lib/feature-flags";
 import {
   stockMagasinInstantane,
   calculerCA,
@@ -160,6 +161,6 @@ export function kpiPertesTotales(
     prodRange,
     cap
   );
-  return prod.oeufsCasses + sales.casses;
+  return prod.oeufsCasses + (SHOW_VENTE_CASSES ? sales.casses : 0);
 }
 

@@ -86,7 +86,7 @@ export function GlobalDateRange({ className }: { className?: string }) {
             <Separator />
             <div className="space-y-2 p-3">
               <label className="block min-w-0 space-y-1">
-                <span className="text-[10px] font-medium uppercase text-muted">Du</span>
+                <span className="text-[10px] font-medium text-muted">Du</span>
                 <DateInput
                   value={customFrom}
                   max={customTo || todayIso}
@@ -94,7 +94,7 @@ export function GlobalDateRange({ className }: { className?: string }) {
                 />
               </label>
               <label className="block min-w-0 space-y-1">
-                <span className="text-[10px] font-medium uppercase text-muted">Au</span>
+                <span className="text-[10px] font-medium text-muted">Au</span>
                 <DateInput
                   value={customTo}
                   min={customFrom}

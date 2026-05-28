@@ -6,20 +6,21 @@ import { ShoppingCart, TrendingDown, Warehouse } from "lucide-react";
 
 import { DateInput } from "@/components/shared/date-input";
 import { FormField } from "@/components/shared/form-field";
+import { CompactNumberField } from "@/components/shared/compact-number-field";
+import { DialogDateRow } from "@/components/shared/dialog-date-row";
+import { DialogFormShell } from "@/components/shared/dialog-form-shell";
 import { MultiDayConflictDialog } from "@/components/shared/multi-day-conflict-dialog";
 import { MultiDayModeToggle } from "@/components/shared/multi-day-mode-toggle";
 import { MultiDayPeriodPicker } from "@/components/shared/multi-day-period-picker";
 import { ProductionPreviewPanel } from "@/components/shared/production-preview-panel";
 import { StoreErrorBanner } from "@/components/shared/store-error-banner";
-import { Button } from "@/components/ui/button";
 import {
-  Dialog,
-  DialogContent,
-  DialogBody,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+  DIALOG_SCROLL,
+  FORM_INPUT_NOTES,
+  FORM_NUM_FIELDS_ROW,
+} from "@/components/shared/form-dialog-styles";
+import { Button } from "@/components/ui/button";
+import { DialogScrollRegion } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { useDateRange } from "@/contexts/date-range-context";
 import { useFarmConfig, useProductionStore, useTransfersStore } from "@/contexts/farm-store";
@@ -322,135 +323,123 @@ export function AddProductionDialog({ open, onOpenChange, editEntry = null }: Pr
     });
   };
 
+  const modeToggle = !isEditMode ? (
+    <MultiDayModeToggle multiMode={multiMode} onToggle={() => setMultiMode((m) => !m)} />
+  ) : null;
+
   return (
     <>
-      <Dialog open={open} onOpenChange={unsaved.dialogProps.onOpenChange}>
-        <DialogContent>
-          <DialogHeader>
-            <div className="flex items-start justify-between gap-2">
-              <DialogTitle>
-                {isEditMode ? "Modifier la production" : "Nouvelle production"}
-              </DialogTitle>
-              {!isEditMode ? (
-                <MultiDayModeToggle
-                  multiMode={multiMode}
-                  onToggle={() => setMultiMode((m) => !m)}
-                />
-              ) : null}
-            </div>
-          </DialogHeader>
-
-          <form onSubmit={handleSubmit} className="flex flex-1 flex-col overflow-hidden">
-            <DialogBody className="space-y-3">
-              {multiMode && !isEditMode ? (
-                <>
+      <DialogFormShell
+        open={open}
+        onOpenChange={unsaved.dialogProps.onOpenChange}
+        title={isEditMode ? "Modifier la production" : "Nouvelle production"}
+        onSubmit={handleSubmit}
+        body={
+          <>
+            {multiMode && !isEditMode ? (
+              <>
+                <DialogDateRow toggle={modeToggle}>
                   <MultiDayPeriodPicker
                     fromIso={periodFrom}
                     toIso={periodTo}
                     onFromChange={setPeriodFrom}
                     onToChange={setPeriodTo}
                     maxDateIso={todayIso()}
-                    hintRange={range}
                   />
+                </DialogDateRow>
+                <DialogScrollRegion className={DIALOG_SCROLL}>
                   <ProductionMultiDayForm
                     lines={multiLines}
                     productions={state.productions}
                     onChange={setMultiLines}
                   />
-                  <ProductionPreviewPanel
-                    restantesJour={preview.restantesJour}
-                    stockAvant={preview.stockAvant}
-                    stockApres={preview.stockApres}
-                    restantesLabel={preview.restantesLabel}
-                  />
-                </>
-              ) : (
-                <>
-            <FormField
-              label="Jour"
-              htmlFor="prod-day"
-              required
-              error={touched.jourISO ? errors.jourISO : undefined}
-              hint={dayDate ? formatDay(dayDate) : undefined}
-            >
-              <DateInput
-                id="prod-day"
-                value={draft.jourISO}
-                max={todayIso()}
-                onChange={(e) => setDraft((d) => ({ ...d, jourISO: e.target.value }))}
-                onBlur={() => setTouched((t) => ({ ...t, jourISO: true }))}
-                required
-              />
-            </FormField>
+                </DialogScrollRegion>
+              </>
+            ) : (
+              <DialogScrollRegion className={DIALOG_SCROLL}>
+                <div className="w-full space-y-3">
+                  <DialogDateRow toggle={modeToggle}>
+                    <FormField
+                      label="Jour"
+                      htmlFor="prod-day"
+                      required
+                      error={touched.jourISO ? errors.jourISO : undefined}
+                      hint={dayDate ? formatDay(dayDate) : undefined}
+                    >
+                      <DateInput
+                        id="prod-day"
+                        value={draft.jourISO}
+                        max={todayIso()}
+                        onChange={(e) => setDraft((d) => ({ ...d, jourISO: e.target.value }))}
+                        onBlur={() => setTouched((t) => ({ ...t, jourISO: true }))}
+                        required
+                      />
+                    </FormField>
+                  </DialogDateRow>
 
-            <div className="grid min-w-0 grid-cols-1 gap-3 sm:grid-cols-2">
-              <NumberField
-                id="prod-ramassees"
-                label={FIELD_LABEL.ramassees}
-                hint={FIELD_HINT.quantiteAlveoles}
-                icon={<Warehouse className="h-4 w-4 text-accent-blue" />}
-                value={draft.alveolesRamassees}
-                onChange={(v) => setDraft((d) => ({ ...d, alveolesRamassees: v }))}
-                onBlur={() => setTouched((t) => ({ ...t, alveolesRamassees: true }))}
-                error={touched.alveolesRamassees ? errors.alveolesRamassees : undefined}
-                required
-              />
+                  <div className={FORM_NUM_FIELDS_ROW}>
+                    <CompactNumberField
+                      id="prod-ramassees"
+                      label={FIELD_LABEL.ramassees}
+                      hint={FIELD_HINT.quantiteAlveoles}
+                      icon={<Warehouse className="h-4 w-4 text-accent-blue" />}
+                      value={draft.alveolesRamassees}
+                      onChange={(v) => setDraft((d) => ({ ...d, alveolesRamassees: v }))}
+                      onBlur={() => setTouched((t) => ({ ...t, alveolesRamassees: true }))}
+                      error={touched.alveolesRamassees ? errors.alveolesRamassees : undefined}
+                      required
+                    />
+                    <CompactNumberField
+                      id="prod-mises"
+                      label={FIELD_LABEL.misesEnVente}
+                      hint={FIELD_HINT.quantiteAlveoles}
+                      icon={<ShoppingCart className="h-4 w-4 text-info" />}
+                      value={draft.alveolesMisesEnVente}
+                      onChange={(v) => setDraft((d) => ({ ...d, alveolesMisesEnVente: v }))}
+                      onBlur={() => setTouched((t) => ({ ...t, alveolesMisesEnVente: true }))}
+                      error={
+                        touched.alveolesMisesEnVente ? errors.alveolesMisesEnVente : undefined
+                      }
+                    />
+                    <CompactNumberField
+                      id="prod-casses"
+                      label="Œufs cassés"
+                      hint="En œufs"
+                      icon={<TrendingDown className="h-4 w-4 text-danger" />}
+                      value={draft.oeufsCasses}
+                      onChange={(v) => setDraft((d) => ({ ...d, oeufsCasses: v }))}
+                      onBlur={() => setTouched((t) => ({ ...t, oeufsCasses: true }))}
+                      error={touched.oeufsCasses ? errors.oeufsCasses : undefined}
+                    />
+                  </div>
 
-              <NumberField
-                id="prod-mises"
-                label={FIELD_LABEL.misesEnVente}
-                hint={FIELD_HINT.quantiteAlveoles}
-                icon={<ShoppingCart className="h-4 w-4 text-info" />}
-                value={draft.alveolesMisesEnVente}
-                onChange={(v) => setDraft((d) => ({ ...d, alveolesMisesEnVente: v }))}
-                onBlur={() => setTouched((t) => ({ ...t, alveolesMisesEnVente: true }))}
-                error={
-                  touched.alveolesMisesEnVente ? errors.alveolesMisesEnVente : undefined
-                }
-              />
-            </div>
-
-            <NumberField
-              id="prod-casses"
-              label="Œufs cassés"
-              hint="En œufs — perte ferme, n'affecte pas le stock disponible"
-              icon={<TrendingDown className="h-4 w-4 text-danger" />}
-              value={draft.oeufsCasses}
-              onChange={(v) => setDraft((d) => ({ ...d, oeufsCasses: v }))}
-              onBlur={() => setTouched((t) => ({ ...t, oeufsCasses: true }))}
-              error={touched.oeufsCasses ? errors.oeufsCasses : undefined}
-            />
-
-            <FormField label="Notes (optionnel)" htmlFor="prod-notes">
-              <Input
-                id="prod-notes"
-                type="text"
-                value={draft.notes ?? ""}
-                onChange={(e) => setDraft((d) => ({ ...d, notes: e.target.value }))}
-                placeholder="Ex : Forte chaleur, baisse de la ponte…"
-                className="h-9"
-              />
-            </FormField>
-
-            <ProductionPreviewPanel
-              restantesJour={preview.restantesJour}
-              stockAvant={preview.stockAvant}
-              stockApres={preview.stockApres}
-              restantesLabel={preview.restantesLabel}
-            />
-                </>
-              )}
-
+                  <FormField label="Notes (optionnel)" htmlFor="prod-notes">
+                    <Input
+                      id="prod-notes"
+                      type="text"
+                      value={draft.notes ?? ""}
+                      onChange={(e) => setDraft((d) => ({ ...d, notes: e.target.value }))}
+                      placeholder="Optionnel"
+                      className={FORM_INPUT_NOTES}
+                    />
+                  </FormField>
+                </div>
+              </DialogScrollRegion>
+            )}
             <StoreErrorBanner error={state.errors} />
-          </DialogBody>
-
-          <DialogFooter>
-            <Button
-              type="button"
-              variant="ghost"
-              size="sm"
-              onClick={unsaved.requestClose}
-            >
+          </>
+        }
+        preview={
+          <ProductionPreviewPanel
+            restantesJour={preview.restantesJour}
+            stockAvant={preview.stockAvant}
+            stockApres={preview.stockApres}
+            restantesLabel={preview.restantesLabel}
+          />
+        }
+        footer={
+          <>
+            <Button type="button" variant="ghost" size="sm" onClick={unsaved.requestClose}>
               Annuler
             </Button>
             <Button
@@ -458,17 +447,14 @@ export function AddProductionDialog({ open, onOpenChange, editEntry = null }: Pr
               variant="accent"
               size="sm"
               disabled={
-                multiMode && !isEditMode
-                  ? !canSubmitMulti
-                  : hasErrors || !dayDate
+                multiMode && !isEditMode ? !canSubmitMulti : hasErrors || !dayDate
               }
             >
               {isEditMode ? "Enregistrer les modifications" : "Enregistrer"}
             </Button>
-          </DialogFooter>
-        </form>
-      </DialogContent>
-    </Dialog>
+          </>
+        }
+      />
 
       <MultiDayConflictDialog
         open={conflictOpen}
@@ -519,59 +505,4 @@ function productionFormComparable(input: {
     };
   }
   return { mode: "day", draft: input.draft };
-}
-
-type NumberFieldProps = {
-  id: string;
-  label: string;
-  hint?: string;
-  icon: React.ReactNode;
-  value: number;
-  onChange: (next: number) => void;
-  onBlur?: () => void;
-  error?: string;
-  required?: boolean;
-};
-
-function NumberField({
-  id,
-  label,
-  hint,
-  icon,
-  value,
-  onChange,
-  onBlur,
-  error,
-  required,
-}: NumberFieldProps) {
-  return (
-    <FormField label={label} htmlFor={id} required={required} error={error} hint={hint}>
-      <div className="relative">
-        <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2">
-          {icon}
-        </span>
-        <Input
-          id={id}
-          type="number"
-          inputMode="numeric"
-          min={0}
-          step={1}
-          value={Number.isFinite(value) ? value : 0}
-          onChange={(e) => {
-            const raw = e.target.value.trim();
-            if (raw === "") {
-              onChange(0);
-              return;
-            }
-            const n = parseInt(raw, 10);
-            onChange(Number.isNaN(n) ? 0 : Math.max(0, n));
-          }}
-          onBlur={onBlur}
-          onFocus={(e) => e.currentTarget.select()}
-          className="h-9 pl-9 tabular-nums"
-          required={required}
-        />
-      </div>
-    </FormField>
-  );
 }

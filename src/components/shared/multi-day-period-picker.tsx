@@ -4,7 +4,6 @@ import * as React from "react";
 
 import { FormField } from "@/components/shared/form-field";
 import { DateInput } from "@/components/shared/date-input";
-import { formatRange, toIsoDate, type DateRange } from "@/lib/date-ranges";
 import { clampMultiDayPeriod, enumerateDayISOs } from "@/lib/multi-day";
 
 type Props = {
@@ -13,7 +12,6 @@ type Props = {
   onFromChange: (iso: string) => void;
   onToChange: (iso: string) => void;
   maxDateIso: string;
-  hintRange?: DateRange;
 };
 
 export function MultiDayPeriodPicker({
@@ -22,7 +20,6 @@ export function MultiDayPeriodPicker({
   onFromChange,
   onToChange,
   maxDateIso,
-  hintRange,
 }: Props) {
   const clamped = React.useMemo(
     () => clampMultiDayPeriod(fromIso, toIso, maxDateIso),
@@ -49,19 +46,11 @@ export function MultiDayPeriodPicker({
     onToChange(next.toIso);
   };
 
-  const globalEndIso = hintRange ? toIsoDate(hintRange.to) : null;
-  const cappedByToday =
-    globalEndIso != null &&
-    globalEndIso > maxDateIso &&
-    clamped.toIso === maxDateIso;
-
   return (
-    <div className="min-w-0 space-y-2 rounded-card border border-border bg-card-muted/50 p-3">
-      <p className="text-[11px] font-medium uppercase tracking-wide text-muted">
-        Période
-      </p>
-      <div className="grid min-w-0 grid-cols-1 gap-3 sm:grid-cols-2">
-        <FormField label="Du" htmlFor="multi-from" required>
+    <div className="shrink-0 space-y-1.5">
+      <p className="text-[11px] font-medium text-muted">Période</p>
+      <div className="flex flex-wrap items-end gap-2">
+        <FormField label="Du" htmlFor="multi-from" required className="mb-0">
           <DateInput
             id="multi-from"
             value={clamped.fromIso}
@@ -69,7 +58,7 @@ export function MultiDayPeriodPicker({
             onChange={(e) => applyFrom(e.target.value)}
           />
         </FormField>
-        <FormField label="Au" htmlFor="multi-to" required>
+        <FormField label="Au" htmlFor="multi-to" required className="mb-0">
           <DateInput
             id="multi-to"
             value={clamped.toIso}
@@ -79,17 +68,10 @@ export function MultiDayPeriodPicker({
         </FormField>
       </div>
       {periodInvalid ? (
-        <p className="text-[11px] text-danger">Sélectionnez une période valide (max. 31 jours).</p>
+        <p className="text-[11px] text-danger">Période invalide.</p>
       ) : (
         <p className="text-[11px] text-muted">
           {dayCount} jour{dayCount > 1 ? "s" : ""}
-          {hintRange ? ` · Calendrier global : ${formatRange(hintRange)}` : null}
-          {cappedByToday ? (
-            <span className="mt-0.5 block text-[10px] leading-snug">
-              Jusqu&apos;à aujourd&apos;hui uniquement — les jours futurs du calendrier global ne sont pas
-              saisissables.
-            </span>
-          ) : null}
         </p>
       )}
     </div>

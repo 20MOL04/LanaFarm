@@ -2,14 +2,19 @@
 
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
-import { CircleDollarSign, Plus, Trash2 } from "lucide-react";
+import { Plus, Trash2 } from "lucide-react";
 
 import { ComboboxCategorie } from "@/components/shared/combobox-categorie";
-import { FormField } from "@/components/shared/form-field";
+import {
+  MULTI_DAY_INPUT_PRICE,
+  MULTI_DAY_INPUT_TEXT,
+  MULTI_DAY_TABLE,
+} from "@/components/shared/form-dialog-styles";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { hasActiveDepensesForDay } from "@/lib/multi-day";
+import { cn } from "@/lib/utils";
 import type { Depense, FarmConfig } from "@/types/domain";
 
 export type ExpenseMultiDayLine = {
@@ -75,96 +80,108 @@ export function ExpensesMultiDayForm({ blocks, depenses, config, onChange }: Pro
   };
 
   return (
-    <div className="max-h-[min(50vh,360px)] space-y-3 overflow-y-auto pr-1">
-      {blocks.map((block, blockIndex) => {
-        const dayLabel = format(new Date(block.jourISO), "EEEE d MMMM", { locale: fr });
-        const hasConflict = hasActiveDepensesForDay(depenses, block.jourISO);
-        return (
-          <div
-            key={block.jourISO}
-            className="space-y-2 rounded-card border border-border bg-card-muted/40 p-3"
-          >
-            <div className="flex flex-wrap items-center gap-2">
-              <p className="text-sm font-medium capitalize text-foreground">{dayLabel}</p>
-              {hasConflict ? (
-                <Badge tone="warning" className="text-[10px]">
-                  Jour déjà saisi
-                </Badge>
-              ) : null}
-            </div>
-
-            {block.lignes.map((ligne, lineIndex) => (
-              <div
-                key={lineIndex}
-                className="space-y-2 rounded-sm border border-border/60 bg-card p-2"
+    <div className={MULTI_DAY_TABLE.wrap}>
+      <table className={MULTI_DAY_TABLE.root}>
+        <thead>
+          <tr className="border-b border-border bg-card-muted text-[10px] font-medium text-muted">
+            <th className={cn(MULTI_DAY_TABLE.th, MULTI_DAY_TABLE.col.day)}>Jour</th>
+            <th className={cn(MULTI_DAY_TABLE.th, MULTI_DAY_TABLE.col.category)}>Catégorie</th>
+            <th className={cn(MULTI_DAY_TABLE.th, MULTI_DAY_TABLE.col.montant)}>Montant (GNF)</th>
+            <th className={cn(MULTI_DAY_TABLE.th, MULTI_DAY_TABLE.col.description)}>
+              Description (optionnel)
+            </th>
+            <th className={cn(MULTI_DAY_TABLE.th, MULTI_DAY_TABLE.col.action)} />
+          </tr>
+        </thead>
+        <tbody>
+          {blocks.map((block, blockIndex) => {
+            const dayLabel = format(new Date(block.jourISO), "EEE d/MM", { locale: fr });
+            const hasConflict = hasActiveDepensesForDay(depenses, block.jourISO);
+            return block.lignes.map((ligne, lineIndex) => (
+              <tr
+                key={`${block.jourISO}-${lineIndex}`}
+                className={cn(
+                  "border-b border-border last:border-0",
+                  isExpenseBlockFilled(block) && "bg-card"
+                )}
               >
-                <div className="grid gap-2 sm:grid-cols-2">
-                  <FormField label="Catégorie" required>
+                <td className={cn(MULTI_DAY_TABLE.td, MULTI_DAY_TABLE.col.day, "align-top")}>
+                  {lineIndex === 0 ? (
+                    <div className="flex flex-col gap-0.5 pt-0.5">
+                      <span className="font-medium capitalize text-foreground">{dayLabel}</span>
+                      {hasConflict ? (
+                        <Badge tone="warning" className="w-fit text-[10px]">
+                          Déjà saisi
+                        </Badge>
+                      ) : null}
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        className="mt-0.5 h-6 w-fit px-1 text-[10px]"
+                        onClick={() => addLine(blockIndex)}
+                      >
+                        <Plus className="h-3 w-3" />
+                        Ligne
+                      </Button>
+                    </div>
+                  ) : null}
+                </td>
+                <td className={cn(MULTI_DAY_TABLE.td, MULTI_DAY_TABLE.col.category)}>
+                  <div className="min-w-0 [&_input]:h-8 [&_input]:min-w-0 [&_input]:px-1.5 [&_input]:text-[13px]">
                     <ComboboxCategorie
                       value={ligne.categorie}
                       onChange={(v) => updateLine(blockIndex, lineIndex, { categorie: v })}
                       categories={config.listes.categoriesDepense}
+                      placeholder="Catégorie"
                     />
-                  </FormField>
-                  <FormField label="Montant" required>
-                    <div className="relative">
-                      <CircleDollarSign className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted" />
-                      <Input
-                        type="number"
-                        min={0}
-                        step={500}
-                        value={ligne.montant}
-                        onChange={(e) => {
-                          const n = e.target.valueAsNumber;
-                          updateLine(blockIndex, lineIndex, {
-                            montant: Number.isNaN(n) ? 0 : Math.max(0, Math.floor(n)),
-                          });
-                        }}
-                        onFocus={(e) => e.currentTarget.select()}
-                        className="h-9 pl-9 tabular-nums"
-                      />
-                    </div>
-                  </FormField>
-                </div>
-                <div className="flex items-end gap-2">
-                  <FormField label="Description" className="min-w-0 flex-1">
-                    <Input
-                      value={ligne.description}
-                      onChange={(e) =>
-                        updateLine(blockIndex, lineIndex, { description: e.target.value })
-                      }
-                      placeholder="Optionnel"
-                      className="h-9"
-                      maxLength={240}
-                    />
-                  </FormField>
+                  </div>
+                </td>
+                <td className={cn(MULTI_DAY_TABLE.td, MULTI_DAY_TABLE.col.montant)}>
+                  <Input
+                    type="number"
+                    min={0}
+                    step={500}
+                    inputMode="numeric"
+                    value={ligne.montant || ""}
+                    onChange={(e) => {
+                      const n = e.target.valueAsNumber;
+                      updateLine(blockIndex, lineIndex, {
+                        montant: Number.isNaN(n) ? 0 : Math.max(0, Math.floor(n)),
+                      });
+                    }}
+                    onFocus={(e) => e.currentTarget.select()}
+                    className={MULTI_DAY_INPUT_PRICE}
+                  />
+                </td>
+                <td className={cn(MULTI_DAY_TABLE.td, MULTI_DAY_TABLE.col.description)}>
+                  <Input
+                    value={ligne.description}
+                    onChange={(e) =>
+                      updateLine(blockIndex, lineIndex, { description: e.target.value })
+                    }
+                    placeholder="Optionnel"
+                    className={MULTI_DAY_INPUT_TEXT}
+                    maxLength={240}
+                  />
+                </td>
+                <td className={cn(MULTI_DAY_TABLE.td, MULTI_DAY_TABLE.col.action, "align-top")}>
                   <Button
                     type="button"
                     variant="ghost"
                     size="icon-sm"
                     onClick={() => removeLine(blockIndex, lineIndex)}
                     disabled={block.lignes.length <= 1}
-                    title="Supprimer la ligne"
+                    title="Supprimer"
                   >
-                    <Trash2 className="h-4 w-4 text-muted" />
+                    <Trash2 className="h-3.5 w-3.5 text-muted" />
                   </Button>
-                </div>
-              </div>
-            ))}
-
-            <Button
-              type="button"
-              variant="ghost"
-              size="sm"
-              className="h-7 text-xs"
-              onClick={() => addLine(blockIndex)}
-            >
-              <Plus className="h-3.5 w-3.5" />
-              Ligne
-            </Button>
-          </div>
-        );
-      })}
+                </td>
+              </tr>
+            ));
+          })}
+        </tbody>
+      </table>
     </div>
   );
 }

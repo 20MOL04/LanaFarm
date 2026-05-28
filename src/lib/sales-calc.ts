@@ -12,6 +12,7 @@
 
 import { startOfDay } from "date-fns";
 
+import { SHOW_VENTE_CASSES } from "@/lib/feature-flags";
 import { formatNumber } from "@/lib/format";
 import { recuFermeJour, stockMagasinInstantane } from "@/lib/lanafarm-core";
 import { stockMagasinAvailableForSale } from "@/lib/transfers-calc";
@@ -324,7 +325,10 @@ export function saleDayUiToStorageDrafts(
     jourISO: ui.jourISO,
     vendus: traysToEggs(Math.max(0, Math.floor(ligne.alveoles)), capacitePlateau),
     prix: ligne.prix,
-    cassesVente: index === 0 ? Math.max(0, Math.floor(ui.oeufsCasses)) : 0,
+    cassesVente:
+      SHOW_VENTE_CASSES && index === 0
+        ? Math.max(0, Math.floor(ui.oeufsCasses))
+        : 0,
     client: ligne.client?.trim() || ui.client?.trim() || undefined,
   }));
 }

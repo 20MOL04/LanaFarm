@@ -112,9 +112,38 @@ function DialogBody({
   return (
     <div
       className={cn(
-        "min-h-0 flex-1 overflow-x-hidden overflow-y-auto overscroll-y-contain px-4 py-3",
+        "flex min-h-0 flex-1 flex-col overflow-hidden px-4 py-3",
         className
       )}
+      {...props}
+    />
+  );
+}
+
+/** Zone scrollable (tableau / champs) — le preview reste hors de cette zone. */
+function DialogScrollRegion({
+  className,
+  ...props
+}: React.HTMLAttributes<HTMLDivElement>) {
+  return (
+    <div
+      className={cn(
+        "overflow-auto overscroll-contain",
+        className
+      )}
+      {...props}
+    />
+  );
+}
+
+/** Preview fixe entre le corps scrollable et le footer. */
+function DialogPreviewBar({
+  className,
+  ...props
+}: React.HTMLAttributes<HTMLDivElement>) {
+  return (
+    <div
+      className={cn("shrink-0 border-t border-border bg-card px-4 py-2", className)}
       {...props}
     />
   );
@@ -153,6 +182,8 @@ export {
   DialogContent,
   DialogHeader,
   DialogBody,
+  DialogScrollRegion,
+  DialogPreviewBar,
   DialogFooter,
   DialogTitle,
   DialogDescription,

@@ -1,4 +1,5 @@
 import { formatDay } from "@/lib/date-ranges";
+import { SHOW_VENTE_CASSES } from "@/lib/feature-flags";
 import { formatGNF, formatNumber } from "@/lib/format";
 import { eggsToTrays } from "@/lib/terminology";
 import type { HistoryVersionRow } from "@/components/shared/history-dialog";
@@ -54,7 +55,9 @@ export function toSaleHistoryRows(versions: Vente[], cap: number): HistoryVersio
     fields: [
       { label: "Alvéoles", value: `${formatNumber(eggsToTrays(v.vendus, cap))} alv.` },
       { label: "Prix", value: `${formatGNF(v.prix)} / alv.` },
-      { label: "Cassés", value: `${formatNumber(v.cassesVente)} œufs` },
+      ...(SHOW_VENTE_CASSES
+        ? [{ label: "Cassés", value: `${formatNumber(v.cassesVente)} œufs` }]
+        : []),
       ...(v.client?.trim() ? [{ label: "Client", value: v.client.trim() }] : []),
       { label: "Montant", value: formatGNF(v.montant) },
     ],

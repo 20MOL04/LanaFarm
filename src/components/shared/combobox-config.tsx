@@ -4,6 +4,7 @@ import * as React from "react";
 import { Plus } from "lucide-react";
 
 import { Input } from "@/components/ui/input";
+import { Popover, PopoverAnchor, PopoverContent } from "@/components/ui/popover";
 import {
   findClosestMatch,
   fuzzyMatch,
@@ -28,6 +29,7 @@ type Props = {
   createError?: string | null;
   onClearError?: () => void;
   duplicateErrorCode?: string;
+  className?: string;
 };
 
 export function ComboboxConfig({
@@ -41,10 +43,11 @@ export function ComboboxConfig({
   createError,
   onClearError,
   duplicateErrorCode,
+  className,
 }: Props) {
   const [open, setOpen] = React.useState(false);
   const [inputValue, setInputValue] = React.useState("");
-  const rootRef = React.useRef<HTMLDivElement>(null);
+  const inputRef = React.useRef<HTMLInputElement>(null);
   const pendingCreateRef = React.useRef<string | null>(null);
 
   const displayLabel = React.useMemo(
@@ -131,70 +134,75 @@ export function ComboboxConfig({
     }
   }, [items, createError, duplicateErrorCode]);
 
-  React.useEffect(() => {
-    const onDocClick = (e: MouseEvent) => {
-      if (!rootRef.current?.contains(e.target as Node)) setOpen(false);
-    };
-    document.addEventListener("mousedown", onDocClick);
-    return () => document.removeEventListener("mousedown", onDocClick);
-  }, []);
-
   return (
-    <div ref={rootRef} className="relative">
-      <Input
-        id={id}
-        value={inputValue}
-        onChange={(e) => handleInputChange(e.target.value)}
-        onFocus={() => {
-          setOpen(true);
-          setInputValue((prev) => prev || displayLabel);
-        }}
-        placeholder={placeholder}
-        className="h-9"
-        autoComplete="off"
-      />
-
-      {open ? (
-        <div
-          className={cn(
-            "absolute z-50 mt-1 max-h-48 w-full overflow-auto rounded-md border border-border bg-card py-1 shadow-modal"
-          )}
-          role="listbox"
-        >
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverAnchor asChild>
+        <Input
+          ref={inputRef}
+          id={id}
+          value={inputValue}
+          onChange={(e) => handleInputChange(e.target.value)}
+          onFocus={() => {
+            setOpen(true);
+            setInputValue((prev) => prev || displayLabel);
+          }}
+          onBlur={() => {
+            window.setTimeout(() => {
+              if (!inputRef.current?.matches(":focus")) setOpen(false);
+            }, 120);
+          }}
+          placeholder={placeholder}
+          className={cn("h-8 w-full min-w-0 tabular-nums", className)}
+          autoComplete="off"
+          aria-expanded={open}
+          aria-haspopup="listbox"
+        />
+      </PopoverAnchor>
+      <PopoverContent
+        className="w-[min(100vw-2rem,var(--radix-popover-trigger-width,12rem))] p-1"
+        align="start"
+        side="bottom"
+        onOpenAutoFocus={(e) => e.preventDefault()}
+      >
+        <ul role="listbox" className="max-h-48 overflow-y-auto">
           {suggestions.map((item) => (
-            <button
-              key={item.id}
-              type="button"
-              role="option"
-              className="flex w-full px-3 py-2 text-left text-sm hover:bg-card-muted"
-              onMouseDown={(e) => e.preventDefault()}
-              onClick={() => selectItem(item)}
-            >
-              {item.label.trim() || item.id}
-            </button>
+            <li key={item.id}>
+              <button
+                type="button"
+                role="option"
+                className="flex w-full rounded-sm px-2.5 py-1.5 text-left text-sm hover:bg-card-muted"
+                onMouseDown={(e) => e.preventDefault()}
+                onClick={() => selectItem(item)}
+              >
+                {item.label.trim() || item.id}
+              </button>
+            </li>
           ))}
 
           {showCreate ? (
-            <button
-              type="button"
-              className="flex w-full items-center gap-2 border-t border-border px-3 py-2 text-left text-sm font-medium text-accent-blue hover:bg-accent-blue-soft/40"
-              onMouseDown={(e) => e.preventDefault()}
-              onClick={handleCreate}
-            >
-              <Plus className="h-3.5 w-3.5 shrink-0" />
-              {`Créer « ${trimmed} »`}
-            </button>
+            <li>
+              <button
+                type="button"
+                className="flex w-full items-center gap-2 border-t border-border px-2.5 py-1.5 text-left text-sm font-medium text-accent-blue hover:bg-accent-blue-soft/40"
+                onMouseDown={(e) => e.preventDefault()}
+                onClick={handleCreate}
+              >
+                <Plus className="h-3.5 w-3.5 shrink-0" />
+                {`Créer « ${trimmed} »`}
+              </button>
+            </li>
           ) : null}
 
           {suggestions.length === 0 && !showCreate ? (
-            <p className="px-3 py-2 text-xs text-muted">Aucune suggestion</p>
+            <li className="px-2.5 py-1.5 text-xs text-muted">Aucune suggestion</li>
           ) : null}
-        </div>
-      ) : null}
-
-      {createError ? (
-        <p className="mt-1 text-[11px] text-danger">{createError}</p>
-      ) : null}
-    </div>
+        </ul>
+        {createError ? (
+          <p className="border-t border-border px-2.5 py-1.5 text-[11px] text-danger">
+            {createError}
+          </p>
+        ) : null}
+      </PopoverContent>
+    </Popover>
   );
 }

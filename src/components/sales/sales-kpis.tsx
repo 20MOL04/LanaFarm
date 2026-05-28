@@ -3,6 +3,7 @@
 import { CircleDollarSign, PackageOpen, ShoppingBag, TrendingDown } from "lucide-react";
 
 import { KpiCard } from "@/components/shared/kpi-card";
+import { SHOW_VENTE_CASSES } from "@/lib/feature-flags";
 import { useDateRange } from "@/contexts/date-range-context";
 import { useFarmConfig, useTransfersStore, useSalesStore } from "@/contexts/farm-store";
 import { useKpiPeriodLabel } from "@/hooks/use-kpi-period-label";
@@ -41,7 +42,13 @@ export function SalesKpis() {
   const labelCa = useKpiPeriodLabel(KPI_LABEL.chiffreAffaires);
 
   return (
-    <div className="grid-contained gap-3 grid-cols-2 lg:grid-cols-4">
+    <div
+      className={
+        SHOW_VENTE_CASSES
+          ? "grid-contained grid-cols-2 gap-3 lg:grid-cols-4"
+          : "grid-contained grid-cols-2 gap-3 lg:grid-cols-3"
+      }
+    >
       <KpiCard
         label={labelStockVente}
         amount={stockMagasin}
@@ -58,14 +65,16 @@ export function SalesKpis() {
         icon={ShoppingBag}
         tone="neutral"
       />
-      <KpiCard
-        label={labelCasses}
-        amount={totals.casses}
-        amountKind="number"
-        amountSuffix="œufs"
-        icon={TrendingDown}
-        tone="danger"
-      />
+      {SHOW_VENTE_CASSES ? (
+        <KpiCard
+          label={labelCasses}
+          amount={totals.casses}
+          amountKind="number"
+          amountSuffix="œufs"
+          icon={TrendingDown}
+          tone="danger"
+        />
+      ) : null}
       <KpiCard
         label={labelCa}
         amount={chiffreAffaires}

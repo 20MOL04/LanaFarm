@@ -3,6 +3,10 @@
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 
+import {
+  MULTI_DAY_INPUT_NUM,
+  MULTI_DAY_TABLE,
+} from "@/components/shared/form-dialog-styles";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { findActiveProductionForDay } from "@/lib/multi-day";
@@ -32,14 +36,20 @@ export function ProductionMultiDayForm({ lines, productions, onChange }: Props) 
   };
 
   return (
-    <div className="min-w-0 overflow-x-auto rounded-card border border-border">
-      <table className="w-full min-w-[480px] text-left text-sm">
+    <div className={MULTI_DAY_TABLE.wrap}>
+      <table className={MULTI_DAY_TABLE.root}>
         <thead>
-          <tr className="border-b border-border bg-card-muted text-[10px] font-medium uppercase tracking-wide text-muted">
-            <th className="px-2 py-2">Jour</th>
-            <th className="px-2 py-2">Ramassées (alv.)</th>
-            <th className="px-2 py-2">Mises en vente (alv.)</th>
-            <th className="px-2 py-2">Cassés (œufs)</th>
+          <tr className="border-b border-border bg-card-muted text-[10px] font-medium text-muted">
+            <th className={cn(MULTI_DAY_TABLE.th, MULTI_DAY_TABLE.col.day)}>Jour</th>
+            <th className={cn(MULTI_DAY_TABLE.th, MULTI_DAY_TABLE.col.ramassees)}>
+              Ramassées (alv.)
+            </th>
+            <th className={cn(MULTI_DAY_TABLE.th, MULTI_DAY_TABLE.col.misesEnVente)}>
+              Mises en vente (alv.)
+            </th>
+            <th className={cn(MULTI_DAY_TABLE.th, MULTI_DAY_TABLE.col.cassesOeufs)}>
+              Cassés (œufs)
+            </th>
           </tr>
         </thead>
         <tbody>
@@ -54,7 +64,7 @@ export function ProductionMultiDayForm({ lines, productions, onChange }: Props) 
                   isProductionMultiLineFilled(line) && "bg-card"
                 )}
               >
-                <td className="px-2 py-1.5">
+                <td className={cn(MULTI_DAY_TABLE.td, MULTI_DAY_TABLE.col.day)}>
                   <div className="flex flex-col gap-0.5">
                     <span className="font-medium capitalize text-foreground">{dayLabel}</span>
                     {hasConflict ? (
@@ -64,7 +74,7 @@ export function ProductionMultiDayForm({ lines, productions, onChange }: Props) 
                     ) : null}
                   </div>
                 </td>
-                <td className="px-2 py-1.5">
+                <td className={cn(MULTI_DAY_TABLE.td, MULTI_DAY_TABLE.col.ramassees)}>
                   <Input
                     type="number"
                     min={0}
@@ -79,10 +89,10 @@ export function ProductionMultiDayForm({ lines, productions, onChange }: Props) 
                       });
                     }}
                     onFocus={(e) => e.currentTarget.select()}
-                    className="h-8 tabular-nums"
+                    className={MULTI_DAY_INPUT_NUM}
                   />
                 </td>
-                <td className="px-2 py-1.5">
+                <td className={cn(MULTI_DAY_TABLE.td, MULTI_DAY_TABLE.col.misesEnVente)}>
                   <Input
                     type="number"
                     min={0}
@@ -97,10 +107,10 @@ export function ProductionMultiDayForm({ lines, productions, onChange }: Props) 
                       });
                     }}
                     onFocus={(e) => e.currentTarget.select()}
-                    className="h-8 tabular-nums"
+                    className={MULTI_DAY_INPUT_NUM}
                   />
                 </td>
-                <td className="px-2 py-1.5">
+                <td className={cn(MULTI_DAY_TABLE.td, MULTI_DAY_TABLE.col.cassesOeufs)}>
                   <Input
                     type="number"
                     min={0}
@@ -114,7 +124,7 @@ export function ProductionMultiDayForm({ lines, productions, onChange }: Props) 
                       });
                     }}
                     onFocus={(e) => e.currentTarget.select()}
-                    className="h-8 tabular-nums"
+                    className={MULTI_DAY_INPUT_NUM}
                   />
                 </td>
               </tr>

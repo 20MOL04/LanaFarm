@@ -1,5 +1,8 @@
 import { startOfDay } from "date-fns";
 
+import type { SalesMultiDayBlock } from "@/components/sales/sales-multi-day-form";
+import { isSalesBlockFilled } from "@/components/sales/sales-multi-day-form";
+import { SHOW_VENTE_CASSES } from "@/lib/feature-flags";
 import {
   calcSaleLineMontant,
   saleDayUiToStorageDrafts,
@@ -10,8 +13,6 @@ import { stockMagasinInstantane } from "@/lib/lanafarm-core";
 import { eggsToTrays, traysToEggs } from "@/lib/units";
 import type { TransfertStock, Vente } from "@/types/domain";
 
-import type { SalesMultiDayLine } from "@/components/sales/sales-multi-day-form";
-
 export type SalesPreviewSnapshot = {
   stockDisponibleAlv: number;
   stockApresAlv: number;
@@ -20,10 +21,6 @@ export type SalesPreviewSnapshot = {
   stockNegatif: boolean;
   caLabel: string;
 };
-
-function isLineFilled(line: SalesMultiDayLine): boolean {
-  return line.alveoles > 0;
-}
 
 /**
  * Preview ventes — une source pour 1 jour (lignes + cassés) ou plusieurs jours.
@@ -39,7 +36,7 @@ export function computeSalesPreview(
         lignes: SaleLineUiDraft[];
         cassesAlveoles: number;
       }
-    | { mode: "multi"; lines: SalesMultiDayLine[] }
+    | { mode: "multi"; blocks: SalesMultiDayBlock[] }
 ): SalesPreviewSnapshot | null {
   if (input.mode === "day") {
     if (!input.dayDate) return null;
@@ -64,15 +61,17 @@ export function computeSalesPreview(
     return {
       stockDisponibleAlv: eggsToTrays(stockDisponible, capacitePlateau),
       stockApresAlv: eggsToTrays(Math.max(0, stockApres), capacitePlateau),
-      deltaAlv: eggsToTrays(stockApres, capacitePlateau) - eggsToTrays(stockDisponible, capacitePlateau),
+      deltaAlv:
+        eggsToTrays(stockApres, capacitePlateau) -
+        eggsToTrays(stockDisponible, capacitePlateau),
       montantTotal,
       stockNegatif: stockApres < 0,
       caLabel: "CA du jour",
     };
   }
 
-  const filled = input.lines
-    .filter(isLineFilled)
+  const filled = input.blocks
+    .filter(isSalesBlockFilled)
     .sort(
       (a, b) =>
         startOfDay(new Date(a.jourISO)).getTime() -
@@ -86,15 +85,18 @@ export function computeSalesPreview(
   let stockNegatif = false;
   let firstStockAlv = 0;
   let lastStockApresAlv = 0;
+  let draftIndex = 0;
 
   for (let i = 0; i < filled.length; i++) {
-    const line = filled[i]!;
-    const jourISO = startOfDay(new Date(line.jourISO)).toISOString();
+    const block = filled[i]!;
+    const jourISO = startOfDay(new Date(block.jourISO)).toISOString();
     const drafts = saleDayUiToStorageDrafts(
       {
         jourISO,
-        lignes: [{ alveoles: line.alveoles, prix: line.prix, client: line.client }],
-        oeufsCasses: traysToEggs(line.cassesAlveoles, capacitePlateau),
+        lignes: block.lignes.filter((l) => l.alveoles > 0),
+        oeufsCasses: SHOW_VENTE_CASSES
+          ? traysToEggs(block.cassesAlveoles, capacitePlateau)
+          : 0,
       },
       capacitePlateau
     );
@@ -106,7 +108,7 @@ export function computeSalesPreview(
       });
       const vendus = draft.vendus + draft.cassesVente;
       const stockApres = stockDisponible - vendus;
-      if (i === 0 && drafts.indexOf(draft) === 0) {
+      if (draftIndex === 0) {
         firstStockAlv = eggsToTrays(stockDisponible, capacitePlateau);
       }
       lastStockApresAlv = eggsToTrays(Math.max(0, stockApres), capacitePlateau);
@@ -116,7 +118,7 @@ export function computeSalesPreview(
       ventesSim = [
         ...ventesSim,
         {
-          id: `__preview_${jourISO}_${i}`,
+          id: `__preview_${jourISO}_${draftIndex}`,
           jourISO: draft.jourISO,
           vendus: draft.vendus,
           cassesVente: draft.cassesVente,
@@ -128,6 +130,7 @@ export function computeSalesPreview(
           updatedAt: "",
         } as Vente,
       ];
+      draftIndex += 1;
     }
   }
 

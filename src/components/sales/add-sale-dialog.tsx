@@ -3,42 +3,47 @@
 import * as React from "react";
 import { format, startOfDay } from "date-fns";
 import {
-  Plus,
   ShoppingBag,
   Trash2,
-  TrendingDown,
   UserRound,
 } from "lucide-react";
 
 import { PriceSelect } from "@/components/sales/price-select";
 import {
-  isSalesMultiLineFilled,
+  emptySalesMultiBlock,
+  isSalesBlockFilled,
   SalesMultiDayForm,
-  type SalesMultiDayLine,
+  type SalesMultiDayBlock,
 } from "@/components/sales/sales-multi-day-form";
 import { DateInput } from "@/components/shared/date-input";
 import { FormField } from "@/components/shared/form-field";
+import { DialogDayLinesToolbar } from "@/components/shared/dialog-day-lines-toolbar";
+import { DialogDateRow } from "@/components/shared/dialog-date-row";
+import { DialogFormShell } from "@/components/shared/dialog-form-shell";
 import { MultiDayConflictDialog } from "@/components/shared/multi-day-conflict-dialog";
 import { MultiDayModeToggle } from "@/components/shared/multi-day-mode-toggle";
 import { MultiDayPeriodPicker } from "@/components/shared/multi-day-period-picker";
 import { StoreErrorBanner } from "@/components/shared/store-error-banner";
-import { Button } from "@/components/ui/button";
 import {
-  Dialog,
-  DialogBody,
-  DialogContent,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+  DIALOG_SCROLL,
+  FORM_INPUT_NUM_ICON,
+  FORM_INPUT_PRICE,
+  FORM_INPUT_TEXT,
+  FORM_LINE_CARD,
+  FORM_LINE_GRID_2,
+  FORM_LINE_ROW_END,
+} from "@/components/shared/form-dialog-styles";
+import { StockPreviewPanel } from "@/components/shared/stock-preview-panel";
+import { Button } from "@/components/ui/button";
+import { DialogScrollRegion } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
+import { SHOW_VENTE_CASSES } from "@/lib/feature-flags";
 import { useDateRange } from "@/contexts/date-range-context";
 import {
   useFarmConfig,
   useSalesStore,
   useTransfersStore,
 } from "@/contexts/farm-store";
-import { StockPreviewPanel } from "@/components/shared/stock-preview-panel";
 import { formatDay } from "@/lib/date-ranges";
 import { formatGNF, formatNumber } from "@/lib/format";
 import { computeSalesPreview } from "@/lib/sales-preview";
@@ -54,7 +59,6 @@ import {
 } from "@/lib/sales-calc";
 import { SALES_LABEL, eggsToTrays } from "@/lib/terminology";
 import { traysToEggs } from "@/lib/units";
-import { cn } from "@/lib/utils";
 import {
   clampMultiDayPeriod,
   enumerateDayISOs,
@@ -107,7 +111,9 @@ function toSaleDayDraft(state: SaleDayFormState, cap: number): SaleDayUiDraft {
   return {
     jourISO: state.jourISO,
     lignes: state.lignes,
-    oeufsCasses: traysToEggs(state.cassesAlveoles, cap),
+    oeufsCasses: SHOW_VENTE_CASSES
+      ? traysToEggs(state.cassesAlveoles, cap)
+      : 0,
   };
 }
 
@@ -139,16 +145,6 @@ function editStateFromVente(
   };
 }
 
-function emptySalesMultiLine(jourISO: string, defaultPrix: number): SalesMultiDayLine {
-  return {
-    jourISO,
-    alveoles: 0,
-    prix: defaultPrix,
-    client: "",
-    cassesAlveoles: 0,
-  };
-}
-
 export function AddSaleDialog({ open, onOpenChange, editEntry = null }: Props) {
   const {
     state: salesState,
@@ -172,10 +168,10 @@ export function AddSaleDialog({ open, onOpenChange, editEntry = null }: Props) {
   const [multiMode, setMultiMode] = React.useState(false);
   const [periodFrom, setPeriodFrom] = React.useState(todayIso);
   const [periodTo, setPeriodTo] = React.useState(todayIso);
-  const [multiLines, setMultiLines] = React.useState<SalesMultiDayLine[]>([]);
+  const [multiBlocks, setMultiBlocks] = React.useState<SalesMultiDayBlock[]>([]);
   const [conflictOpen, setConflictOpen] = React.useState(false);
   const [conflictDays, setConflictDays] = React.useState<string[]>([]);
-  const pendingMultiRef = React.useRef<SalesMultiDayLine[]>([]);
+  const pendingMultiRef = React.useRef<SalesMultiDayBlock[]>([]);
   const openSnapshotRef = React.useRef<string | null>(null);
 
   React.useEffect(() => {
@@ -187,7 +183,7 @@ export function AddSaleDialog({ open, onOpenChange, editEntry = null }: Props) {
     const rawTo = format(startOfDay(range.to), "yyyy-MM-dd");
     const { fromIso, toIso } = clampMultiDayPeriod(rawFrom, rawTo, todayIso());
     const days = enumerateDayISOs(fromIso, toIso);
-    const lines = days.map((d) => emptySalesMultiLine(d, defaultPrix));
+    const blocks = days.map((d) => emptySalesMultiBlock(d, defaultPrix));
     const edit = editEntry
       ? editStateFromVente(editEntry, cap, defaultPrix)
       : null;
@@ -202,7 +198,7 @@ export function AddSaleDialog({ open, onOpenChange, editEntry = null }: Props) {
     setMultiMode(false);
     setPeriodFrom(fromIso);
     setPeriodTo(toIso);
-    setMultiLines(lines);
+    setMultiBlocks(blocks);
     setConflictOpen(false);
     setConflictDays([]);
     pendingMultiRef.current = [];
@@ -216,7 +212,7 @@ export function AddSaleDialog({ open, onOpenChange, editEntry = null }: Props) {
         multiMode: false,
         periodFrom: fromIso,
         periodTo: toIso,
-        multiLines: lines,
+        multiBlocks: blocks,
       })
     );
   }, [open, editEntry, defaultPrix, cap, clearError, range.from, range.to]);
@@ -230,7 +226,7 @@ export function AddSaleDialog({ open, onOpenChange, editEntry = null }: Props) {
         multiMode,
         periodFrom,
         periodTo,
-        multiLines,
+        multiBlocks,
       }),
     [
       isEditMode,
@@ -239,7 +235,7 @@ export function AddSaleDialog({ open, onOpenChange, editEntry = null }: Props) {
       multiMode,
       periodFrom,
       periodTo,
-      multiLines,
+      multiBlocks,
     ]
   );
 
@@ -280,7 +276,9 @@ export function AddSaleDialog({ open, onOpenChange, editEntry = null }: Props) {
   const editValidation = React.useMemo(() => {
     if (!isEditMode || !dayDate) return null;
     const vendus = traysToEggs(editDraft.alveoles, cap);
-    const cassesEggs = traysToEggs(editDraft.cassesAlveoles, cap);
+    const cassesEggs = SHOW_VENTE_CASSES
+      ? traysToEggs(editDraft.cassesAlveoles, cap)
+      : 0;
     const result = validateSaleDraftWithCumulativeStock(
       {
         jourISO: dayDate.toISOString(),
@@ -328,10 +326,10 @@ export function AddSaleDialog({ open, onOpenChange, editEntry = null }: Props) {
       multiMode && !isEditMode
         ? computeSalesPreview(salesState.ventes, getAllTransfers(), cap, {
             mode: "multi",
-            lines: multiLines,
+            blocks: multiBlocks,
           })
         : null,
-    [multiMode, isEditMode, multiLines, salesState.ventes, getAllTransfers, cap]
+    [multiMode, isEditMode, multiBlocks, salesState.ventes, getAllTransfers, cap]
   );
 
   const editErrors: SaleFormErrors = editValidation?.errors ?? {};
@@ -358,63 +356,57 @@ export function AddSaleDialog({ open, onOpenChange, editEntry = null }: Props) {
 
   React.useEffect(() => {
     if (!multiMode) return;
-    setMultiLines((prev) =>
+    setMultiBlocks((prev) =>
       syncLinesWithPeriod(prev, multiDayISOs, (jourISO) =>
-        emptySalesMultiLine(jourISO, defaultPrix)
+        emptySalesMultiBlock(jourISO, defaultPrix)
       )
     );
   }, [multiMode, multiDayISOs, defaultPrix]);
 
-  const filledMultiLines = React.useMemo(
-    () => multiLines.filter(isSalesMultiLineFilled),
-    [multiLines]
+  const filledMultiBlocks = React.useMemo(
+    () => multiBlocks.filter(isSalesBlockFilled),
+    [multiBlocks]
   );
 
   const canSubmitMulti =
     multiDayISOs.length > 0 &&
-    filledMultiLines.length > 0 &&
+    filledMultiBlocks.length > 0 &&
     !(multiPreview?.stockNegatif ?? false);
 
-  const multiLineToStorageDrafts = React.useCallback(
-    (line: SalesMultiDayLine) =>
+  const blockToStorageDrafts = React.useCallback(
+    (block: SalesMultiDayBlock) =>
       saleDayUiToStorageDrafts(
         {
-          jourISO: startOfDay(new Date(line.jourISO)).toISOString(),
-          lignes: [{ alveoles: line.alveoles, prix: line.prix, client: line.client }],
-          oeufsCasses: traysToEggs(line.cassesAlveoles, cap),
+          jourISO: startOfDay(new Date(block.jourISO)).toISOString(),
+          lignes: block.lignes.filter((l) => l.alveoles > 0),
+          oeufsCasses: SHOW_VENTE_CASSES
+            ? traysToEggs(block.cassesAlveoles, cap)
+            : 0,
         },
         cap
       ),
     [cap]
   );
 
-  const persistMultiLines = React.useCallback(
-    (lines: SalesMultiDayLine[], resolution: MultiDayConflictResolution | null) => {
+  const persistMultiBlocks = React.useCallback(
+    (blocks: SalesMultiDayBlock[], resolution: MultiDayConflictResolution | null) => {
       clearError();
       runSubmit(() => {
-        for (const line of lines) {
-          const existing = getActiveVentesForDay(salesState.ventes, line.jourISO);
-          const drafts = multiLineToStorageDrafts(line);
+        for (const block of blocks) {
+          const existing = getActiveVentesForDay(salesState.ventes, block.jourISO);
+          const drafts = blockToStorageDrafts(block);
+          if (drafts.length === 0) continue;
           if (existing.length > 0) {
             if (resolution === "ignore") continue;
             for (const sale of existing) {
               cancelSale(sale.id);
             }
-            addSalesDay(drafts);
-          } else {
-            addSalesDay(drafts);
           }
+          addSalesDay(drafts);
         }
       });
     },
-    [
-      addSalesDay,
-      cancelSale,
-      clearError,
-      runSubmit,
-      salesState.ventes,
-      multiLineToStorageDrafts,
-    ]
+    [addSalesDay, blockToStorageDrafts, cancelSale, clearError, runSubmit, salesState.ventes]
   );
 
   const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
@@ -422,16 +414,16 @@ export function AddSaleDialog({ open, onOpenChange, editEntry = null }: Props) {
 
     if (multiMode && !isEditMode) {
       if (!canSubmitMulti) return;
-      const conflicts = filledMultiLines
-        .filter((line) => getActiveVentesForDay(salesState.ventes, line.jourISO).length > 0)
-        .map((line) => line.jourISO);
+      const conflicts = filledMultiBlocks
+        .filter((block) => getActiveVentesForDay(salesState.ventes, block.jourISO).length > 0)
+        .map((block) => block.jourISO);
       if (conflicts.length > 0) {
-        pendingMultiRef.current = filledMultiLines;
+        pendingMultiRef.current = filledMultiBlocks;
         setConflictDays(conflicts);
         setConflictOpen(true);
         return;
       }
-      persistMultiLines(filledMultiLines, null);
+      persistMultiBlocks(filledMultiBlocks, null);
       return;
     }
 
@@ -444,7 +436,9 @@ export function AddSaleDialog({ open, onOpenChange, editEntry = null }: Props) {
         updateSale(editEntry.id, {
           jourISO: dayDate.toISOString(),
           vendus: traysToEggs(editDraft.alveoles, cap),
-          cassesVente: traysToEggs(editDraft.cassesAlveoles, cap),
+          cassesVente: SHOW_VENTE_CASSES
+            ? traysToEggs(editDraft.cassesAlveoles, cap)
+            : 0,
           prix: editDraft.prix,
           client: editDraft.client.trim() || undefined,
         });
@@ -479,205 +473,153 @@ export function AddSaleDialog({ open, onOpenChange, editEntry = null }: Props) {
     }));
   };
 
+  const previewPanel =
+    multiMode && !isEditMode && multiPreview ? (
+      <StockPreviewPanel
+        stockDisponible={multiPreview.stockDisponibleAlv}
+        stockApres={multiPreview.stockApresAlv}
+        montant={multiPreview.montantTotal}
+        stockNegatif={multiPreview.stockNegatif}
+        deltaAlv={multiPreview.deltaAlv}
+        caLabel={multiPreview.caLabel}
+      />
+    ) : isEditMode && editValidation ? (
+      <StockPreviewPanel
+        stockDisponible={eggsToTrays(editValidation.stockDisponible, cap)}
+        stockApres={eggsToTrays(Math.max(0, editValidation.stockApres), cap)}
+        montant={editValidation.montantTotal}
+        stockNegatif={editValidation.stockApres < 0}
+      />
+    ) : !isEditMode && dayPreview ? (
+      <StockPreviewPanel
+        stockDisponible={dayPreview.stockDisponibleAlv}
+        stockApres={dayPreview.stockApresAlv}
+        montant={dayPreview.montantTotal}
+        stockNegatif={dayPreview.stockNegatif}
+        deltaAlv={dayPreview.deltaAlv}
+        caLabel={dayPreview.caLabel}
+      />
+    ) : null;
+
+  const modeToggle = !isEditMode ? (
+    <MultiDayModeToggle multiMode={multiMode} onToggle={() => setMultiMode((m) => !m)} />
+  ) : null;
+
   return (
     <>
-      <Dialog open={open} onOpenChange={unsaved.dialogProps.onOpenChange}>
-        <DialogContent>
-          <DialogHeader>
-            <div className="flex items-start justify-between gap-2">
-              <DialogTitle>
-                {isEditMode ? "Modifier la vente" : "Ventes du jour"}
-              </DialogTitle>
-              {!isEditMode ? (
-                <MultiDayModeToggle
-                  multiMode={multiMode}
-                  onToggle={() => setMultiMode((m) => !m)}
-                />
-              ) : null}
-            </div>
-          </DialogHeader>
-
-          <form onSubmit={handleSubmit} className="flex flex-1 flex-col overflow-hidden">
-            <DialogBody className="space-y-3">
-              {multiMode && !isEditMode ? (
-                <>
+      <DialogFormShell
+        open={open}
+        onOpenChange={unsaved.dialogProps.onOpenChange}
+        title={isEditMode ? "Modifier la vente" : "Ventes du jour"}
+        onSubmit={handleSubmit}
+        body={
+          <>
+            {multiMode && !isEditMode ? (
+              <>
+                <DialogDateRow toggle={modeToggle}>
                   <MultiDayPeriodPicker
                     fromIso={periodFrom}
                     toIso={periodTo}
                     onFromChange={setPeriodFrom}
                     onToChange={setPeriodTo}
                     maxDateIso={todayIso()}
-                    hintRange={range}
                   />
+                </DialogDateRow>
+                <DialogScrollRegion className={DIALOG_SCROLL}>
                   <SalesMultiDayForm
-                    lines={multiLines}
+                    blocks={multiBlocks}
                     ventes={salesState.ventes}
                     defaultPrix={defaultPrix}
-                    onChange={setMultiLines}
+                    onChange={setMultiBlocks}
                   />
-                  {multiPreview ? (
-                    <StockPreviewPanel
-                      stockDisponible={multiPreview.stockDisponibleAlv}
-                      stockApres={multiPreview.stockApresAlv}
-                      montant={multiPreview.montantTotal}
-                      stockNegatif={multiPreview.stockNegatif}
-                      deltaAlv={multiPreview.deltaAlv}
-                      caLabel={multiPreview.caLabel}
-                    />
-                  ) : null}
-                </>
-              ) : (
-                <>
-            <FormField
-              label="Jour"
-              htmlFor="sale-day"
-              required
-              error={
-                touched
-                  ? isEditMode
-                    ? editErrors.jourISO
-                    : dayErrors.jourISO
-                  : undefined
-              }
-              hint={dayDate ? formatDay(dayDate) : undefined}
-            >
-              <DateInput
-                id="sale-day"
-                value={isEditMode ? editDraft.jourISO : draft.jourISO}
-                max={todayIso()}
-                onChange={(e) => {
-                  const v = e.target.value;
-                  if (isEditMode) {
-                    setEditDraft((d) => ({ ...d, jourISO: v }));
-                  } else {
-                    setDraft((d) => ({ ...d, jourISO: v }));
-                  }
-                }}
-                required
-              />
-            </FormField>
-
-            {isEditMode ? (
-              <SaleLineCard
-                alveoles={editDraft.alveoles}
-                prix={editDraft.prix}
-                client={editDraft.client}
-                defaultPrix={defaultPrix}
-                onAlveolesChange={(v) => setEditDraft((d) => ({ ...d, alveoles: v }))}
-                onPrixChange={(v) => setEditDraft((d) => ({ ...d, prix: v }))}
-                onClientChange={(v) => setEditDraft((d) => ({ ...d, client: v }))}
-                errors={
-                  touched
-                    ? {
-                        alveoles: editErrors.vendus,
-                        prix: editErrors.prix,
-                      }
-                    : undefined
-                }
-                showDelete={false}
-              />
+                </DialogScrollRegion>
+              </>
             ) : (
-              <div className="space-y-2">
-                <div className="flex items-center justify-between gap-2">
-                  <p className="text-[11px] font-medium uppercase tracking-wide text-muted">
-                    Lignes de vente
-                  </p>
-                  <Button type="button" variant="ghost" size="sm" onClick={addLine}>
-                    <Plus className="h-4 w-4" />
-                    Ajouter
-                  </Button>
-                </div>
-
-                {draft.lignes.map((ligne, index) => (
-                  <SaleLineCard
-                    key={index}
-                    alveoles={ligne.alveoles}
-                    prix={ligne.prix}
-                    client={ligne.client ?? ""}
-                    defaultPrix={defaultPrix}
-                    onAlveolesChange={(v) => updateLine(index, { alveoles: v })}
-                    onPrixChange={(v) => updateLine(index, { prix: v })}
-                    onClientChange={(v) => updateLine(index, { client: v })}
-                    errors={
-                      touched ? dayErrors.lignes?.[index] : undefined
+              <>
+                <DialogDateRow toggle={modeToggle}>
+                  <FormField
+                    label="Jour"
+                    htmlFor="sale-day"
+                    required
+                    error={
+                      touched
+                        ? isEditMode
+                          ? editErrors.jourISO
+                          : dayErrors.jourISO
+                        : undefined
                     }
-                    onDelete={() => removeLine(index)}
-                    deleteDisabled={draft.lignes.length <= 1}
-                  />
-                ))}
-
-                {touched && dayErrors.form ? (
-                  <p className="text-[11px] text-danger">{dayErrors.form}</p>
-                ) : null}
-              </div>
+                    hint={dayDate ? formatDay(dayDate) : undefined}
+                  >
+                    <DateInput
+                      id="sale-day"
+                      value={isEditMode ? editDraft.jourISO : draft.jourISO}
+                      max={todayIso()}
+                      onChange={(e) => {
+                        const v = e.target.value;
+                        if (isEditMode) {
+                          setEditDraft((d) => ({ ...d, jourISO: v }));
+                        } else {
+                          setDraft((d) => ({ ...d, jourISO: v }));
+                        }
+                      }}
+                      required
+                    />
+                  </FormField>
+                </DialogDateRow>
+                <DialogScrollRegion className={DIALOG_SCROLL}>
+                  <div className="space-y-2">
+                    {isEditMode ? (
+                      <SaleLineCard
+                        alveoles={editDraft.alveoles}
+                        prix={editDraft.prix}
+                        client={editDraft.client}
+                        defaultPrix={defaultPrix}
+                        onAlveolesChange={(v) => setEditDraft((d) => ({ ...d, alveoles: v }))}
+                        onPrixChange={(v) => setEditDraft((d) => ({ ...d, prix: v }))}
+                        onClientChange={(v) => setEditDraft((d) => ({ ...d, client: v }))}
+                        errors={
+                          touched
+                            ? {
+                                alveoles: editErrors.vendus,
+                                prix: editErrors.prix,
+                              }
+                            : undefined
+                        }
+                        showDelete={false}
+                      />
+                    ) : (
+                      <>
+                        <DialogDayLinesToolbar label="Lignes de vente" onAdd={addLine} />
+                        {draft.lignes.map((ligne, index) => (
+                          <SaleLineCard
+                            key={index}
+                            alveoles={ligne.alveoles}
+                            prix={ligne.prix}
+                            client={ligne.client ?? ""}
+                            defaultPrix={defaultPrix}
+                            onAlveolesChange={(v) => updateLine(index, { alveoles: v })}
+                            onPrixChange={(v) => updateLine(index, { prix: v })}
+                            onClientChange={(v) => updateLine(index, { client: v })}
+                            errors={touched ? dayErrors.lignes?.[index] : undefined}
+                            onDelete={() => removeLine(index)}
+                            deleteDisabled={draft.lignes.length <= 1}
+                          />
+                        ))}
+                        {touched && dayErrors.form ? (
+                          <p className="text-[11px] text-danger">{dayErrors.form}</p>
+                        ) : null}
+                      </>
+                    )}
+                  </div>
+                </DialogScrollRegion>
+              </>
             )}
-
-            <FormField
-              label="Cassés vente (stock magasin uniquement)"
-              htmlFor="sale-casses"
-              hint="Alvéoles endommagées chez le vendeur"
-              error={touched ? (isEditMode ? editErrors.cassesVente : dayErrors.oeufsCasses) : undefined}
-            >
-              <div className="relative max-w-[140px]">
-                <TrendingDown className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-danger" />
-                <Input
-                  id="sale-casses"
-                  type="number"
-                  inputMode="numeric"
-                  min={0}
-                  step={1}
-                  value={isEditMode ? editDraft.cassesAlveoles : draft.cassesAlveoles}
-                  onChange={(e) => {
-                    const raw = e.target.value.trim();
-                    const v =
-                      raw === ""
-                        ? 0
-                        : (() => {
-                            const n = parseInt(raw, 10);
-                            return Number.isNaN(n) ? 0 : Math.max(0, n);
-                          })();
-                    if (isEditMode) {
-                      setEditDraft((d) => ({ ...d, cassesAlveoles: v }));
-                    } else {
-                      setDraft((d) => ({ ...d, cassesAlveoles: v }));
-                    }
-                  }}
-                  onFocus={(e) => e.currentTarget.select()}
-                  className="pl-9 tabular-nums"
-                />
-                <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-[11px] text-muted">
-                  alv.
-                </span>
-              </div>
-            </FormField>
-
-            {isEditMode && editValidation ? (
-              <StockPreviewPanel
-                stockDisponible={eggsToTrays(editValidation.stockDisponible, cap)}
-                stockApres={eggsToTrays(Math.max(0, editValidation.stockApres), cap)}
-                montant={editValidation.montantTotal}
-                stockNegatif={editValidation.stockApres < 0}
-              />
-            ) : null}
-
-            {!isEditMode && dayPreview ? (
-              <StockPreviewPanel
-                stockDisponible={dayPreview.stockDisponibleAlv}
-                stockApres={dayPreview.stockApresAlv}
-                montant={dayPreview.montantTotal}
-                stockNegatif={dayPreview.stockNegatif}
-                deltaAlv={dayPreview.deltaAlv}
-                caLabel={dayPreview.caLabel}
-              />
-            ) : null}
-
-                </>
-              )}
-
             <StoreErrorBanner error={salesState.errors} />
-          </DialogBody>
-
-          <DialogFooter>
+          </>
+        }
+        preview={previewPanel}
+        footer={
+          <>
             <Button type="button" variant="ghost" size="sm" onClick={unsaved.requestClose}>
               Annuler
             </Button>
@@ -689,22 +631,21 @@ export function AddSaleDialog({ open, onOpenChange, editEntry = null }: Props) {
             >
               {isEditMode ? "Enregistrer les modifications" : "Enregistrer"}
             </Button>
-          </DialogFooter>
-        </form>
-      </DialogContent>
-    </Dialog>
+          </>
+        }
+      />
 
       <MultiDayConflictDialog
         open={conflictOpen}
         onOpenChange={setConflictOpen}
         conflictDays={conflictDays}
         onResolve={(resolution) => {
-          const lines =
+          const blocks =
             pendingMultiRef.current.length > 0
               ? pendingMultiRef.current
-              : filledMultiLines;
+              : filledMultiBlocks;
           pendingMultiRef.current = [];
-          persistMultiLines(lines, resolution);
+          persistMultiBlocks(blocks, resolution);
         }}
       />
 
@@ -720,7 +661,7 @@ type SalesFormComparable =
       mode: "multi";
       periodFrom: string;
       periodTo: string;
-      multiLines: SalesMultiDayLine[];
+      multiBlocks: SalesMultiDayBlock[];
     };
 
 function salesFormComparable(input: {
@@ -730,7 +671,7 @@ function salesFormComparable(input: {
   multiMode: boolean;
   periodFrom: string;
   periodTo: string;
-  multiLines: SalesMultiDayLine[];
+  multiBlocks: SalesMultiDayBlock[];
 }): SalesFormComparable {
   if (input.isEditMode) {
     return { mode: "edit", editDraft: input.editDraft };
@@ -740,7 +681,7 @@ function salesFormComparable(input: {
       mode: "multi",
       periodFrom: input.periodFrom,
       periodTo: input.periodTo,
-      multiLines: input.multiLines,
+      multiBlocks: input.multiBlocks,
     };
   }
   return { mode: "day", dayDraft: input.dayDraft };
@@ -772,8 +713,8 @@ function SaleLineCard({
   showDelete?: boolean;
 }) {
   return (
-    <div className="space-y-2 rounded-card border border-border bg-card-muted p-2.5">
-      <div className="grid gap-2 sm:grid-cols-2">
+    <div className={FORM_LINE_CARD}>
+      <div className={FORM_LINE_GRID_2}>
         <FormField
           label="Qté vendues"
           htmlFor={`alv-${alveoles}-${prix}`}
@@ -782,7 +723,7 @@ function SaleLineCard({
           hint="alvéoles"
         >
           <div className="relative">
-            <ShoppingBag className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-accent-blue" />
+            <ShoppingBag className="pointer-events-none absolute left-2 top-1/2 h-4 w-4 -translate-y-1/2 text-accent-blue" />
             <Input
               type="number"
               inputMode="numeric"
@@ -799,7 +740,7 @@ function SaleLineCard({
                 onAlveolesChange(Number.isNaN(n) ? 0 : Math.max(0, n));
               }}
               onFocus={(e) => e.currentTarget.select()}
-              className="h-9 pl-9 tabular-nums"
+              className={FORM_INPUT_NUM_ICON}
             />
           </div>
         </FormField>
@@ -815,23 +756,24 @@ function SaleLineCard({
             onChange={onPrixChange}
             defaultPrix={defaultPrix}
             required={alveoles > 0}
+            className={FORM_INPUT_PRICE}
           />
         </FormField>
       </div>
 
-      <div className="flex items-end gap-2">
+      <div className={FORM_LINE_ROW_END}>
         <FormField
           label="Client (optionnel)"
           htmlFor={`client-${alveoles}`}
           className="min-w-0 flex-1"
         >
           <div className="relative">
-            <UserRound className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted" />
+            <UserRound className="pointer-events-none absolute left-2 top-1/2 h-4 w-4 -translate-y-1/2 text-muted" />
             <Input
-              placeholder="Ex : Marché Madina"
+              placeholder="Optionnel"
               value={client}
               onChange={(e) => onClientChange(e.target.value)}
-              className="h-9 pl-9"
+              className={`${FORM_INPUT_TEXT} pl-8`}
             />
           </div>
         </FormField>

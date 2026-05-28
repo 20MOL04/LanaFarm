@@ -2,126 +2,221 @@
 
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
+import { Plus, Trash2 } from "lucide-react";
 
 import { PriceSelect } from "@/components/sales/price-select";
+import {
+  MULTI_DAY_INPUT_NUM,
+  MULTI_DAY_INPUT_PRICE,
+  MULTI_DAY_INPUT_TEXT,
+  MULTI_DAY_TABLE,
+} from "@/components/shared/form-dialog-styles";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { SHOW_VENTE_CASSES } from "@/lib/feature-flags";
 import { getActiveVentesForDay } from "@/lib/multi-day";
 import { cn } from "@/lib/utils";
 import type { Vente } from "@/types/domain";
 
 export type SalesMultiDayLine = {
-  jourISO: string;
   alveoles: number;
   prix: number;
   client: string;
+};
+
+export type SalesMultiDayBlock = {
+  jourISO: string;
+  lignes: SalesMultiDayLine[];
   cassesAlveoles: number;
 };
 
-export function isSalesMultiLineFilled(line: SalesMultiDayLine): boolean {
-  return line.alveoles > 0;
+export function emptySalesMultiLine(defaultPrix: number): SalesMultiDayLine {
+  return { alveoles: 0, prix: defaultPrix, client: "" };
+}
+
+export function emptySalesMultiBlock(jourISO: string, defaultPrix: number): SalesMultiDayBlock {
+  return {
+    jourISO,
+    lignes: [emptySalesMultiLine(defaultPrix)],
+    cassesAlveoles: 0,
+  };
+}
+
+export function isSalesBlockFilled(block: SalesMultiDayBlock): boolean {
+  return block.lignes.some((l) => l.alveoles > 0);
 }
 
 type Props = {
-  lines: SalesMultiDayLine[];
+  blocks: SalesMultiDayBlock[];
   ventes: Vente[];
   defaultPrix: number;
-  onChange: (lines: SalesMultiDayLine[]) => void;
+  onChange: (blocks: SalesMultiDayBlock[]) => void;
 };
 
-export function SalesMultiDayForm({ lines, ventes, defaultPrix, onChange }: Props) {
-  const updateLine = (index: number, patch: Partial<SalesMultiDayLine>) => {
-    onChange(lines.map((line, i) => (i === index ? { ...line, ...patch } : line)));
+export function SalesMultiDayForm({ blocks, ventes, defaultPrix, onChange }: Props) {
+  const updateBlock = (blockIndex: number, next: SalesMultiDayBlock) => {
+    onChange(blocks.map((b, i) => (i === blockIndex ? next : b)));
+  };
+
+  const updateLine = (
+    blockIndex: number,
+    lineIndex: number,
+    patch: Partial<SalesMultiDayLine>
+  ) => {
+    const block = blocks[blockIndex];
+    updateBlock(blockIndex, {
+      ...block,
+      lignes: block.lignes.map((l, i) => (i === lineIndex ? { ...l, ...patch } : l)),
+    });
+  };
+
+  const addLine = (blockIndex: number) => {
+    const block = blocks[blockIndex];
+    updateBlock(blockIndex, {
+      ...block,
+      lignes: [...block.lignes, emptySalesMultiLine(defaultPrix)],
+    });
+  };
+
+  const removeLine = (blockIndex: number, lineIndex: number) => {
+    const block = blocks[blockIndex];
+    if (block.lignes.length <= 1) return;
+    updateBlock(blockIndex, {
+      ...block,
+      lignes: block.lignes.filter((_, i) => i !== lineIndex),
+    });
   };
 
   return (
-    <div className="min-w-0 overflow-x-auto rounded-card border border-border">
-      <table className="w-full min-w-[520px] text-left text-sm">
+    <div className={MULTI_DAY_TABLE.wrap}>
+      <table className={MULTI_DAY_TABLE.root}>
         <thead>
-          <tr className="border-b border-border bg-card-muted text-[10px] font-medium uppercase tracking-wide text-muted">
-            <th className="px-2 py-2">Jour</th>
-            <th className="px-2 py-2">Vendus (alv.)</th>
-            <th className="px-2 py-2">Prix (GNF/alv.)</th>
-            <th className="px-2 py-2">Client</th>
-            <th className="px-2 py-2">Cassés vente (alv.)</th>
+          <tr className="border-b border-border bg-card-muted text-[10px] font-medium text-muted">
+            <th className={cn(MULTI_DAY_TABLE.th, MULTI_DAY_TABLE.col.day)}>Jour</th>
+            <th className={cn(MULTI_DAY_TABLE.th, MULTI_DAY_TABLE.col.vendus)}>Vendus (alv.)</th>
+            <th className={cn(MULTI_DAY_TABLE.th, MULTI_DAY_TABLE.col.prix)}>
+              Prix (GNF/alv.)
+            </th>
+            <th className={cn(MULTI_DAY_TABLE.th, MULTI_DAY_TABLE.col.client)}>
+              Client (optionnel)
+            </th>
+            {SHOW_VENTE_CASSES ? (
+              <th className={cn(MULTI_DAY_TABLE.th, MULTI_DAY_TABLE.col.cassesAlv)}>
+                Cassés (alv.)
+              </th>
+            ) : null}
+            <th className={cn(MULTI_DAY_TABLE.th, MULTI_DAY_TABLE.col.action)} />
           </tr>
         </thead>
         <tbody>
-          {lines.map((line, index) => {
-            const dayLabel = format(new Date(line.jourISO), "EEE d/MM", { locale: fr });
-            const hasConflict = getActiveVentesForDay(ventes, line.jourISO).length > 0;
-            return (
+          {blocks.map((block, blockIndex) => {
+            const dayLabel = format(new Date(block.jourISO), "EEE d/MM", { locale: fr });
+            const hasConflict = getActiveVentesForDay(ventes, block.jourISO).length > 0;
+            return block.lignes.map((ligne, lineIndex) => (
               <tr
-                key={line.jourISO}
+                key={`${block.jourISO}-${lineIndex}`}
                 className={cn(
                   "border-b border-border last:border-0",
-                  isSalesMultiLineFilled(line) && "bg-card"
+                  isSalesBlockFilled(block) && "bg-card"
                 )}
               >
-                <td className="px-2 py-1.5 align-top">
-                  <div className="flex flex-col gap-0.5 pt-1">
-                    <span className="font-medium capitalize text-foreground">{dayLabel}</span>
-                    {hasConflict ? (
-                      <Badge tone="warning" className="w-fit text-[10px]">
-                        Jour déjà saisi
-                      </Badge>
-                    ) : null}
-                  </div>
+                <td className={cn(MULTI_DAY_TABLE.td, MULTI_DAY_TABLE.col.day, "align-top")}>
+                  {lineIndex === 0 ? (
+                    <div className="flex flex-col gap-0.5 pt-0.5">
+                      <span className="font-medium capitalize text-foreground">{dayLabel}</span>
+                      {hasConflict ? (
+                        <Badge tone="warning" className="w-fit text-[10px]">
+                          Jour déjà saisi
+                        </Badge>
+                      ) : null}
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        className="mt-0.5 h-6 w-fit px-1 text-[10px]"
+                        onClick={() => addLine(blockIndex)}
+                      >
+                        <Plus className="h-3 w-3" />
+                        Ligne
+                      </Button>
+                    </div>
+                  ) : null}
                 </td>
-                <td className="px-2 py-1.5">
+                <td className={cn(MULTI_DAY_TABLE.td, MULTI_DAY_TABLE.col.vendus)}>
                   <Input
                     type="number"
                     min={0}
                     step={1}
                     inputMode="numeric"
-                    value={line.alveoles}
+                    value={ligne.alveoles || ""}
                     onChange={(e) => {
                       const raw = e.target.value.trim();
                       const n = raw === "" ? 0 : parseInt(raw, 10);
-                      updateLine(index, {
+                      updateLine(blockIndex, lineIndex, {
                         alveoles: Number.isNaN(n) ? 0 : Math.max(0, n),
                       });
                     }}
                     onFocus={(e) => e.currentTarget.select()}
-                    className="h-8 tabular-nums"
+                    className={MULTI_DAY_INPUT_NUM}
                   />
                 </td>
-                <td className="min-w-[7.5rem] px-2 py-1.5">
+                <td className={cn(MULTI_DAY_TABLE.td, MULTI_DAY_TABLE.col.prix)}>
                   <PriceSelect
-                    id={`sale-multi-price-${index}`}
-                    value={line.prix}
+                    id={`sale-multi-price-${blockIndex}-${lineIndex}`}
+                    value={ligne.prix}
                     defaultPrix={defaultPrix}
-                    onChange={(prix) => updateLine(index, { prix })}
+                    onChange={(prix) => updateLine(blockIndex, lineIndex, { prix })}
+                    className={MULTI_DAY_INPUT_PRICE}
                   />
                 </td>
-                <td className="px-2 py-1.5">
+                <td className={cn(MULTI_DAY_TABLE.td, MULTI_DAY_TABLE.col.client)}>
                   <Input
                     type="text"
-                    value={line.client}
-                    onChange={(e) => updateLine(index, { client: e.target.value })}
-                    placeholder="Client"
-                    className="h-8"
+                    value={ligne.client}
+                    onChange={(e) =>
+                      updateLine(blockIndex, lineIndex, { client: e.target.value })
+                    }
+                    placeholder="Optionnel"
+                    className={MULTI_DAY_INPUT_TEXT}
                   />
                 </td>
-                <td className="px-2 py-1.5">
-                  <Input
-                    type="number"
-                    min={0}
-                    step={1}
-                    inputMode="numeric"
-                    value={line.cassesAlveoles}
-                    onChange={(e) => {
-                      const n = e.target.valueAsNumber;
-                      updateLine(index, {
-                        cassesAlveoles: Number.isNaN(n) ? 0 : Math.max(0, Math.floor(n)),
-                      });
-                    }}
-                    onFocus={(e) => e.currentTarget.select()}
-                    className="h-8 w-20 tabular-nums"
-                  />
+                {SHOW_VENTE_CASSES ? (
+                  <td className={cn(MULTI_DAY_TABLE.td, MULTI_DAY_TABLE.col.cassesAlv)}>
+                    {lineIndex === 0 ? (
+                      <Input
+                        type="number"
+                        min={0}
+                        step={1}
+                        inputMode="numeric"
+                        value={block.cassesAlveoles || ""}
+                        onChange={(e) => {
+                          const n = e.target.valueAsNumber;
+                          updateBlock(blockIndex, {
+                            ...block,
+                            cassesAlveoles: Number.isNaN(n) ? 0 : Math.max(0, Math.floor(n)),
+                          });
+                        }}
+                        onFocus={(e) => e.currentTarget.select()}
+                        className={MULTI_DAY_INPUT_NUM}
+                      />
+                    ) : null}
+                  </td>
+                ) : null}
+                <td className={cn(MULTI_DAY_TABLE.td, MULTI_DAY_TABLE.col.action, "align-top")}>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon-sm"
+                    onClick={() => removeLine(blockIndex, lineIndex)}
+                    disabled={block.lignes.length <= 1}
+                    title="Supprimer"
+                  >
+                    <Trash2 className="h-3.5 w-3.5 text-muted" />
+                  </Button>
                 </td>
               </tr>
-            );
+            ));
           })}
         </tbody>
       </table>
