@@ -11,7 +11,7 @@ type Props = {
 /** Bouton de navigation vers une vraie page de l'application. */
 export function GuideLinkButton({ href, label }: Props) {
   return (
-    <Button asChild variant="outline" size="sm" className="gap-1.5">
+    <Button asChild variant="ghost" size="sm" className="gap-1.5">
       <Link href={href}>
         {label}
         <ArrowRight className="h-4 w-4" />

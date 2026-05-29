@@ -3,258 +3,117 @@ import type { GuideSection } from "@/lib/user-guide/types";
 export const GUIDE_INTRO = {
   title: "Guide d'utilisation",
   subtitle:
-    "Tout ce dont vous avez besoin pour utiliser LanaFarm au quotidien, expliqué simplement.",
-  welcome: `Bienvenue dans LanaFarm.
-
-Ce guide a été créé pour vous aider à comprendre et utiliser facilement l'application au quotidien.
-
-Même si vous n'êtes pas habitué à la technologie, ce guide vous accompagne étape par étape. Vous pouvez le lire dans l'ordre, ou sauter directement à la partie qui vous intéresse grâce au sommaire à gauche.
-
-Prenez votre temps. Vous ne pouvez pas « casser » l'application en explorant. En cas de doute, revenez ici.`,
+    "Tout ce qu'il faut savoir pour utiliser LanaFarm au quotidien, expliqué simplement.",
+  intro: {
+    appParagraph:
+      "LanaFarm est l'application qui vous permet de suivre votre ferme avicole au quotidien. Production, ventes, dépenses, trésorerie — tout est au même endroit, toujours à jour.",
+    guideParagraph:
+      "Ce guide vous explique chaque partie de l'application. Lisez-le une première fois du début à la fin, puis revenez à la section qui vous intéresse quand vous en avez besoin.",
+    checklistTitle: "Vous trouverez dans ce guide :",
+    checklistItems: [
+      "Comment saisir votre production chaque jour",
+      "Comment enregistrer vos ventes",
+      "Comment suivre vos dépenses et vos versements",
+      "Comment lire les chiffres qui s'affichent",
+      "Comment corriger une erreur",
+      "Ce que signifie chaque alerte",
+    ],
+  },
 };
 
 export const GUIDE_SECTIONS: GuideSection[] = [
   {
-    id: "menu",
-    title: "Le menu principal",
-    blocks: [
-      {
-        type: "p",
-        text: "Le menu bleu à gauche est votre carte routière. Il reste visible sur ordinateur ; sur téléphone, ouvrez-le avec les trois petites barres en haut à gauche.",
-      },
-      {
-        type: "h3",
-        text: "Vue d'ensemble",
-      },
-      {
-        type: "ul",
-        items: [
-          "Dashboard : la photo globale de la ferme sur la période choisie (chiffres, graphique, raccourcis).",
-        ],
-      },
-      {
-        type: "h3",
-        text: "Opérations (le cœur du travail quotidien)",
-      },
-      {
-        type: "ul",
-        items: [
-          "Production : ce que vous ramassez à la ferme et ce que vous envoyez vers la vente.",
-          "Ventes : ce que vous vendez au magasin ou aux clients.",
-          "Dépenses : l'argent que vous dépensez (alimentation, salaires, transport…).",
-          "Trésorerie : l'argent que vous recevez et ce que vous versez à la ferme.",
-        ],
-      },
-      {
-        type: "h3",
-        text: "Pilotage",
-      },
-      {
-        type: "ul",
-        items: [
-          "Rapports : synthèse imprimable ou en PDF / Excel pour une période.",
-          "Historique : journal de tout ce qui a été fait (ajouts, modifications, annulations).",
-          "Paramètres : nom de la ferme, prix du casier, listes, alertes.",
-          "Guide : cette page d'aide.",
-        ],
-      },
-      {
-        type: "p",
-        text: "En bas du menu : « Se déconnecter » ferme votre session en toute sécurité.",
-      },
-      {
-        type: "links",
-        links: [
-          { label: "Ouvrir le Dashboard", href: "/dashboard" },
-          { label: "Voir la Production", href: "/production" },
-        ],
-      },
-    ],
-  },
-  {
-    id: "couleurs",
-    title: "Comprendre les couleurs",
-    blocks: [
-      {
-        type: "p",
-        text: "Les couleurs vous aident à lire un chiffre ou une situation en un coup d'œil. Elles ne changent jamais le sens des montants : elles les rendent plus visibles.",
-      },
-      {
-        type: "ul",
-        items: [
-          "Bleu : actions principales (bouton « Nouvelle saisie », élément sélectionné dans le menu).",
-          "Vert : situation positive ou stock disponible.",
-          "Orange / jaune : attention, montant en attente, stock bas, alerte modérée.",
-          "Rouge : perte, casses, annulation, montant négatif ou problème à corriger.",
-          "Gris / blanc : texte normal, cartes et fond d'écran.",
-        ],
-      },
-      {
-        type: "tip",
-        title: "Bon réflexe",
-        text: "Si une carte devient orange ou rouge, lisez le petit texte sous le chiffre ou ouvrez la cloche de notifications : un message vous dira souvent quoi faire.",
-      },
-    ],
-  },
-  {
-    id: "boutons",
-    title: "Comprendre les boutons",
-    blocks: [
-      {
-        type: "ul",
-        items: [
-          "Bouton bleu plein : action importante (« Nouvelle saisie », « Enregistrer »).",
-          "Bouton blanc avec bordure : action secondaire (« Envoyer en Vente », « Annuler », « Générer rapport »).",
-          "Les trois points « ⋯ » sur une ligne : menu d'actions (modifier, annuler, restaurer, historique).",
-          "La loupe / barre « Rechercher » en haut : retrouver un client, un jour, un montant (raccourci clavier : Ctrl + K sur ordinateur).",
-          "Le calendrier en haut à droite : changer la période affichée partout dans l'application.",
-          "La cloche : vos alertes et rappels (stock bas, reste à verser, etc.).",
-        ],
-      },
-      {
-        type: "warning",
-        title: "Avant de quitter une fenêtre",
-        text: "Si vous avez commencé à remplir un formulaire sans enregistrer, l'application peut vous demander confirmation avant de changer de page. C'est normal : elle protège votre saisie.",
-      },
-    ],
-  },
-  {
-    id: "graphiques",
-    title: "Comprendre les graphiques",
-    blocks: [
-      {
-        type: "p",
-        text: "Le graphique d'activité (surtout sur le Dashboard et dans les Rapports) montre l'évolution jour par jour sur la période choisie en haut.",
-      },
-      {
-        type: "ul",
-        items: [
-          "Chaque jour est un point sur la courbe ou une barre selon l'écran.",
-          "Passez la souris (ou touchez sur mobile) sur un point pour voir le détail du jour.",
-          "Si la courbe monte : plus d'activité ce jour-là. Si elle descend : moins d'activité.",
-          "Le graphique suit toujours la période du calendrier global : changez la date en haut si vous voulez voir un autre mois ou une autre semaine.",
-        ],
-      },
-      {
-        type: "links",
-        links: [{ label: "Voir le graphique sur le Dashboard", href: "/dashboard" }],
-      },
-    ],
-  },
-  {
-    id: "statistiques",
-    title: "Comprendre les statistiques (cartes chiffres)",
-    blocks: [
-      {
-        type: "p",
-        text: "Les cartes en haut de chaque page résument l'essentiel. Le libellé indique de quoi il s'agit ; le gros chiffre est la valeur ; parfois « alvéoles » ou « GNF » précise l'unité.",
-      },
-      {
-        type: "h3",
-        text: "Mots fréquents",
-      },
-      {
-        type: "ul",
-        items: [
-          "Alvéole / casier : unité pour compter les œufs (un plateau d'œufs).",
-          "Stock ferme : œufs encore à la ferme, pas encore partis en vente.",
-          "Stock vente : invendus au magasin à la fin de la période.",
-          "Chiffre d'affaires : argent des ventes sur la période.",
-          "Reste à verser : ce qu'il reste à remettre à la ferme après dépenses et versements.",
-          "Profit : ce qui reste une fois les dépenses déduites (simplifié pour la lecture).",
-          "Œufs cassés : pertes comptées à la ferme et/ou en vente.",
-        ],
-      },
-      {
-        type: "tip",
-        text: "Les chiffres suivent la période du calendrier en haut. Si un chiffre vous surprend, vérifiez d'abord que vous êtes sur « Ce mois » ou la bonne semaine.",
-      },
-    ],
-  },
-  {
-    id: "calendrier-recherche",
-    title: "Calendrier, recherche et notifications",
-    blocks: [
-      {
-        type: "h3",
-        text: "Le calendrier (en haut à droite)",
-      },
-      {
-        type: "ol",
-        items: [
-          "Cliquez sur la date affichée.",
-          "Choisissez « Cette semaine », « Ce mois » ou « Personnalisé » avec une date de début et de fin.",
-          "Toutes les pages (Dashboard, Production, Ventes…) se mettent à jour pour cette période.",
-        ],
-      },
-      {
-        type: "h3",
-        text: "La recherche",
-      },
-      {
-        type: "p",
-        text: "Tapez un nom de client, un jour ou un montant. La liste des résultats vous envoie directement vers la bonne page. Sur ordinateur : Ctrl + K.",
-      },
-      {
-        type: "h3",
-        text: "La cloche (notifications)",
-      },
-      {
-        type: "ul",
-        items: [
-          "Le petit chiffre rouge indique des messages non lus.",
-          "Cliquez sur une alerte pour la lire.",
-          "Les alertes rappellent par exemple un stock bas ou un reste à verser important.",
-        ],
-      },
-    ],
-  },
-  {
     id: "dashboard",
-    title: "Tableau de bord (Dashboard)",
+    title: "Le tableau de bord (Dashboard)",
     blocks: [
       {
         type: "p",
-        text: "C'est votre tableau de bord : tout en un coup d'œil pour la période choisie.",
+        text: "Le tableau de bord est la première page que vous voyez en ouvrant LanaFarm. Il résume l'état de votre ferme en un coup d'œil.",
       },
       {
-        type: "h3",
-        text: "Ce que vous voyez",
-      },
-      {
-        type: "ul",
-        items: [
-          "Des cartes : stock ferme, stock vente, chiffre d'affaires, profit, montant versé, reste à verser, dépenses, casses…",
-          "Un graphique d'activité sur la période.",
-          "Des raccourcis rapides (ajouter production, vente, etc.).",
-          "L'activité récente : dernières actions enregistrées.",
-        ],
-      },
-      {
-        type: "h3",
-        text: "Boutons utiles",
+        type: "p",
+        text: "En haut, vous trouvez huit grandes cartes avec les chiffres les plus importants :",
       },
       {
         type: "ul",
         items: [
-          "« Générer rapport » : ouvre la page Rapports.",
-          "« Nouvelle saisie » : ouvre directement le formulaire Production.",
+          "Stock ferme : le nombre d'alvéoles actuellement à la ferme, pas encore parties vers le magasin.",
+          "Stock vente : le nombre d'alvéoles disponibles au magasin, pas encore vendues.",
+          "Chiffre d'affaires : l'argent rapporté par les ventes sur la période que vous avez choisie.",
+          "Profit : ce qui reste après avoir soustrait les dépenses du chiffre d'affaires, sur la période choisie.",
+          "Montant versé : la somme qui a déjà été versée à la ferme sur la période.",
+          "Reste à verser : l'argent qui doit encore être remis à la ferme. Ce chiffre est calculé depuis le tout premier jour, pas seulement sur la période affichée.",
+          "Dépenses : le total des sorties d'argent sur la période choisie.",
+          "Œufs cassés : les pertes enregistrées sur la période.",
         ],
       },
       {
-        type: "h3",
-        text: "Conseil",
+        type: "p",
+        text: "En dessous des cartes, le graphique d'Activité montre l'évolution jour par jour. Vous pouvez choisir d'afficher le Profit, le Chiffre d'affaires, les Dépenses ou la Production en cliquant sur les onglets au-dessus du graphique.",
       },
       {
-        type: "tip",
-        text: "Commencez votre journée ici : vérifiez le reste à verser et le stock, puis allez saisir dans Production ou Ventes.",
+        type: "p",
+        text: "À droite, des raccourcis vous permettent d'aller directement saisir une production, une vente, une dépense ou un versement.",
+      },
+      {
+        type: "p",
+        text: "En bas, l'Activité récente liste les quatre dernières actions enregistrées dans l'application.",
       },
       {
         type: "links",
-        links: [
-          { label: "Ouvrir le Dashboard", href: "/dashboard" },
-          { label: "Nouvelle production", href: "/production?action=ajouter" },
+        links: [{ label: "Voir le Dashboard", href: "/dashboard" }],
+      },
+    ],
+  },
+  {
+    id: "periode",
+    title: "Le filtre de période",
+    blocks: [
+      {
+        type: "p",
+        text: "En haut à droite de toutes les pages, vous voyez une plage de dates comme « 25 → 31 mai 2026 ». C'est le filtre de période.",
+      },
+      {
+        type: "p",
+        text: "Cliquez dessus pour choisir :",
+      },
+      {
+        type: "ul",
+        items: [
+          "Cette semaine",
+          "Ce mois-ci",
+          "Personnalisé : choisissez vous-même une date de début et une date de fin",
         ],
+      },
+      {
+        type: "p",
+        text: "Quand vous changez la période, les chiffres de ventes, dépenses, production et profit se mettent à jour. Les tableaux affichent uniquement les saisies de cette période.",
+      },
+      {
+        type: "p",
+        text: "En revanche, trois chiffres ne changent jamais avec la période :",
+      },
+      {
+        type: "ul",
+        items: ["Stock ferme", "Stock vente", "Reste à verser"],
+      },
+      {
+        type: "p",
+        text: "Ces trois valeurs reflètent toujours la situation réelle à l'instant présent, depuis le tout début de l'utilisation de l'application.",
+      },
+    ],
+  },
+  {
+    id: "recherche",
+    title: "La recherche",
+    blocks: [
+      {
+        type: "p",
+        text: "La barre de recherche se trouve en haut à gauche de toutes les pages. Sur ordinateur, vous pouvez aussi l'ouvrir avec Ctrl+K.",
+      },
+      {
+        type: "p",
+        text: "Tapez un nom de client, une date, un montant ou une catégorie. L'application trouve les entrées correspondantes dans toutes les sections et vous y amène directement.",
       },
     ],
   },
@@ -264,69 +123,72 @@ export const GUIDE_SECTIONS: GuideSection[] = [
     blocks: [
       {
         type: "p",
-        text: "Ici vous notez ce qui se passe à la ferme : combien d'œufs ramassés, combien cassés, combien envoyés vers la vente.",
+        text: "La page Production est l'endroit où vous enregistrez ce qui se passe chaque jour à la ferme : combien d'alvéoles ont été ramassées, combien ont été envoyées vers le magasin, et les cassés.",
       },
       {
-        type: "h3",
-        text: "Les cartes en haut",
+        type: "p",
+        text: "En haut, quatre cartes résument la période en cours :",
       },
       {
         type: "ul",
         items: [
-          "Alvéoles ramassées : total ramassé sur la période.",
-          "Alvéoles mises en vente : ce qui est parti vers le magasin.",
-          "Stock ferme : ce qui reste encore à la ferme.",
-          "Œufs cassés : pertes à la ferme sur la période.",
+          "Alvéoles ramassées : tout ce qui a été collecté.",
+          "Alvéoles mises en vente : tout ce qui a été envoyé au magasin.",
+          "Stock ferme : ce qui reste à la ferme en ce moment (toujours à jour).",
+          "Œufs cassés : les pertes de la période.",
         ],
       },
       {
+        type: "p",
+        text: "Le tableau en dessous liste toutes vos saisies avec les colonnes : Jour, Ramassées, Mises en vente, Restantes, Cassés, Statut.",
+      },
+      {
+        type: "p",
+        text: "Par défaut, le tableau montre les saisies actives de la période choisie. Vous pouvez filtrer pour voir aussi les saisies annulées ou archivées.",
+      },
+      {
         type: "h3",
-        text: "Ajouter une saisie",
+        text: "Comment saisir la production du jour",
       },
       {
         type: "ol",
         items: [
-          "Cliquez sur « Nouvelle saisie » (bouton bleu).",
-          "Choisissez le jour.",
-          "Indiquez les quantités (ramassées, cassées, mises en vente).",
-          "Validez avec « Enregistrer ».",
+          "Cliquez sur Nouvelle saisie.",
+          "Choisissez le jour. L'application propose automatiquement aujourd'hui.",
+          "Indiquez le nombre d'alvéoles ramassées.",
+          "Si vous avez envoyé des alvéoles au magasin ce même jour, indiquez-le dans Mises en vente.",
+          "Si des œufs ont été cassés, indiquez-le.",
+          "Ajoutez une note si vous le souhaitez.",
+          "Cliquez sur Enregistrer.",
         ],
       },
       {
         type: "p",
-        text: "Une seule saisie active par jour : si le jour existe déjà, utilisez « Modifier » sur la ligne au lieu d'en créer une nouvelle.",
-      },
-      {
-        type: "h3",
-        text: "Envoyer en vente",
+        text: "En bas du formulaire, un aperçu vous montre combien d'alvéoles resteront à la ferme après enregistrement.",
       },
       {
         type: "p",
-        text: "Le bouton « Envoyer en Vente » sert à enregistrer un envoi vers le magasin (même logique que les mises en vente dans la saisie du jour).",
+        text: "Une seule saisie par jour est possible. Si vous essayez d'enregistrer un jour déjà saisi, l'application vous le signale. Utilisez Modifier sur la ligne existante à la place.",
       },
       {
         type: "h3",
-        text: "Modifier, annuler, restaurer",
+        text: "Comment saisir plusieurs jours à la fois",
       },
       {
-        type: "ul",
-        items: [
-          "Les trois points « ⋯ » sur une ligne : Modifier, Annuler, Restaurer, Historique.",
-          "Annuler : la ligne reste visible mais n'est plus comptée (filtre « Annulées »).",
-          "Restaurer : remettre une ligne annulée.",
-        ],
+        type: "p",
+        text: "Si vous avez oublié de saisir plusieurs jours, cliquez sur Plusieurs jours en haut du formulaire. Choisissez la période. Une ligne apparaît pour chaque jour. Remplissez les jours que vous voulez et laissez vides ceux que vous ne voulez pas enregistrer. Si un jour a déjà une saisie, l'application vous propose de le remplacer ou de l'ignorer.",
       },
       {
-        type: "warning",
-        title: "Erreurs fréquentes",
-        text: "Oublier de changer la période en haut ; créer deux fois le même jour au lieu de modifier ; vendre plus que le stock disponible.",
+        type: "h3",
+        text: "Comment envoyer des alvéoles au magasin",
+      },
+      {
+        type: "p",
+        text: "Le bouton Envoyer en Vente en haut de la page ouvre un formulaire séparé. Indiquez le jour et le nombre d'alvéoles à envoyer. À la validation, le stock ferme diminue et le stock vente augmente du même nombre. Si vous essayez d'envoyer plus que ce qui est disponible à la ferme, l'application bloque et affiche un message d'erreur.",
       },
       {
         type: "links",
-        links: [
-          { label: "Voir la Production", href: "/production" },
-          { label: "Nouvelle saisie", href: "/production?action=ajouter" },
-        ],
+        links: [{ label: "Aller à la Production", href: "/production" }],
       },
     ],
   },
@@ -336,52 +198,40 @@ export const GUIDE_SECTIONS: GuideSection[] = [
     blocks: [
       {
         type: "p",
-        text: "Vous enregistrez ici ce qui est vendu : quantité, prix du casier, client éventuel, casses en vente.",
+        text: "La page Ventes est l'endroit où vous enregistrez ce qui a été vendu au magasin ou à des clients.",
       },
       {
-        type: "h3",
-        text: "Les cartes en haut",
+        type: "p",
+        text: "En haut, quatre cartes résument :",
       },
       {
         type: "ul",
         items: [
-          "Stock vente : invendus au magasin.",
-          "Alvéoles vendues : total vendu sur la période.",
-          "Chiffre d'affaires : argent des ventes.",
-          "Reste à verser : ce qu'il reste à remettre à la ferme.",
-        ],
-      },
-      {
-        type: "h3",
-        text: "Ajouter une vente",
-      },
-      {
-        type: "ol",
-        items: [
-          "« Nouvelle saisie » ou « Ajouter ».",
-          "Choisissez un jour ou plusieurs jours (mode plusieurs jours).",
-          "Renseignez vendus, prix, client si besoin.",
-          "Enregistrez.",
+          "Stock vente : invendus disponibles en ce moment.",
+          "Alvéoles vendues : volume vendu sur la période.",
+          "Chiffre d'affaires : argent des ventes sur la période.",
+          "Reste à verser : argent pas encore remis à la ferme (chiffre global).",
         ],
       },
       {
         type: "p",
-        text: "L'application calcule automatiquement le montant et le « reçu ferme » à partir de la production et des ventes déjà saisies.",
+        text: "Le tableau liste vos ventes avec les colonnes : Jour, Reçu, Vendu, Reste, Prix, Montant, Statut.",
+      },
+      {
+        type: "p",
+        text: "Juste au-dessus du tableau, le panneau Réceptions montre les alvéoles reçues du magasin depuis la ferme. Pour chaque envoi, vous voyez la date, la quantité envoyée et la quantité reçue. Si un envoi est en attente de confirmation, un bouton Confirmer apparaît.",
       },
       {
         type: "h3",
-        text: "Stock insuffisant",
+        text: "Comment saisir une vente",
       },
       {
-        type: "warning",
-        text: "Si vous vendez plus que le stock disponible au magasin, un message vous prévient. Vérifiez la Production (envois) et les ventes déjà enregistrées.",
+        type: "p",
+        text: "Cliquez sur Ventes du jour. Choisissez le jour. Pour chaque vente, indiquez le nombre d'alvéoles vendues, le prix du casier, et le nom du client si vous le connaissez. Vous pouvez ajouter plusieurs lignes de vente pour un même jour si vous avez vendu à des prix ou des clients différents. En bas, l'application affiche le stock disponible et ce qu'il restera après enregistrement. Si vous essayez de vendre plus que le stock disponible, l'enregistrement est bloqué avec un message d'erreur.",
       },
       {
         type: "links",
-        links: [
-          { label: "Aller dans les Ventes", href: "/ventes" },
-          { label: "Ajouter une vente", href: "/ventes?action=ajouter" },
-        ],
+        links: [{ label: "Aller aux Ventes", href: "/ventes" }],
       },
     ],
   },
@@ -391,38 +241,51 @@ export const GUIDE_SECTIONS: GuideSection[] = [
     blocks: [
       {
         type: "p",
-        text: "Toutes les sorties d'argent : alimentation, salaires, transport, emballage, etc.",
+        text: "La page Dépenses est l'endroit où vous enregistrez toutes les sorties d'argent : alimentation des poules, salaires, transport, emballage, et tout autre frais.",
+      },
+      {
+        type: "p",
+        text: "En haut, quatre cartes résument :",
+      },
+      {
+        type: "ul",
+        items: [
+          "Total dépenses sur la période.",
+          "Catégorie principale : la catégorie la plus utilisée sur la période.",
+          "Moyenne par jour : dépense journalière moyenne sur la période.",
+          "Dépenses cette semaine.",
+        ],
+      },
+      {
+        type: "p",
+        text: "Le tableau liste les dépenses avec : Jour, Catégorie, Montant, Description, Statut.",
       },
       {
         type: "h3",
-        text: "Ajouter une dépense",
+        text: "Comment saisir une dépense",
       },
       {
         type: "ol",
         items: [
-          "« Nouvelle saisie ».",
-          "Jour, catégorie, montant en GNF, description optionnelle.",
-          "Enregistrer.",
+          "Cliquez sur Nouvelle dépense.",
+          "Choisissez le jour.",
+          "Sélectionnez la catégorie dans la liste.",
+          "Indiquez le montant en francs guinéens.",
+          "Ajoutez une description si vous voulez.",
+          "Enregistrez.",
         ],
       },
       {
         type: "p",
-        text: "Les catégories se gèrent dans Paramètres → Listes métier si vous devez en ajouter une.",
-      },
-      {
-        type: "h3",
-        text: "Après validation",
+        text: "Vous pouvez saisir plusieurs dépenses le même jour, chacune avec sa catégorie et son montant.",
       },
       {
         type: "p",
-        text: "La dépense apparaît dans le tableau, entre dans le total des dépenses et influence le profit et le reste à verser sur le Dashboard.",
+        text: "Les catégories disponibles se gèrent dans Paramètres, section Listes métier.",
       },
       {
         type: "links",
-        links: [
-          { label: "Voir les Dépenses", href: "/depenses" },
-          { label: "Ajouter une dépense", href: "/depenses?action=ajouter" },
-        ],
+        links: [{ label: "Aller aux Dépenses", href: "/depenses" }],
       },
     ],
   },
@@ -432,42 +295,104 @@ export const GUIDE_SECTIONS: GuideSection[] = [
     blocks: [
       {
         type: "p",
-        text: "Vous notez l'argent réellement reçu (espèces, Orange Money, MTN, virement…) et ce que vous déposez pour la ferme.",
+        text: "La page Trésorerie est l'endroit où vous enregistrez l'argent reçu des ventes et les versements que vous faites à la ferme.",
       },
       {
-        type: "h3",
-        text: "Les cartes en haut",
+        type: "p",
+        text: "En haut, quatre cartes résument :",
       },
       {
         type: "ul",
         items: [
-          "Total reçu : somme encaissée sur la période.",
-          "Montant versé : ce qui a été remis à la ferme.",
-          "Reste à verser : écart encore dû (lié aux ventes et dépenses).",
+          "Total reçu sur la période.",
+          "Montant versé sur la période.",
+          "Reste à verser : ce qui doit encore être remis à la ferme, calculé depuis le début.",
+          "Méthode principale : le mode de paiement le plus utilisé.",
         ],
       },
       {
+        type: "p",
+        text: "Le tableau liste les versements avec : Jour, Versé, Reste, Méthode, Statut.",
+      },
+      {
         type: "h3",
-        text: "Saisie",
+        text: "Comment enregistrer un versement",
       },
       {
         type: "ol",
         items: [
-          "« Nouvelle saisie ».",
-          "Jour, méthode de paiement, montant reçu, montant déposé si partiel.",
-          "Enregistrer.",
+          "Cliquez sur Nouvelle saisie.",
+          "Choisissez le jour.",
+          "Choisissez la méthode de paiement (espèces, Orange Money, MTN, virement…).",
+          "Indiquez le montant versé.",
+          "Enregistrez.",
         ],
       },
       {
-        type: "tip",
-        text: "Saisissez la trésorerie régulièrement : le « reste à verser » sur le Dashboard sera plus fiable.",
+        type: "p",
+        text: "Avant d'enregistrer, l'application affiche un contexte avec le chiffre d'affaires de la période, les dépenses et le reste à verser global. Cela vous permet de vérifier que le montant saisi est correct.",
+      },
+      {
+        type: "p",
+        text: "Si vous essayez de verser plus que le reste à verser, l'enregistrement est bloqué. L'application affiche un message expliquant qu'il n'y a rien à verser ou que le montant dépasse ce qui est dû.",
+      },
+      {
+        type: "h3",
+        text: "Comment se calcule le Reste à verser",
+      },
+      {
+        type: "p",
+        text: "Le reste à verser est la différence entre tout l'argent gagné depuis le début (chiffre d'affaires total), toutes les dépenses depuis le début, et tout ce qui a déjà été versé depuis le début. Ce chiffre ne dépend pas de la période affichée. Il représente toujours la situation réelle globale.",
       },
       {
         type: "links",
-        links: [
-          { label: "Ouvrir la Trésorerie", href: "/tresorerie" },
-          { label: "Nouvelle saisie trésorerie", href: "/tresorerie?action=ajouter" },
-        ],
+        links: [{ label: "Aller à la Trésorerie", href: "/tresorerie" }],
+      },
+    ],
+  },
+  {
+    id: "modifier",
+    title: "Modifier, annuler et restaurer",
+    blocks: [
+      {
+        type: "p",
+        text: "Toutes les saisies peuvent être modifiées ou annulées. Rien n'est effacé définitivement.",
+      },
+      {
+        type: "p",
+        text: "Pour agir sur une ligne, cliquez sur les trois points ⋯ à droite de la ligne dans le tableau.",
+      },
+      {
+        type: "h3",
+        text: "Modifier",
+      },
+      {
+        type: "p",
+        text: "Le formulaire s'ouvre avec les valeurs actuelles déjà remplies. Changez ce que vous voulez et enregistrez. L'ancienne version est conservée automatiquement. Vous pouvez la consulter ou la restaurer via Historique dans le même menu.",
+      },
+      {
+        type: "h3",
+        text: "Annuler une saisie",
+      },
+      {
+        type: "p",
+        text: "La saisie passe en statut Annulée. Elle n'est plus comptabilisée dans aucun calcul. Elle reste visible si vous filtrez le tableau sur Annulées. Vous pouvez la restaurer à tout moment.",
+      },
+      {
+        type: "h3",
+        text: "Restaurer une saisie annulée",
+      },
+      {
+        type: "p",
+        text: "Cliquez sur ⋯ → Restaurer. La saisie redevient active et est à nouveau comptabilisée.",
+      },
+      {
+        type: "h3",
+        text: "Voir les versions précédentes",
+      },
+      {
+        type: "p",
+        text: "Cliquez sur ⋯ → Historique. Vous voyez toutes les versions précédentes de cette saisie. Cliquez sur Restaurer cette version pour revenir à une ancienne valeur.",
       },
     ],
   },
@@ -477,30 +402,45 @@ export const GUIDE_SECTIONS: GuideSection[] = [
     blocks: [
       {
         type: "p",
-        text: "Pour imprimer ou exporter une synthèse de la période (PDF, Excel) ou archiver un rapport.",
+        text: "La page Rapports génère une synthèse complète de la période choisie.",
       },
       {
-        type: "h3",
-        text: "Étapes",
+        type: "p",
+        text: "En haut, choisissez la période avec le même sélecteur qu'ailleurs dans l'application.",
       },
       {
-        type: "ol",
+        type: "p",
+        text: "Le rapport affiche :",
+      },
+      {
+        type: "ul",
         items: [
-          "Choisissez la période (Cette semaine, Ce mois, Personnalisé) — même calendrier qu'en haut.",
-          "« Générer et archiver » : sauvegarde le rapport dans la liste en bas.",
-          "« Imprimer », « PDF » ou « Excel » : obtenir le document.",
+          "Les KPI principaux : production, stocks, ventes, dépenses, profit, versements, reste à verser.",
+          "Une synthèse financière avec les recettes, les dépenses et le résultat net.",
+          "Un graphique d'activité.",
+          "Quatre tableaux de détail : Production, Ventes, Dépenses, Trésorerie.",
         ],
       },
       {
         type: "p",
-        text: "Les chiffres du rapport reprennent exactement ceux des saisies sur la période.",
+        text: "Les boutons disponibles :",
+      },
+      {
+        type: "ul",
+        items: [
+          "Générer le rapport : enregistre un instantané du rapport actuel dans la liste Rapports récents.",
+          "PDF : télécharge le rapport en PDF.",
+          "Excel : télécharge un fichier tableur avec les chiffres.",
+          "Imprimer : lance l'impression.",
+        ],
+      },
+      {
+        type: "p",
+        text: "Les rapports générés apparaissent dans la liste Rapports récents en bas de page. Vous pouvez les rouvrir, les re-télécharger ou les supprimer. Quand vous ouvrez un rapport archivé, un bandeau vous indique que vous consultez un rapport passé. Cliquez sur Revenir au live pour retrouver la vue normale.",
       },
       {
         type: "links",
-        links: [
-          { label: "Ouvrir les Rapports", href: "/rapports" },
-          { label: "Générer un rapport", href: "/rapports?action=generer" },
-        ],
+        links: [{ label: "Voir les Rapports", href: "/rapports" }],
       },
     ],
   },
@@ -510,19 +450,72 @@ export const GUIDE_SECTIONS: GuideSection[] = [
     blocks: [
       {
         type: "p",
-        text: "Journal de tout ce qui s'est passé : créations, modifications, annulations, restaurations. Utile pour retrouver « qui a changé quoi ».",
+        text: "La page Historique est le journal de tout ce qui s'est passé dans l'application.",
       },
       {
-        type: "ul",
-        items: [
-          "Filtres par type d'action et par zone (production, vente…).",
-          "Recherche dans le journal.",
-          "Frise chronologique à droite sur grand écran.",
-        ],
+        type: "p",
+        text: "Chaque action est enregistrée : création, modification, annulation, restauration.",
+      },
+      {
+        type: "p",
+        text: "Le journal affiche pour chaque action : la date, le module concerné (Production, Vente, Dépense…), le type d'action et un résumé de ce qui a été fait.",
+      },
+      {
+        type: "p",
+        text: "Vous pouvez filtrer par module ou par type d'action pour retrouver rapidement ce que vous cherchez.",
+      },
+      {
+        type: "p",
+        text: "À droite, une frise chronologique montre les huit actions les plus récentes avec leur heure.",
       },
       {
         type: "links",
         links: [{ label: "Voir l'Historique", href: "/historique" }],
+      },
+    ],
+  },
+  {
+    id: "notifications",
+    title: "Notifications",
+    blocks: [
+      {
+        type: "p",
+        text: "La cloche en haut à droite affiche un chiffre quand vous avez des alertes non lues.",
+      },
+      {
+        type: "p",
+        text: "Cliquez dessus pour voir vos notifications dans un panneau. Deux onglets sont disponibles :",
+      },
+      {
+        type: "ul",
+        items: [
+          "Récentes : toutes les alertes actives.",
+          "Importantes : uniquement les alertes critiques qui demandent votre attention.",
+        ],
+      },
+      {
+        type: "p",
+        text: "Les notifications que l'application peut vous envoyer :",
+      },
+      {
+        type: "ul",
+        items: [
+          "Stock vente incohérent — Le stock au magasin est négatif, ce qui ne devrait pas arriver. Vérifiez vos transferts et vos ventes.",
+          "Stock vente faible — Il reste très peu d'alvéoles au magasin. Le seuil se configure dans Paramètres.",
+          "Stock ferme épuisé — Il n'y a plus d'alvéoles disponibles à la ferme pour un envoi au magasin.",
+          "Transfert contesté — Un envoi entre la ferme et le magasin a été contesté. Il faut le régulariser.",
+          "Versement supérieur au reçu — Une ligne de trésorerie a un montant versé supérieur au montant reçu. Vérifiez cette saisie.",
+          "Pertes anormales — Les casses des 7 derniers jours dépassent le pourcentage maximum que vous avez configuré dans Paramètres.",
+          "Reste à verser élevé — Le montant à remettre à la ferme a dépassé le seuil configuré dans Paramètres.",
+          "Reste à verser — Il y a encore de l'argent à remettre à la ferme, mais le montant reste dans la limite normale.",
+          "Trésorerie à jour — Tout l'argent dû a été versé. Rien ne manque.",
+          "Pas de production aujourd'hui — Aucune production n'a été enregistrée pour la journée en cours.",
+          "Pas de vente aujourd'hui — Aucune vente n'a été enregistrée pour la journée en cours.",
+        ],
+      },
+      {
+        type: "p",
+        text: "Cliquez sur une notification pour aller directement à la page concernée. Une fois lue, la notification n'apparaît plus dans le compteur.",
       },
     ],
   },
@@ -532,52 +525,65 @@ export const GUIDE_SECTIONS: GuideSection[] = [
     blocks: [
       {
         type: "p",
-        text: "Configuration de la ferme. À remplir une fois, puis à ajuster si les prix ou les listes changent.",
+        text: "Les Paramètres vous permettent de configurer l'application selon les réalités de votre ferme.",
+      },
+      {
+        type: "h3",
+        text: "Profil de la ferme",
+      },
+      {
+        type: "p",
+        text: "Renseignez le nom de votre ferme, la ville et le numéro de téléphone. Ces informations apparaissent sur vos rapports imprimés.",
+      },
+      {
+        type: "h3",
+        text: "Préférences opérationnelles",
       },
       {
         type: "ul",
         items: [
-          "Profil : nom, ville, téléphone de la ferme.",
-          "Préférences : prix du casier (GNF), taille du plateau (œufs par alvéole).",
-          "Seuils & alertes : quand l'application vous prévient (stock bas, reste à verser…).",
-          "Listes métier : catégories de dépenses, méthodes de paiement.",
+          "Prix moyen du plateau : le prix proposé par défaut à chaque nouvelle vente. Vous pouvez le changer à la saisie.",
+          "Capacité d'un plateau : le nombre d'œufs par alvéole (casier). Cette valeur est utilisée partout dans l'application pour convertir entre œufs et alvéoles.",
+        ],
+      },
+      {
+        type: "h3",
+        text: "Seuils et alertes",
+      },
+      {
+        type: "p",
+        text: "Configurez à partir de quel niveau l'application vous envoie une alerte :",
+      },
+      {
+        type: "ul",
+        items: [
+          "Stock vente faible : en dessous de combien d'alvéoles au magasin vous recevez une alerte.",
+          "Trésorerie en attente : au-dessus de quel montant le reste à verser déclenche une alerte élevée.",
+          "Pertes hebdomadaires : au-dessus de quel pourcentage de casses sur 7 jours vous recevez une alerte.",
+        ],
+      },
+      {
+        type: "h3",
+        text: "Listes métier",
+      },
+      {
+        type: "p",
+        text: "Deux listes à gérer :",
+      },
+      {
+        type: "ul",
+        items: [
+          "Catégories de dépense : alimentation, salaires, transport, etc. Vous pouvez renommer les catégories existantes, en ajouter de nouvelles et désactiver celles que vous n'utilisez pas.",
+          "Méthodes de paiement : espèces, Orange Money, MTN, virement, etc. Même fonctionnement que les catégories.",
         ],
       },
       {
         type: "p",
-        text: "N'oubliez pas « Enregistrer » dans chaque section avant de changer d'onglet à gauche.",
+        text: "N'oubliez pas de cliquer sur Enregistrer dans chaque section avant de passer à une autre.",
       },
       {
         type: "links",
         links: [{ label: "Ouvrir les Paramètres", href: "/parametres" }],
-      },
-    ],
-  },
-  {
-    id: "conseils-finaux",
-    title: "Conseils pour bien utiliser LanaFarm",
-    blocks: [
-      {
-        type: "ol",
-        items: [
-          "Chaque matin : vérifiez la période (calendrier), puis le Dashboard.",
-          "Saisissez Production le jour même.",
-          "Enregistrez les Ventes et la Trésorerie souvent — les totaux seront justes.",
-          "Consultez la cloche si un chiffre vous semble bizarre.",
-          "Une fois par semaine ou par mois : générez un Rapport pour garder une trace.",
-        ],
-      },
-      {
-        type: "tip",
-        title: "Vous n'êtes pas seul",
-        text: "Ce guide reste accessible depuis le menu « Guide ». Revenez-y quand vous voulez : il ne disparaît pas.",
-      },
-      {
-        type: "links",
-        links: [
-          { label: "Commencer par le Dashboard", href: "/dashboard" },
-          { label: "Guide — Production", href: "/production" },
-        ],
       },
     ],
   },

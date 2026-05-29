@@ -5,6 +5,7 @@ import Link from "next/link";
 import { BookOpen } from "lucide-react";
 
 import { GuideBlockRenderer } from "@/components/guide/guide-block-renderer";
+import { GuideIntroPanel } from "@/components/guide/guide-intro-panel";
 import { PageHeader } from "@/components/shared/page-header";
 import {
   SectionBody,
@@ -15,7 +16,7 @@ import { GUIDE_INTRO, GUIDE_SECTIONS } from "@/lib/user-guide/guide-content";
 import { cn } from "@/lib/utils";
 
 export function GuideModule() {
-  const [activeId, setActiveId] = React.useState(GUIDE_SECTIONS[0]?.id ?? "menu");
+  const [activeId, setActiveId] = React.useState(GUIDE_SECTIONS[0]?.id ?? "dashboard");
 
   React.useEffect(() => {
     const observer = new IntersectionObserver(
@@ -57,9 +58,7 @@ export function GuideModule() {
         <SectionBody>
           <div className="flex gap-3">
             <BookOpen className="mt-0.5 h-6 w-6 shrink-0 text-accent-blue" />
-            <p className="whitespace-pre-line text-body leading-relaxed text-foreground">
-              {GUIDE_INTRO.welcome}
-            </p>
+            <GuideIntroPanel />
           </div>
         </SectionBody>
       </SectionCard>

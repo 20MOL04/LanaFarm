@@ -87,12 +87,6 @@ export const navigation: NavGroup[] = [
         description: "Semaines passées",
       },
       {
-        label: "Guide",
-        href: "/guide",
-        icon: BookOpen,
-        description: "Aide et mode d'emploi",
-      },
-      {
         label: "Paramètres",
         href: "/parametres",
         icon: Settings,
@@ -100,6 +94,19 @@ export const navigation: NavGroup[] = [
     ],
   },
 ];
+
+/** Section séparée en bas du menu — au-dessus de « Se déconnecter ». */
+export const assistanceNavigation: NavGroup = {
+  title: "Assistance",
+  items: [
+    {
+      label: "Guide d'utilisation",
+      href: "/guide",
+      icon: BookOpen,
+      description: "Aide pas à pas pour utiliser l'application",
+    },
+  ],
+};
 
 export const quickActions: NavItem[] = [
   { label: "Ajouter production", href: "/production?action=ajouter", icon: Egg },

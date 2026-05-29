@@ -7,7 +7,7 @@ import { ChevronsRight, X } from "lucide-react";
 
 import { BrandLogo } from "@/components/brand/brand-logo";
 import { SidebarLogoutButton } from "@/components/layout/sidebar-logout-button";
-import { navigation, type NavItem } from "@/config/navigation";
+import { navigation, assistanceNavigation, type NavItem, type NavGroup } from "@/config/navigation";
 import { useSidebar } from "@/contexts/sidebar-context";
 import { useUnsavedNavigation } from "@/contexts/unsaved-navigation-context";
 import { cn } from "@/lib/utils";
@@ -55,7 +55,11 @@ export function Sidebar() {
           onCloseMobile={closeMobile}
           onToggleCollapsed={toggleCollapsed}
         />
-        <SidebarNav pathname={pathname} collapsed={collapsed} onNavigate={closeMobile} />
+        <SidebarMenu
+          pathname={pathname}
+          collapsed={collapsed}
+          onNavigate={closeMobile}
+        />
         <SidebarLogoutButton collapsed={collapsed && !mobileOpen} />
       </aside>
     </>
@@ -142,10 +146,10 @@ function SidebarHeader({
 }
 
 /* ===========================================================
-   Nav
+   Menu — espacement confortable, répartition verticale
    =========================================================== */
 
-function SidebarNav({
+function SidebarMenu({
   pathname,
   collapsed,
   onNavigate,
@@ -154,24 +158,64 @@ function SidebarNav({
   collapsed: boolean;
   onNavigate: () => void;
 }) {
+  const groups: NavGroup[] = [...navigation, assistanceNavigation];
+
   return (
     <nav
+      aria-label="Navigation"
       className={cn(
-        "min-h-0 flex-1 overflow-y-auto overscroll-contain",
-        "px-2 py-3"
+        "flex min-h-0 flex-1 flex-col overflow-x-hidden overflow-y-auto px-2 py-2.5 md:py-2",
+        "[scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden"
       )}
     >
-      <ul className="space-y-4">
-        {navigation.map((group) => (
-          <li key={group.title}>
+      <SidebarNavGroups
+        groups={groups}
+        pathname={pathname}
+        collapsed={collapsed}
+        onNavigate={onNavigate}
+      />
+    </nav>
+  );
+}
+
+function SidebarNavGroups({
+  groups,
+  pathname,
+  collapsed,
+  onNavigate,
+}: {
+  groups: NavGroup[];
+  pathname: string;
+  collapsed: boolean;
+  onNavigate: () => void;
+}) {
+  return (
+    <ul
+      className={cn(
+        "flex flex-1 flex-col",
+        collapsed ? "gap-2" : "justify-between gap-3 md:gap-2.5"
+      )}
+    >
+      {groups.map((group, index) => {
+        const isAssistance = group.title === "Assistance";
+
+        return (
+          <li
+            key={group.title}
+            className={cn(
+              isAssistance &&
+                !collapsed &&
+                "border-t border-sidebar-border/40 pt-2.5 md:pt-2"
+            )}
+          >
             {!collapsed ? (
-              <p className={cn("px-2 pb-2 text-caption font-semibold uppercase tracking-wider text-sidebar-muted md:pb-1.5 md:text-micro")}>
+              <p className="px-2 pb-1 text-micro font-semibold uppercase tracking-wide text-sidebar-muted">
                 {group.title}
               </p>
-            ) : (
-              <div className="mx-2 my-2 h-px bg-sidebar-border first:hidden" />
-            )}
-            <ul className="space-y-0.5">
+            ) : index > 0 ? (
+              <div className="mx-2 my-1.5 h-px bg-sidebar-border/80" />
+            ) : null}
+            <ul className="space-y-0">
               {group.items.map((item) => (
                 <li key={item.href}>
                   <SidebarLink
@@ -184,9 +228,9 @@ function SidebarNav({
               ))}
             </ul>
           </li>
-        ))}
-      </ul>
-    </nav>
+        );
+      })}
+    </ul>
   );
 }
 
@@ -247,9 +291,8 @@ function SidebarLink({
       aria-current={isActive ? "page" : undefined}
       title={collapsed ? item.label : undefined}
       className={cn(
-        "group flex items-center gap-3 rounded-sm px-3 py-3",
-        "text-base font-semibold leading-snug",
-        "md:gap-2.5 md:px-2 md:py-1.5 md:text-nav md:font-medium",
+        "group flex items-center gap-2.5 rounded-sm px-2",
+        "py-[0.375rem] text-nav font-medium leading-snug",
         "transition-colors",
         collapsed ? "justify-center md:justify-center" : "justify-start",
         isActive
@@ -257,7 +300,7 @@ function SidebarLink({
           : "text-sidebar-foreground hover:bg-sidebar-hover hover:text-white"
       )}
     >
-      <Icon className="h-5 w-5 shrink-0 md:h-4 md:w-4" />
+      <Icon className="h-4 w-4 shrink-0" />
       {!collapsed ? <span className="truncate">{item.label}</span> : null}
     </Link>
   );

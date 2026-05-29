@@ -29,12 +29,12 @@ export function SidebarLogoutButton({ collapsed }: Props) {
   return (
     <div
       className={cn(
-        "shrink-0 border-0 bg-sidebar p-2 pb-[max(0.5rem,env(safe-area-inset-bottom))]",
+        "shrink-0 border-0 bg-sidebar p-2 pb-[max(0.625rem,env(safe-area-inset-bottom))]",
         "md:pb-2"
       )}
     >
       {!collapsed ? (
-        <p className="mb-1.5 px-2 text-caption font-medium text-sidebar-muted md:text-micro">
+        <p className="mb-1.5 px-2 text-micro font-medium text-sidebar-muted">
           Session active
         </p>
       ) : null}
@@ -45,16 +45,15 @@ export function SidebarLogoutButton({ collapsed }: Props) {
         title="Se déconnecter"
         aria-label="Se déconnecter"
         className={cn(
-          "flex w-full items-center gap-3 rounded-sm px-3",
-          "text-base font-semibold md:gap-2.5 md:px-2 md:text-nav md:font-medium",
-          "min-h-11 md:min-h-0 md:py-1.5",
+          "flex w-full items-center gap-2.5 rounded-sm px-2",
+          "py-[0.375rem] text-nav font-medium leading-snug",
           "text-white/90 transition-colors",
           "bg-white/10 hover:bg-white/20 hover:text-white",
           "disabled:opacity-50",
           collapsed && "justify-center md:min-h-0 md:bg-transparent md:hover:bg-sidebar-hover"
         )}
       >
-        <LogOut className="h-5 w-5 shrink-0 md:h-4 md:w-4" />
+        <LogOut className="h-4 w-4 shrink-0" />
         {!collapsed ? (
           <span>{loading ? "Déconnexion…" : "Se déconnecter"}</span>
         ) : null}
