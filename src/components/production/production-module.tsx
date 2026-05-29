@@ -75,6 +75,7 @@ function ProductionModuleContent() {
         data={productions}
         initialStatut={urlFilters.statut}
         initialJour={urlFilters.jour}
+        initialQ={urlFilters.q}
         onRequestEdit={(entry) => {
           setEditingEntry(entry);
           setOpen(true);

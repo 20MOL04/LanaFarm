@@ -50,6 +50,7 @@ type Props = {
   onRequestEdit?: (entry: Production) => void;
   initialStatut?: EntreeStatut | null;
   initialJour?: string | null;
+  initialQ?: string | null;
 };
 
 export function ProductionTable({
@@ -58,6 +59,7 @@ export function ProductionTable({
   onRequestEdit,
   initialStatut,
   initialJour,
+  initialQ,
 }: Props) {
   const config = useFarmConfig();
   const cap = config.preferences.capacitePlateau;
@@ -104,6 +106,7 @@ export function ProductionTable({
     },
     initialSort: { key: "jour", direction: "desc" },
     pageSize: 10,
+    initialSearch: initialQ,
   });
 
   const columns: DataTableColumn<Production>[] = [

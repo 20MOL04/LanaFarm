@@ -59,6 +59,7 @@ type Props = {
   onRequestEdit?: (entry: Tresorerie) => void;
   initialStatut?: EntreeStatut | null;
   initialJour?: string | null;
+  initialQ?: string | null;
 };
 
 export function TresorerieTable({
@@ -67,6 +68,7 @@ export function TresorerieTable({
   onRequestEdit,
   initialStatut,
   initialJour,
+  initialQ,
 }: Props) {
   const config = useFarmConfig();
   const filterLabels = React.useMemo(
@@ -128,6 +130,7 @@ export function TresorerieTable({
     },
     initialSort: { key: "jour", direction: "desc" },
     pageSize: 10,
+    initialSearch: initialQ,
   });
 
   const columns: DataTableColumn<TresorerieDayGroup>[] = [

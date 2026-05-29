@@ -13,6 +13,8 @@ export type ModuleUrlFilters = {
   action: string | null;
   section: string | null;
   categorie: string | null;
+  /** Terme pré-rempli depuis la recherche globale. */
+  q: string | null;
 };
 
 /** Lit les query params deep-link (contrat cahier notifications v2). */
@@ -31,5 +33,6 @@ export function useModuleUrlFilters(): ModuleUrlFilters {
     action: searchParams.get("action"),
     section: searchParams.get("section"),
     categorie: searchParams.get("categorie"),
+    q: searchParams.get("q"),
   };
 }

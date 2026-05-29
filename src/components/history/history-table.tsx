@@ -36,9 +36,10 @@ import type { ActionLog } from "@/types/domain";
 
 type Props = {
   actions: ActionLog[];
+  initialQ?: string | null;
 };
 
-export function HistoryTable({ actions }: Props) {
+export function HistoryTable({ actions, initialQ }: Props) {
   const [moduleFilter, setModuleFilter] = React.useState<ModuleFilter>("tous");
   const [typeFilter, setTypeFilter] = React.useState<TypeFilter>("tous");
 
@@ -68,6 +69,7 @@ export function HistoryTable({ actions }: Props) {
     },
     initialSort: { key: "date", direction: "desc" },
     pageSize: 15,
+    initialSearch: initialQ,
   });
 
   const columns: DataTableColumn<ActionLog>[] = [

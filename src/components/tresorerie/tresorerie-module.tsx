@@ -58,6 +58,7 @@ export function TresorerieModule() {
         data={tresorerie}
         initialStatut={urlFilters.statut}
         initialJour={urlFilters.jour}
+        initialQ={urlFilters.q}
         onRequestEdit={(entry) => {
           setEditingEntry(entry);
           setOpen(true);

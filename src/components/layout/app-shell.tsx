@@ -3,6 +3,7 @@ import * as React from "react";
 import { MobileKeyboardFix } from "@/components/layout/mobile-keyboard-fix";
 import { Sidebar } from "@/components/layout/sidebar";
 import { Topbar } from "@/components/layout/topbar";
+import { GlobalSearchProvider } from "@/components/search/global-search-provider";
 import { DateRangeProvider } from "@/contexts/date-range-context";
 import { SidebarProvider } from "@/contexts/sidebar-context";
 import { UnsavedNavigationProvider } from "@/contexts/unsaved-navigation-context";
@@ -21,6 +22,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     <SidebarProvider>
       <UnsavedNavigationProvider>
       <DateRangeProvider>
+        <GlobalSearchProvider>
         <MobileKeyboardFix />
         <div className="flex min-h-[100dvh] min-h-[var(--vvh,100dvh)] w-full max-w-[100vw] overflow-x-clip bg-background print:block print:min-h-0 print:bg-white">
           <div className="print:hidden">
@@ -37,6 +39,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             </main>
           </div>
         </div>
+        </GlobalSearchProvider>
       </DateRangeProvider>
       </UnsavedNavigationProvider>
     </SidebarProvider>

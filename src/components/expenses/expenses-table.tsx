@@ -60,6 +60,7 @@ type Props = {
   initialStatut?: EntreeStatut | null;
   initialJour?: string | null;
   initialCategorie?: string | null;
+  initialQ?: string | null;
 };
 
 export function ExpensesTable({
@@ -69,6 +70,7 @@ export function ExpensesTable({
   initialStatut,
   initialJour,
   initialCategorie,
+  initialQ,
 }: Props) {
   const config = useFarmConfig();
   const filterLabels = React.useMemo(
@@ -136,6 +138,7 @@ export function ExpensesTable({
     },
     initialSort: { key: "jour", direction: "desc" },
     pageSize: 10,
+    initialSearch: initialQ,
   });
 
   const columns: DataTableColumn<ExpenseDayGroup>[] = [

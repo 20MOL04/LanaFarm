@@ -1,19 +1,20 @@
 "use client";
 
 import * as React from "react";
-import { Menu, Search } from "lucide-react";
+import { Menu } from "lucide-react";
 
 import { GlobalDateRange } from "@/components/calendar/global-date-range";
 import { NotificationBell } from "@/components/notifications/notification-bell";
+import {
+  GlobalSearchIconButton,
+  GlobalSearchTrigger,
+} from "@/components/search/global-search-provider";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { useSidebar } from "@/contexts/sidebar-context";
 import { cn } from "@/lib/utils";
 
 /**
- * Topbar minimaliste : burger (mobile) + recherche + calendrier + actions.
- * Densifiée : 56 px de hauteur, padding réduit, action "Nouvelle saisie"
- * compactée en icône sous lg.
+ * Topbar minimaliste : burger (mobile) + recherche globale + calendrier + actions.
  */
 export function Topbar() {
   const { openMobile } = useSidebar();
@@ -28,7 +29,6 @@ export function Topbar() {
       )}
     >
       <div className="flex h-full min-w-0 items-center gap-2 overflow-hidden px-3 sm:px-4">
-        {/* Burger mobile */}
         <Button
           type="button"
           variant="ghost"
@@ -40,7 +40,8 @@ export function Topbar() {
           <Menu className="h-4 w-4" />
         </Button>
 
-        <SearchField />
+        <GlobalSearchIconButton className="sm:hidden" />
+        <GlobalSearchTrigger />
 
         <div className="ml-auto flex min-w-0 shrink items-center gap-1.5">
           <GlobalDateRange />
@@ -48,19 +49,5 @@ export function Topbar() {
         </div>
       </div>
     </header>
-  );
-}
-
-function SearchField() {
-  return (
-    <div className="relative hidden flex-1 sm:block sm:max-w-sm">
-      <Search className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted" />
-      <Input
-        type="search"
-        placeholder="Rechercher…"
-        aria-label="Rechercher"
-        className="h-9 bg-card pl-8 text-base md:text-body-sm"
-      />
-    </div>
   );
 }

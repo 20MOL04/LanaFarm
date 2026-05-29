@@ -61,6 +61,7 @@ type Props = {
   onRequestEdit?: (entry: Vente) => void;
   initialStatut?: EntreeStatut | null;
   initialJour?: string | null;
+  initialQ?: string | null;
 };
 
 export function SalesTable({
@@ -69,6 +70,7 @@ export function SalesTable({
   onRequestEdit,
   initialStatut,
   initialJour,
+  initialQ,
 }: Props) {
   const { state: prodState } = useProductionStore();
   const { getAllTransfers } = useTransfersStore();
@@ -133,6 +135,7 @@ export function SalesTable({
     },
     initialSort: { key: "jour", direction: "desc" },
     pageSize: 10,
+    initialSearch: initialQ,
   });
 
   const columns: DataTableColumn<SalesDayGroup>[] = [

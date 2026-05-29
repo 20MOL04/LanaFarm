@@ -9,6 +9,7 @@ import { PageHeader } from "@/components/shared/page-header";
 import { Badge } from "@/components/ui/badge";
 import { useDateRange } from "@/contexts/date-range-context";
 import { useActionsInRange } from "@/hooks/use-actions-in-range";
+import { useModuleUrlFilters } from "@/hooks/use-module-url-filters";
 import { formatRange } from "@/lib/date-ranges";
 import { buildHistoryCounters } from "@/lib/history-calc";
 
@@ -20,6 +21,7 @@ import { buildHistoryCounters } from "@/lib/history-calc";
  */
 export function HistoryModule() {
   const { range } = useDateRange();
+  const urlFilters = useModuleUrlFilters();
   const actions = useActionsInRange();
   const counters = React.useMemo(
     () => buildHistoryCounters(actions),
@@ -36,7 +38,7 @@ export function HistoryModule() {
       <HistoryKpis counters={counters} />
 
       <div className="grid-contained gap-4 grid-cols-1 xl:grid-cols-[1.6fr_1fr]">
-        <HistoryTable actions={actions} />
+        <HistoryTable actions={actions} initialQ={urlFilters.q} />
         <HistoryTimeline actions={actions} />
       </div>
     </>

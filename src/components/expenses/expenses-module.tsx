@@ -61,6 +61,7 @@ export function ExpensesModule() {
         initialStatut={urlFilters.statut}
         initialJour={urlFilters.jour}
         initialCategorie={urlFilters.categorie}
+        initialQ={urlFilters.q}
         onRequestEdit={(entry) => {
           setEditingEntry(entry);
           setOpen(true);

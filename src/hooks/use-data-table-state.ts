@@ -15,6 +15,8 @@ type Options<T> = {
   filters?: ((row: T) => boolean)[];
   pageSize?: number;
   initialSort?: SortState;
+  /** Pré-remplit la recherche (deep link `?q=`). */
+  initialSearch?: string | null;
 };
 
 export type DataTableState<T> = {
@@ -53,8 +55,9 @@ export function useDataTableState<T>({
   filters = [],
   pageSize: initialPageSize = DEFAULT_PAGE_SIZE,
   initialSort = null,
+  initialSearch = null,
 }: Options<T>): DataTableState<T> {
-  const [search, setSearch] = React.useState("");
+  const [search, setSearch] = React.useState(initialSearch?.trim() ?? "");
   const [sort, setSort] = React.useState<SortState>(initialSort);
   const [page, setPage] = React.useState(1);
   const [pageSize, setPageSize] = React.useState(initialPageSize);
@@ -106,6 +109,13 @@ export function useDataTableState<T>({
     const maxPage = Math.max(1, Math.ceil(totalItems / pageSize));
     if (page > maxPage) setPage(maxPage);
   }, [totalItems, pageSize, page]);
+
+  // Sync deep link ?q=
+  React.useEffect(() => {
+    if (initialSearch != null) {
+      setSearch(initialSearch.trim());
+    }
+  }, [initialSearch]);
 
   // Reset à la page 1 quand la recherche change
   React.useEffect(() => {
