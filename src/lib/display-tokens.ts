@@ -15,4 +15,4 @@ export const surfaceCardClass =
 
 /** Unité métrique (œufs, alvéoles) — plus petite que le chiffre. */
 export const metricUnitClass =
-  "text-[10px] font-medium leading-none text-muted sm:text-[11px]" as const;
+  "text-caption font-medium leading-none text-muted sm:text-label" as const;

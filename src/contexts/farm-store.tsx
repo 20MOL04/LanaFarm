@@ -36,6 +36,7 @@ export { stockFermeDisponiblePourEnvoi };
 import { computeVenteSnapshot } from "@/lib/sales-calc";
 import { eggsToTrays, traysToEggs } from "@/lib/units";
 import { kpiResteAVerser } from "@/lib/kpi-sources";
+import { KPI_LABEL } from "@/lib/terminology";
 import { evaluateNotificationRules } from "@/lib/notifications/notification-rules";
 import { getNotificationRepository } from "@/lib/notifications/notification-storage";
 import { mergeNotificationSync } from "@/lib/notifications/notification-sync";
@@ -1447,7 +1448,7 @@ function reducer(state: State, action: Action): State {
         const dispoAlv = eggsToTrays(stockFerme, cap);
         return setStoreError(state, {
           code: "STOCK_FERME_INSUFFISANT",
-          message: `Stock ferme insuffisant. Disponible : ${dispoAlv} alv. Demandé : ${Math.floor(quantiteAlveoles)} alv.`,
+          message: `${KPI_LABEL.stockFerme} insuffisant. Disponible : ${dispoAlv} alv. Demandé : ${Math.floor(quantiteAlveoles)} alv.`,
           meta: { stockFerme, quantiteOeufs, dispoAlv, quantiteAlveoles },
         });
       }

@@ -4,6 +4,9 @@ export const DIALOG_FIT_CONTENT = "!w-max !max-w-[min(100vw-1rem,100%)]";
 /** Plafond mode 1 jour (saisie terrain). */
 export const DIALOG_SINGLE_MAX = "sm:!max-w-[min(100vw-1rem,28rem)]";
 
+/** Saisie courte (3–4 champs) — ex. envoi en vente. */
+export const DIALOG_COMPACT_MAX = "sm:!max-w-[min(100vw-1rem,20rem)]";
+
 /** Enveloppe interne (header + form) — occupe la hauteur dispo sans écraser le footer. */
 export const DIALOG_INNER = "flex min-h-0 w-full min-w-0 max-w-full flex-1 flex-col";
 
@@ -40,9 +43,9 @@ export const FORM_NUM_FIELDS_ROW = "flex flex-wrap items-start gap-x-3 gap-y-2";
  * Tableaux multi-jours — colonnes = largeur libellé (une ligne).
  */
 export const MULTI_DAY_TABLE = {
-  root: "w-max max-w-full border-collapse text-left text-sm",
+  root: "w-max max-w-full border-collapse text-left text-body-sm",
   wrap: "inline-block max-w-full overflow-x-auto rounded-card border border-border",
-  th: "whitespace-nowrap px-2 py-1.5 text-left text-[10px] font-medium text-muted",
+  th: "whitespace-nowrap px-2 py-1.5 text-left text-caption font-medium text-muted",
   td: "px-2 py-1 align-middle",
   col: {
     day: "min-w-[5.75rem]",

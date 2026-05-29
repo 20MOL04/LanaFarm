@@ -28,7 +28,7 @@ export default function LoginPage() {
           </Suspense>
         </div>
 
-        <p className="mt-6 text-xs text-muted-foreground">
+        <p className="mt-6 text-label text-muted-foreground">
           Production, ventes et trésorerie — tout votre suivi en un seul endroit.
         </p>
       </div>

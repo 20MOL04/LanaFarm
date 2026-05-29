@@ -37,7 +37,7 @@ export function EntryStatusBadge({
   masculine = false,
 }: Props) {
   const labels = masculine ? MASCULINE_LABELS : DEFAULT_LABELS;
-  const sizeClass = size === "sm" ? "text-[10px]" : undefined;
+  const sizeClass = size === "sm" ? "text-caption" : undefined;
 
   if (statut === "annule") {
     return (
@@ -66,7 +66,7 @@ export function DayGroupStatusBadge({
   masculine?: boolean;
   size?: "sm" | "default";
 }) {
-  const sizeClass = size === "sm" ? "text-[10px]" : undefined;
+  const sizeClass = size === "sm" ? "text-caption" : undefined;
   const labels = masculine ? MASCULINE_LABELS : DEFAULT_LABELS;
 
   if (group.statut === "mixte") {

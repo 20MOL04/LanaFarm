@@ -50,7 +50,7 @@ export function SectionHeader({
       <h2
         className={cn(
           "min-w-0 flex-1 truncate font-semibold text-foreground",
-          compact ? "text-sm" : "text-[15px]"
+          compact ? "text-sm" : "text-title"
         )}
       >
         {title}

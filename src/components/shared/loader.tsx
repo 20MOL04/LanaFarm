@@ -20,7 +20,7 @@ export function Loader({ className, size = 16, label }: LoaderProps) {
         className="inline-block animate-spin rounded-full border-2 border-border border-t-accent-blue"
         style={{ width: size, height: size }}
       />
-      {label ? <span className="text-xs">{label}</span> : null}
+      {label ? <span className="text-label">{label}</span> : null}
       <span className="sr-only">Chargement…</span>
     </span>
   );

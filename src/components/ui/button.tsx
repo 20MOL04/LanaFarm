@@ -32,9 +32,9 @@ const buttonVariants = cva(
           "text-accent-blue underline-offset-4 hover:underline",
       },
       size: {
-        sm: "h-8 px-3 text-[12px]",
-        md: "h-9 px-3.5 text-[13px]",
-        lg: "h-10 px-4 text-[13.5px]",
+        sm: "h-8 px-3 text-body-sm",
+        md: "h-9 px-3.5 text-body-sm",
+        lg: "h-10 px-4 text-body",
         icon: "h-9 w-9",
         "icon-sm": "h-8 w-8",
       },

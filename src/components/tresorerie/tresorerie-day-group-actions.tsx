@@ -43,7 +43,7 @@ function TresorerieDayDetailItem({
           <AdaptiveMetric value={entry.depose} kind="gnf" className="text-sm font-semibold" />
           <EntryStatusBadge statut={entry.statut} masculine size="sm" />
         </div>
-        <div className="flex flex-wrap gap-x-3 text-[11px] text-muted">
+        <div className="flex flex-wrap gap-x-3 text-label text-muted">
           <span>Reçu {formatGNF(entry.montantRecu)}</span>
           {reste !== 0 ? (
             <span className={cn(reste > 0 && "text-warning", reste < 0 && "text-danger")}>
@@ -52,7 +52,7 @@ function TresorerieDayDetailItem({
           ) : null}
         </div>
         {entry.note?.trim() ? (
-          <p className="line-clamp-2 text-[11px] text-muted">{entry.note.trim()}</p>
+          <p className="line-clamp-2 text-label text-muted">{entry.note.trim()}</p>
         ) : null}
       </div>
       <TresorerieRowActions entry={entry} onRequestEdit={onRequestEdit} />

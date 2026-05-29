@@ -39,7 +39,7 @@ export function GlobalDateRange({ className }: { className?: string }) {
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger
         className={cn(
-          "inline-flex h-9 max-w-full min-w-0 items-center gap-1.5 rounded-button border border-border bg-card px-2.5 text-[13px] text-foreground sm:px-3",
+          "inline-flex h-9 max-w-full min-w-0 items-center gap-1.5 rounded-button border border-border bg-card px-2.5 text-body-sm text-foreground sm:px-3",
           "hover:bg-card-muted transition-colors",
           "focus:outline-none focus:ring-2 focus:ring-accent-blue/40",
           className
@@ -86,7 +86,7 @@ export function GlobalDateRange({ className }: { className?: string }) {
             <Separator />
             <div className="space-y-2 p-3">
               <label className="block min-w-0 space-y-1">
-                <span className="text-[10px] font-medium text-muted">Du</span>
+                <span className="text-caption font-medium text-muted">Du</span>
                 <DateInput
                   value={customFrom}
                   max={customTo || todayIso}
@@ -94,7 +94,7 @@ export function GlobalDateRange({ className }: { className?: string }) {
                 />
               </label>
               <label className="block min-w-0 space-y-1">
-                <span className="text-[10px] font-medium text-muted">Au</span>
+                <span className="text-caption font-medium text-muted">Au</span>
                 <DateInput
                   value={customTo}
                   min={customFrom}

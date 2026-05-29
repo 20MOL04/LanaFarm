@@ -2,6 +2,7 @@
 
 import * as React from "react";
 
+import { textBodySmClass, textCaptionClass } from "@/lib/typography-tokens";
 import { cn } from "@/lib/utils";
 
 type PreviewPanelShellProps = {
@@ -62,10 +63,11 @@ type PreviewCellProps = {
 export function PreviewCell({ label, value, sub, tone }: PreviewCellProps) {
   return (
     <div className="min-w-0">
-      <p className="text-[10px] font-medium leading-tight text-muted">{label}</p>
+      <p className={textCaptionClass}>{label}</p>
       <p
         className={cn(
-          "text-[13px] font-semibold tabular-nums leading-snug",
+          textBodySmClass,
+          "font-semibold tabular-nums",
           tone === "danger" && "text-danger",
           tone === "success" && "text-success",
           !tone && "text-foreground"
@@ -76,7 +78,8 @@ export function PreviewCell({ label, value, sub, tone }: PreviewCellProps) {
       {sub ? (
         <p
           className={cn(
-            "text-[10px] tabular-nums leading-tight",
+            textCaptionClass,
+            "tabular-nums",
             tone === "danger" ? "text-danger" : "text-muted"
           )}
         >

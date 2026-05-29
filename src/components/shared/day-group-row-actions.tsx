@@ -50,7 +50,7 @@ export function DayGroupRowActions({
         }
       >
         <MenuLabel>{dayLabel}</MenuLabel>
-        <li className="px-2.5 pb-1 text-[11px] font-normal normal-case tracking-normal text-muted">
+        <li className="px-2.5 pb-1 text-label normal-case tracking-normal text-muted">
           {summaryLine}
         </li>
         <MenuSeparator />

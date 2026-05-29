@@ -39,7 +39,7 @@ function SummaryCard({
           <Icon className="h-4 w-4 text-muted" />
           <div>
             <p className="text-sm font-medium text-foreground">{title}</p>
-            <p className="text-xs text-muted">{subtitle}</p>
+            <p className="text-label text-muted">{subtitle}</p>
           </div>
         </div>
         <dl className="space-y-1.5">

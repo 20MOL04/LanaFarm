@@ -32,7 +32,7 @@ export function DayGroupDetailDialog({
       <DialogContent className="max-w-md">
         <DialogHeader>
           <DialogTitle>{title}</DialogTitle>
-          {subtitle ? <p className="text-xs text-muted">{subtitle}</p> : null}
+          {subtitle ? <p className="text-label text-muted">{subtitle}</p> : null}
         </DialogHeader>
         <DialogBody className="max-h-[min(50vh,360px)] space-y-2 overflow-y-auto overflow-x-hidden">
           {children}

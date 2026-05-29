@@ -34,15 +34,24 @@ import type {
    Jamais filtrés par période
    ══════════════════════════════════════ */
 
-/** SOURCE UNIQUE — Alvéoles dispo à la ferme (stock instantané cumulatif) */
+/** SOURCE UNIQUE — Stock ferme (alvéoles) à une date donnée. */
+export function kpiAlveolesFermeAt(
+  productions: Production[],
+  transferts: TransfertStock[],
+  cap: number,
+  at: Date
+): number {
+  const oeufs = stockFermeDisponiblePourEnvoi(productions, transferts, at);
+  return eggsToTrays(oeufs, cap);
+}
+
+/** SOURCE UNIQUE — Stock ferme instantané (aujourd'hui). */
 export function kpiAlveolesFerme(
   productions: Production[],
   transferts: TransfertStock[],
   cap: number
 ): number {
-  const today = new Date();
-  const oeufs = stockFermeDisponiblePourEnvoi(productions, transferts, today);
-  return eggsToTrays(oeufs, cap);
+  return kpiAlveolesFermeAt(productions, transferts, cap, new Date());
 }
 
 /** SOURCE UNIQUE — Stock magasin (cumulatif) */

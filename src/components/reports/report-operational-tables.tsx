@@ -146,7 +146,7 @@ function MiniSummaryCard({
             </span>
             {title}
           </h2>
-          <p className="text-xs text-muted">{subtitle}</p>
+          <p className="text-label text-muted">{subtitle}</p>
         </div>
       </div>
       <SectionBody>
@@ -159,7 +159,7 @@ function MiniSummaryCard({
               <div className="min-w-0">
                 <dt className="text-sm text-foreground">{r.label}</dt>
                 {r.hint ? (
-                  <p className="mt-0.5 text-[11px] text-muted">{r.hint}</p>
+                  <p className="mt-0.5 text-label text-muted">{r.hint}</p>
                 ) : null}
               </div>
               <dd className="shrink-0 text-right text-sm">

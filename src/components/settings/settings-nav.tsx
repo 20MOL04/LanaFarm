@@ -34,7 +34,7 @@ export function SettingsNav({ items, activeSection, onSectionChange }: Props) {
   return (
     <>
       <nav className="hidden md:block" aria-label="Sections des paramètres">
-        <p className="px-3 pb-2 text-[11px] font-medium uppercase tracking-wide text-muted">
+        <p className="px-3 pb-2 text-label font-medium uppercase tracking-wide text-muted">
           Sections
         </p>
         <ul className="space-y-1">

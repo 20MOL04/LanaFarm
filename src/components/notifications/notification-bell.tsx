@@ -53,7 +53,7 @@ export function NotificationBell() {
               <span
                 className={cn(
                   "absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center",
-                  "rounded-full bg-danger px-0.5 text-[10px] font-semibold leading-none text-white"
+                  "rounded-full bg-danger px-0.5 text-caption font-semibold leading-none text-white"
                 )}
               >
                 {badge}

@@ -44,7 +44,7 @@ export function Pagination({
         className
       )}
     >
-      <p className="text-xs text-muted">
+      <p className="text-label text-muted">
         {totalItems === 0 ? (
           "Aucune entrée"
         ) : (
@@ -60,7 +60,7 @@ export function Pagination({
 
       <div className="flex items-center gap-3">
         {onPageSizeChange ? (
-          <div className="flex items-center gap-2 text-xs text-muted">
+          <div className="flex items-center gap-2 text-label text-muted">
             <span className="hidden sm:inline">Lignes par page</span>
             <Select
               value={String(pageSize)}
@@ -90,7 +90,7 @@ export function Pagination({
           >
             <ChevronLeft className="h-4 w-4" />
           </Button>
-          <span className="px-2 text-xs text-muted tabular-nums">
+          <span className="px-2 text-label text-muted tabular-nums">
             Page <span className="font-medium text-foreground">{page}</span> /{" "}
             {pageCount}
           </span>

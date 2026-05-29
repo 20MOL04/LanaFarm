@@ -117,7 +117,7 @@ function RecentRow({
           <span className="min-w-0 flex-1">
             <span className="flex flex-wrap items-center gap-2">
               <ReportTypeBadge type={doc.type} />
-              <span className="text-xs text-muted">
+              <span className="text-label text-muted">
                 {formatRelative(doc.generatedAt)}
               </span>
             </span>

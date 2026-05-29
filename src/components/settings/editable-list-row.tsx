@@ -88,7 +88,7 @@ export function EditableListRow({
           <div className="min-w-0 flex-1">
             <p className="truncate text-sm font-medium text-foreground">{label}</p>
             {hint ? (
-              <p className="truncate text-[11px] text-muted">{hint}</p>
+              <p className="truncate text-label text-muted">{hint}</p>
             ) : null}
           </div>
         )}

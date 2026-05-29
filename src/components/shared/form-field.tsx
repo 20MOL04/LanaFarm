@@ -1,6 +1,11 @@
 import * as React from "react";
 
 import { Label } from "@/components/ui/label";
+import {
+  formErrorClass,
+  formFieldLabelClass,
+  formHintClass,
+} from "@/lib/typography-tokens";
 import { cn } from "@/lib/utils";
 
 type FormFieldProps = {
@@ -28,10 +33,7 @@ export function FormField({
 }: FormFieldProps) {
   return (
     <div className={cn("space-y-1", className)}>
-      <Label
-        htmlFor={htmlFor}
-        className="flex items-center gap-1 text-[11.5px] font-medium text-foreground"
-      >
+      <Label htmlFor={htmlFor} className={formFieldLabelClass}>
         {label}
         {required ? (
           <span className="text-danger" aria-hidden="true">
@@ -41,9 +43,9 @@ export function FormField({
       </Label>
       {children}
       {error ? (
-        <p className="text-[10.5px] text-danger">{error}</p>
+        <p className={formErrorClass}>{error}</p>
       ) : hint ? (
-        <p className="text-[10.5px] text-muted">{hint}</p>
+        <p className={formHintClass}>{hint}</p>
       ) : null}
     </div>
   );

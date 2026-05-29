@@ -10,7 +10,7 @@ export function NotificationReadBadge({ unread, className }: Props) {
   return (
     <span
       className={cn(
-        "shrink-0 text-[10px] font-medium leading-none",
+        "shrink-0 text-caption font-medium leading-none",
         unread ? "text-accent-blue" : "text-muted",
         className
       )}

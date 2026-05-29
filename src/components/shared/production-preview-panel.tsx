@@ -6,6 +6,7 @@ import {
   PreviewPanelShell,
 } from "@/components/shared/preview-panel";
 import { formatNumber } from "@/lib/format";
+import { FIELD_LABEL, KPI_LABEL } from "@/lib/terminology";
 
 type Props = {
   restantesJour: number;
@@ -38,11 +39,11 @@ export function ProductionPreviewPanel({
           }
         />
         <PreviewCell
-          label="Stock ferme"
+          label={KPI_LABEL.stockFerme}
           value={`${formatNumber(stockAvant)} alv.`}
         />
         <PreviewCell
-          label="Après enregistrement"
+          label={FIELD_LABEL.apresEnregistrement}
           value={`${formatNumber(stockApres)} alv.`}
           sub={
             delta !== 0

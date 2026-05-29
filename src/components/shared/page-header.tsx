@@ -1,6 +1,7 @@
 import * as React from "react";
 
 import { cn } from "@/lib/utils";
+import { pageDescClass, pageTitleClass } from "@/lib/typography-tokens";
 
 type PageHeaderProps = {
   title: string;
@@ -27,11 +28,9 @@ export function PageHeader({
       )}
     >
       <div className="min-w-0 flex-1">
-        <h1 className="text-[22px] font-semibold leading-tight tracking-tight text-foreground">
-          {title}
-        </h1>
+        <h1 className={pageTitleClass}>{title}</h1>
         {description ? (
-          <p className="mt-1 text-[13px] text-muted">{description}</p>
+          <p className={cn("mt-1", pageDescClass)}>{description}</p>
         ) : null}
       </div>
       {actions ? (

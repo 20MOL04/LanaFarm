@@ -10,6 +10,7 @@ import { SidebarLogoutButton } from "@/components/layout/sidebar-logout-button";
 import { navigation, type NavItem } from "@/config/navigation";
 import { useSidebar } from "@/contexts/sidebar-context";
 import { useUnsavedNavigation } from "@/contexts/unsaved-navigation-context";
+import { textNavClass, textNavGroupClass } from "@/lib/typography-tokens";
 import { cn } from "@/lib/utils";
 
 /**
@@ -162,7 +163,7 @@ function SidebarNav({
         {navigation.map((group) => (
           <li key={group.title}>
             {!collapsed ? (
-              <p className="px-2 pb-1.5 text-[10px] font-semibold uppercase tracking-wider text-sidebar-muted/80">
+              <p className={cn("px-2 pb-1.5", textNavGroupClass)}>
                 {group.title}
               </p>
             ) : (
@@ -236,12 +237,13 @@ function SidebarLink({
       aria-current={isActive ? "page" : undefined}
       title={collapsed ? item.label : undefined}
       className={cn(
-        "group flex items-center gap-2.5 rounded-sm px-2 py-1.5 text-[13px]",
+        "group flex items-center gap-2.5 rounded-sm px-2 py-1.5",
+        textNavClass,
         "transition-colors",
         collapsed ? "justify-center" : "justify-start",
         isActive
-          ? "bg-sidebar-active text-sidebar-active-foreground font-medium"
-          : "text-sidebar-foreground/90 hover:bg-sidebar-hover hover:text-white"
+          ? "bg-sidebar-active text-sidebar-active-foreground font-semibold"
+          : "text-sidebar-foreground hover:bg-sidebar-hover hover:text-white"
       )}
     >
       <Icon className="h-4 w-4 shrink-0" />

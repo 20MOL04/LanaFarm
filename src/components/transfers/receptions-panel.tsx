@@ -160,7 +160,7 @@ function HealthBanner({
 
   if (allHealthy) {
     return (
-      <div className="flex items-center gap-2 rounded-card border border-success/20 bg-success-soft/60 px-3 py-2 text-xs text-success">
+      <div className="flex items-center gap-2 rounded-card border border-success/20 bg-success-soft/60 px-3 py-2 text-label text-success">
         <ShieldCheck className="h-4 w-4" />
         <span>
           {totals.total} transfert{totals.total > 1 ? "s" : ""} synchronisé
@@ -176,7 +176,7 @@ function HealthBanner({
   }
 
   return (
-    <div className="flex flex-wrap items-center gap-2 rounded-card border border-warning/20 bg-warning-soft/60 px-3 py-2 text-xs text-warning">
+    <div className="flex flex-wrap items-center gap-2 rounded-card border border-warning/20 bg-warning-soft/60 px-3 py-2 text-label text-warning">
       <AlertTriangle className="h-4 w-4" />
       <span>
         {totals.parStatut.en_attente > 0
@@ -231,7 +231,7 @@ function TransferRow({
           <p className="text-sm font-medium capitalize text-foreground">
             {formatDay(new Date(dateRef))}
           </p>
-          <p className="flex items-center gap-1.5 text-xs text-muted tabular-nums">
+          <p className="flex items-center gap-1.5 text-label text-muted tabular-nums">
             <span>{formatAlv(transfert.quantiteEnvoyee, cap)} envoyées</span>
             <ArrowRight className="h-3 w-3" />
             <span
@@ -257,7 +257,7 @@ function TransferRow({
             ) : null}
           </p>
           {transfert.noteEcart ? (
-            <p className="mt-0.5 truncate text-[11px] italic text-muted">
+            <p className="mt-0.5 truncate text-label italic text-muted">
               « {transfert.noteEcart} »
             </p>
           ) : null}

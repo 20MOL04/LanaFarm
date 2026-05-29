@@ -81,7 +81,7 @@ export function ReportFinancialSummary({ snapshot }: Props) {
           )}
         >
           <div>
-            <p className="text-[11px] font-medium uppercase tracking-wide text-muted">
+            <p className="text-label font-medium uppercase tracking-wide text-muted">
               Résultat net estimé
             </p>
             <p
@@ -96,7 +96,7 @@ export function ReportFinancialSummary({ snapshot }: Props) {
             </p>
           </div>
           <div className="flex flex-col gap-1 sm:items-end">
-            <div className="flex items-center gap-1.5 text-xs text-muted">
+            <div className="flex items-center gap-1.5 text-label text-muted">
               {profitZero ? (
                 <Minus className="h-4 w-4" />
               ) : profitPositif ? (
@@ -107,7 +107,7 @@ export function ReportFinancialSummary({ snapshot }: Props) {
               <span>CA − Dépenses</span>
             </div>
             {snapshot.margeBrutePct !== null ? (
-              <p className="text-xs font-medium text-muted">
+              <p className="text-label font-medium text-muted">
                 Marge brute :{" "}
                 <span
                   className={cn(
@@ -159,7 +159,7 @@ function Block({
       >
         <p
           className={cn(
-            "text-[11px] font-semibold uppercase tracking-wide",
+            "text-label font-semibold uppercase tracking-wide",
             tone === "success" ? "text-success" : "text-danger"
           )}
         >
@@ -177,7 +177,7 @@ function Block({
               {r.hint ? (
                 <p
                   className={cn(
-                    "mt-0.5 text-[11px]",
+                    "mt-0.5 text-label",
                     r.tone === "warning" && "text-warning",
                     r.tone === "danger" && "text-danger",
                     !r.tone && "text-muted"

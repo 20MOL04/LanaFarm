@@ -48,7 +48,7 @@ export function MultiDayPeriodPicker({
 
   return (
     <div className="shrink-0 space-y-1.5">
-      <p className="text-[11px] font-medium text-muted">Période</p>
+      <p className="text-label font-medium text-muted">Période</p>
       <div className="flex flex-wrap items-end gap-2">
         <FormField label="Du" htmlFor="multi-from" required className="mb-0">
           <DateInput
@@ -68,9 +68,9 @@ export function MultiDayPeriodPicker({
         </FormField>
       </div>
       {periodInvalid ? (
-        <p className="text-[11px] text-danger">Période invalide.</p>
+        <p className="text-label text-danger">Période invalide.</p>
       ) : (
-        <p className="text-[11px] text-muted">
+        <p className="text-label text-muted">
           {dayCount} jour{dayCount > 1 ? "s" : ""}
         </p>
       )}

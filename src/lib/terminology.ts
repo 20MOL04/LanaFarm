@@ -55,6 +55,11 @@ export const MODULE_LABEL = {
   tresorerie: "Trésorerie",
 } as const;
 
+/** Libellés d'actions (boutons / titres dialogues). */
+export const ACTION_LABEL = {
+  envoyerEnVente: "Envoyer en Vente",
+} as const;
+
 export const UNIT_ALVEOLES = "alvéoles";
 export const UNIT_OEUFS = "œufs";
 
@@ -84,6 +89,8 @@ export const FIELD_LABEL = {
   casses: "Cassés",
   restantes: "Restantes",
   prixCasier: "Prix casier",
+  apresEnvoi: "Après envoi",
+  apresEnregistrement: "Après enregistrement",
 } as const;
 
 export const FIELD_HINT = {

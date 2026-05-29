@@ -84,7 +84,7 @@ export function LoginForm() {
       </FormField>
 
       {error ? (
-        <p className="rounded-input border border-danger/30 bg-danger-soft px-3 py-2 text-xs text-danger">
+        <p className="rounded-input border border-danger/30 bg-danger-soft px-3 py-2 text-label text-danger">
           {error}
         </p>
       ) : null}

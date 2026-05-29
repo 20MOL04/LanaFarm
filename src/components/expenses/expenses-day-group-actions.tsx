@@ -40,9 +40,9 @@ function ExpenseDayDetailItem({
           <EntryStatusBadge statut={entry.statut} size="sm" />
         </div>
         {entry.description?.trim() ? (
-          <p className="line-clamp-2 text-[11px] text-muted">{entry.description.trim()}</p>
+          <p className="line-clamp-2 text-label text-muted">{entry.description.trim()}</p>
         ) : (
-          <p className="text-[11px] text-muted">—</p>
+          <p className="text-label text-muted">—</p>
         )}
       </div>
       <ExpensesRowActions entry={entry} onRequestEdit={onRequestEdit} />

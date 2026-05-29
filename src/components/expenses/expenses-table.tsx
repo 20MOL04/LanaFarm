@@ -149,7 +149,7 @@ export function ExpensesTable({
         <div className="min-w-0">
           <span className="capitalize">{formatDay(new Date(group.jourISO))}</span>
           {group.count > 1 ? (
-            <p className="text-[10px] text-muted">{group.count} dépenses</p>
+            <p className="text-caption text-muted">{group.count} dépenses</p>
           ) : null}
         </div>
       ),
@@ -160,7 +160,7 @@ export function ExpensesTable({
       sortable: true,
       hideBelow: "sm",
       cell: (group) => (
-        <span className="line-clamp-2 text-[12px] font-medium text-foreground">
+        <span className="line-clamp-2 text-body-sm font-medium text-foreground">
           {formatCategoriesSummary(group.categories)}
         </span>
       ),

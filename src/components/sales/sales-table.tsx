@@ -146,11 +146,11 @@ export function SalesTable({
         <div className="min-w-0">
           <p className="capitalize">{formatDay(new Date(group.jourISO))}</p>
           {group.count > 1 ? (
-            <p className="truncate text-[11px] font-normal text-muted">
+            <p className="truncate text-label text-muted">
               {formatSalesClientsSummary(group.clients, group.count)}
             </p>
           ) : group.clients[0] ? (
-            <p className="truncate text-[11px] font-normal text-muted">{group.clients[0]}</p>
+            <p className="truncate text-label text-muted">{group.clients[0]}</p>
           ) : null}
         </div>
       ),
@@ -214,7 +214,7 @@ export function SalesTable({
       hideBelow: "md",
       cell: (group) =>
         group.count > 1 && group.prixMin !== group.prixMax ? (
-          <span className="text-[11px] text-muted">{group.prixLabel}</span>
+          <span className="text-label text-muted">{group.prixLabel}</span>
         ) : (
           <AdaptiveMetric value={group.prixMin} kind="gnf" />
         ),

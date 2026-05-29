@@ -4,6 +4,11 @@ import type { LucideIcon } from "lucide-react";
 
 import { AdaptiveMetric } from "@/components/shared/adaptive-metric";
 import { surfaceCardClass } from "@/lib/display-tokens";
+import {
+  kpiHintClass,
+  kpiLabelClass,
+  textLabelClass,
+} from "@/lib/typography-tokens";
 import { unitSuffixForLabel } from "@/lib/terminology";
 import { cn } from "@/lib/utils";
 
@@ -86,8 +91,8 @@ export function KpiCard({
       <div className="flex min-w-0 items-start justify-between gap-2">
         <p
           className={cn(
-            "min-w-0 truncate font-normal leading-snug text-muted",
-            isMini ? "text-[9px]" : "text-[10px]"
+            kpiLabelClass,
+            isMini && "text-micro"
           )}
         >
           {label}
@@ -124,12 +129,7 @@ export function KpiCard({
           </p>
         )}
         {hint ? (
-          <p
-            className={cn(
-              "mt-0.5 truncate text-muted",
-              isMini ? "text-[9px]" : "text-[11px]"
-            )}
-          >
+          <p className={cn(kpiHintClass, isMini && "text-micro")}>
             {hint}
           </p>
         ) : null}
@@ -151,7 +151,7 @@ function KpiTrendBadge({ trend }: { trend: KpiTrend }) {
       : "text-danger";
 
   return (
-    <div className="flex min-w-0 items-center gap-1.5 text-[11px]">
+    <div className={cn("flex min-w-0 items-center gap-1.5", textLabelClass)}>
       <span
         className={cn(
           "inline-flex shrink-0 items-center gap-0.5 font-medium tabular-nums",

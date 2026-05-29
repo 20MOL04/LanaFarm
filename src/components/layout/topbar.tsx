@@ -59,7 +59,7 @@ function SearchField() {
         type="search"
         placeholder="Rechercher…"
         aria-label="Rechercher"
-        className="h-9 bg-card pl-8 text-base md:text-[13px]"
+        className="h-9 bg-card pl-8 text-base md:text-body-sm"
       />
     </div>
   );

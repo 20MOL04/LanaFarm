@@ -141,7 +141,7 @@ export function TresorerieTable({
         <div className="min-w-0">
           <span className="capitalize">{formatDay(new Date(group.jourISO))}</span>
           {group.count > 1 ? (
-            <p className="text-[10px] text-muted">{group.count} versements</p>
+            <p className="text-caption text-muted">{group.count} versements</p>
           ) : null}
         </div>
       ),
@@ -182,7 +182,7 @@ export function TresorerieTable({
       sortable: true,
       hideBelow: "md",
       cell: (group) => (
-        <span className="line-clamp-2 text-[12px] font-medium text-foreground">
+        <span className="line-clamp-2 text-body-sm font-medium text-foreground">
           {formatMethodesSummary(group.methodes)}
         </span>
       ),

@@ -39,7 +39,7 @@ export function ProductionMultiDayForm({ lines, productions, onChange }: Props) 
     <div className={MULTI_DAY_TABLE.wrap}>
       <table className={MULTI_DAY_TABLE.root}>
         <thead>
-          <tr className="border-b border-border bg-card-muted text-[10px] font-medium text-muted">
+          <tr className="border-b border-border bg-card-muted text-caption font-medium text-muted">
             <th className={cn(MULTI_DAY_TABLE.th, MULTI_DAY_TABLE.col.day)}>Jour</th>
             <th className={cn(MULTI_DAY_TABLE.th, MULTI_DAY_TABLE.col.ramassees)}>
               Ramassées (alv.)
@@ -68,7 +68,7 @@ export function ProductionMultiDayForm({ lines, productions, onChange }: Props) 
                   <div className="flex flex-col gap-0.5">
                     <span className="font-medium capitalize text-foreground">{dayLabel}</span>
                     {hasConflict ? (
-                      <Badge tone="warning" className="w-fit text-[10px]">
+                      <Badge tone="warning" className="w-fit text-caption">
                         Jour déjà saisi
                       </Badge>
                     ) : null}

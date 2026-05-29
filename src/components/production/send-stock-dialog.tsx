@@ -1,34 +1,37 @@
 "use client";
 
 import * as React from "react";
-import { format, startOfDay } from "date-fns";
-import { ArrowRight, Warehouse } from "lucide-react";
+import { format, isSameDay, startOfDay } from "date-fns";
+import { ArrowRight, AlertTriangle, Warehouse } from "lucide-react";
 
 import { DateInput } from "@/components/shared/date-input";
 import { DialogFormShell } from "@/components/shared/dialog-form-shell";
 import { FormField } from "@/components/shared/form-field";
 import {
+  DIALOG_COMPACT_MAX,
   FORM_INPUT_NOTES,
   FORM_INPUT_NUM_ICON,
   DIALOG_SCROLL,
 } from "@/components/shared/form-dialog-styles";
-import { PreviewCell, PreviewGrid, PreviewPanelShell } from "@/components/shared/preview-panel";
 import { StoreErrorBanner } from "@/components/shared/store-error-banner";
 import { UnsavedChangesConfirm } from "@/components/shared/unsaved-changes-confirm";
 import { Button } from "@/components/ui/button";
 import { DialogScrollRegion } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import {
-  stockFermeDisponiblePourEnvoi,
-  useFarmConfig,
-  useTransfersStore,
-} from "@/contexts/farm-store";
+import { useFarmConfig, useTransfersStore } from "@/contexts/farm-store";
 import { useUnsavedDialogClose } from "@/hooks/use-unsaved-dialog-close";
 import { useStoreSubmitGuard } from "@/hooks/use-store-submit-guard";
 import { formatDay } from "@/lib/date-ranges";
 import { isDirtyComparedToSnapshot, stableStringify } from "@/lib/form-dirty";
+import { kpiAlveolesFermeAt } from "@/lib/kpi-sources";
 import { eggsToTrays } from "@/lib/units";
+import {
+  ACTION_LABEL,
+  FIELD_LABEL,
+  KPI_LABEL,
+  UNIT_ALVEOLES,
+} from "@/lib/terminology";
 import { cn } from "@/lib/utils";
 
 type Props = {
@@ -46,6 +49,69 @@ const todayIso = () => format(startOfDay(new Date()), "yyyy-MM-dd");
 
 function emptySendStockSnapshot(): SendStockFormSnapshot {
   return { jourISO: todayIso(), alveoles: 0, notes: "" };
+}
+
+function StockFermePreviewBar({
+  stockDispoAlv,
+  apresAlv,
+  overLimit,
+}: {
+  stockDispoAlv: number;
+  apresAlv: number;
+  overLimit: boolean;
+}) {
+  return (
+    <div
+      className={cn(
+        "flex items-center justify-between gap-2 text-label",
+        overLimit && "text-danger"
+      )}
+      aria-live="polite"
+    >
+      <div className="min-w-0 truncate">
+        <span className="text-muted">{KPI_LABEL.stockFerme}</span>
+        <span className="ml-1 font-semibold tabular-nums text-foreground">
+          {stockDispoAlv} {UNIT_ALVEOLES}
+        </span>
+      </div>
+      <div className="shrink-0 text-right">
+        <span className="text-muted">{FIELD_LABEL.apresEnvoi}</span>
+        <span
+          className={cn(
+            "ml-1 font-semibold tabular-nums",
+            overLimit ? "text-danger" : "text-foreground"
+          )}
+        >
+          {apresAlv} {UNIT_ALVEOLES}
+        </span>
+      </div>
+    </div>
+  );
+}
+
+function SendStockPathWarning({
+  misesEnVenteAlv,
+  stockDispoAlv,
+}: {
+  misesEnVenteAlv: number;
+  stockDispoAlv: number;
+}) {
+  if (misesEnVenteAlv <= 0) return null;
+
+  const message =
+    stockDispoAlv <= 0
+      ? `Tout le stock de ce jour est déjà couvert par « ${KPI_LABEL.alveolesMisesEnVente} » (${misesEnVenteAlv} ${UNIT_ALVEOLES}). Modifiez la saisie Production plutôt qu'un envoi manuel.`
+      : `Ce jour a déjà ${misesEnVenteAlv} ${UNIT_ALVEOLES} en « ${KPI_LABEL.alveolesMisesEnVente} » via Production. Un envoi manuel supplémentaire augmentera le stock vente sans retirer à nouveau le ${KPI_LABEL.stockFerme.toLowerCase()}.`;
+
+  return (
+    <div
+      role="status"
+      className="flex gap-2 rounded-md border border-warning/25 bg-warning-soft/60 px-2.5 py-2 text-label leading-snug text-warning"
+    >
+      <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" aria-hidden />
+      <p>{message}</p>
+    </div>
+  );
 }
 
 export function SendStockDialog({ open, onOpenChange }: Props) {
@@ -101,23 +167,36 @@ export function SendStockDialog({ open, onOpenChange }: Props) {
     return Number.isNaN(d.getTime()) ? null : d;
   }, [jourISO]);
 
-  const stockDispoOeufs = React.useMemo(() => {
+  const stockDispoAlv = React.useMemo(() => {
     if (!dayDate) return 0;
-    return stockFermeDisponiblePourEnvoi(
+    return kpiAlveolesFermeAt(
       state.productions,
       state.transferts,
+      cap,
       dayDate
     );
-  }, [dayDate, state.productions, state.transferts]);
+  }, [dayDate, state.productions, state.transferts, cap]);
 
-  const stockDispoAlv = eggsToTrays(stockDispoOeufs, cap);
+  const misesEnVenteAlv = React.useMemo(() => {
+    if (!dayDate) return 0;
+    const dayStart = startOfDay(dayDate);
+    const prod = state.productions.find(
+      (p) =>
+        p.statut === "actif" &&
+        isSameDay(startOfDay(new Date(p.jourISO)), dayStart)
+    );
+    if (!prod || prod.envoyesVente <= 0) return 0;
+    return eggsToTrays(prod.envoyesVente, cap);
+  }, [dayDate, state.productions, cap]);
+
   const apresAlv = Math.max(0, stockDispoAlv - alveoles);
+  const overLimit = alveoles > stockDispoAlv;
 
   const quantiteError =
     touched && alveoles <= 0
       ? "Indiquez au moins 1 alvéole."
-      : touched && alveoles > stockDispoAlv
-        ? `Stock ferme insuffisant. Disponible : ${stockDispoAlv} alv.`
+      : touched && overLimit
+        ? `${KPI_LABEL.stockFerme} insuffisant. Disponible : ${stockDispoAlv} alv.`
         : undefined;
 
   const canSubmit =
@@ -142,13 +221,19 @@ export function SendStockDialog({ open, onOpenChange }: Props) {
       <DialogFormShell
         open={open}
         onOpenChange={unsaved.dialogProps.onOpenChange}
-        title="Envoyer au magasin"
+        contentClassName={DIALOG_COMPACT_MAX}
+        previewBarClassName="py-1.5"
+        title={ACTION_LABEL.envoyerEnVente}
         onSubmit={handleSubmit}
         body={
           <DialogScrollRegion className={cn(DIALOG_SCROLL, "space-y-3")}>
             <StoreErrorBanner error={state.errors} />
-            <p className="text-[12px] text-muted">
-              Transfert manuel depuis le stock ferme, sans nouvelle collecte ce jour-là.
+            <SendStockPathWarning
+              misesEnVenteAlv={misesEnVenteAlv}
+              stockDispoAlv={stockDispoAlv}
+            />
+            <p className="text-label leading-snug text-muted">
+              Transfert manuel vers les ventes, sans nouvelle collecte ce jour-là.
             </p>
             <FormField
               label="Jour"
@@ -169,9 +254,9 @@ export function SendStockDialog({ open, onOpenChange }: Props) {
               htmlFor="send-alv"
               required
               error={quantiteError}
-              hint="alvéoles"
+              hint={UNIT_ALVEOLES}
             >
-              <div className="relative">
+              <div className="relative w-full max-w-[7.5rem]">
                 <Warehouse className="pointer-events-none absolute left-2 top-1/2 h-4 w-4 -translate-y-1/2 text-accent-blue" />
                 <Input
                   id="send-alv"
@@ -203,25 +288,17 @@ export function SendStockDialog({ open, onOpenChange }: Props) {
                 onChange={(e) => setNotes(e.target.value)}
                 placeholder="Optionnel"
                 rows={2}
-                className={FORM_INPUT_NOTES}
+                className={cn(FORM_INPUT_NOTES, "max-h-16 resize-none")}
               />
             </FormField>
           </DialogScrollRegion>
         }
         preview={
-          <PreviewPanelShell variant={alveoles > stockDispoAlv ? "danger" : "default"}>
-            <PreviewGrid cols={2}>
-              <PreviewCell
-                label="Stock ferme dispo."
-                value={`${stockDispoAlv} alv.`}
-              />
-              <PreviewCell
-                label="Après envoi"
-                value={`${apresAlv} alv.`}
-                tone={apresAlv > 0 ? "success" : undefined}
-              />
-            </PreviewGrid>
-          </PreviewPanelShell>
+          <StockFermePreviewBar
+            stockDispoAlv={stockDispoAlv}
+            apresAlv={apresAlv}
+            overLimit={overLimit}
+          />
         }
         footer={
           <>
@@ -230,7 +307,7 @@ export function SendStockDialog({ open, onOpenChange }: Props) {
             </Button>
             <Button type="submit" variant="accent" size="sm" disabled={!canSubmit}>
               <ArrowRight className="h-4 w-4" />
-              Envoyer au magasin
+              {ACTION_LABEL.envoyerEnVente}
             </Button>
           </>
         }

@@ -60,7 +60,7 @@ export function NotificationListItem({ notification, onSelect }: Props) {
           </span>
           <NotificationReadBadge unread={unread} />
         </span>
-        <span className="mt-0.5 block text-xs leading-snug text-muted">
+        <span className="mt-0.5 block text-label leading-snug text-muted">
           <span className="line-clamp-2">{description}</span>
           <span className="text-muted/80"> · {when}</span>
         </span>

@@ -62,14 +62,14 @@ export function NotificationPanel({ notifications, onSelect }: Props) {
             type="button"
             onClick={() => setTab(t.id)}
             className={cn(
-              "flex flex-1 items-center justify-center gap-1.5 rounded-md px-2 py-1.5 text-xs font-medium transition-colors",
+              "flex flex-1 items-center justify-center gap-1.5 rounded-md px-2 py-1.5 text-label font-medium transition-colors",
               tab === t.id
                 ? "bg-card-muted text-foreground"
                 : "text-muted hover:bg-muted/40 hover:text-foreground"
             )}
           >
             <span>{t.label}</span>
-            <span className="tabular-nums text-xs font-normal text-muted">
+            <span className="tabular-nums text-label text-muted">
               ({t.count}
               {t.unread > 0 ? (
                 <span className="text-accent-blue"> · {t.unread}</span>

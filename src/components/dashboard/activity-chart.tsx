@@ -103,7 +103,7 @@ export function ActivityChart({ data }: ActivityChartProps) {
                 variant={metric === key ? "primary" : "ghost"}
                 onClick={() => setMetric(key)}
                 className={cn(
-                  "h-7 px-3 text-xs",
+                  "h-7 px-3 text-label",
                   metric !== key && "text-muted hover:text-foreground"
                 )}
               >

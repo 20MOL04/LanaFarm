@@ -27,6 +27,9 @@ type Props = {
   body: React.ReactNode;
   preview?: React.ReactNode | null;
   footer: React.ReactNode;
+  /** Surcharge largeur modale (ex. DIALOG_COMPACT_MAX). */
+  contentClassName?: string;
+  previewBarClassName?: string;
 };
 
 export function DialogFormShell({
@@ -37,15 +40,19 @@ export function DialogFormShell({
   body,
   preview,
   footer,
+  contentClassName,
+  previewBarClassName,
 }: Props) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className={cn(DIALOG_FIT_CONTENT, DIALOG_SINGLE_MAX)}>
+      <DialogContent className={cn(DIALOG_FIT_CONTENT, DIALOG_SINGLE_MAX, contentClassName)}>
         <div className={DIALOG_INNER}>
           <DialogFormHeader title={title} />
           <form onSubmit={onSubmit} className={DIALOG_FORM}>
             <DialogBody className={DIALOG_BODY}>{body}</DialogBody>
-            {preview ? <DialogPreviewBar>{preview}</DialogPreviewBar> : null}
+            {preview ? (
+              <DialogPreviewBar className={previewBarClassName}>{preview}</DialogPreviewBar>
+            ) : null}
             <DialogFooter>{footer}</DialogFooter>
           </form>
         </div>

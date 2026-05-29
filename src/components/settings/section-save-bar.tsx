@@ -18,7 +18,7 @@ export function SectionSaveBar({ isDirty, onSave, onReset }: Props) {
   if (!isDirty) return null;
   return (
     <div className="flex items-center justify-end gap-2 border-t border-border pt-3">
-      <p className="mr-auto text-xs text-muted">Modifications non enregistrées</p>
+      <p className="mr-auto text-label text-muted">Modifications non enregistrées</p>
       <Button type="button" variant="ghost" size="sm" onClick={onReset}>
         Annuler
       </Button>

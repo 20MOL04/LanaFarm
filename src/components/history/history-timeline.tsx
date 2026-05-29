@@ -74,7 +74,7 @@ function TimelineItem({ action }: { action: ActionLog }) {
         <TypeIcon className="h-3 w-3" />
       </span>
       <div className="flex flex-col gap-0.5">
-        <div className="flex items-center gap-2 text-xs text-muted">
+        <div className="flex items-center gap-2 text-label text-muted">
           <ModuleIcon className="h-3 w-3" />
           <span className="font-medium uppercase tracking-wide">
             {MODULE_LABEL[action.module]}

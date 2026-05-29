@@ -38,7 +38,7 @@ export function RecentActivity({ limit = 4 }: { limit?: number }) {
         compact
         title="Activité récente"
         actions={
-          <Button asChild variant="ghost" size="sm" className="h-7 px-2 text-xs">
+          <Button asChild variant="ghost" size="sm" className="h-7 px-2 text-label">
             <Link href="/historique">
               Tout voir
               <ArrowUpRight className="h-3.5 w-3.5" />
@@ -48,7 +48,7 @@ export function RecentActivity({ limit = 4 }: { limit?: number }) {
       />
       <SectionBody compact>
         {items.length === 0 ? (
-          <p className="text-xs text-muted">
+          <p className="text-label text-muted">
             Les saisies et validations apparaîtront ici.
           </p>
         ) : (
@@ -84,14 +84,14 @@ function ActivityRow({ action }: { action: ActionLog }) {
       </span>
       <div className="min-w-0 flex-1">
         <div className="flex items-baseline justify-between gap-2">
-          <p className="truncate text-[13px] font-medium text-foreground">
+          <p className="truncate text-body-sm font-medium text-foreground">
             {MODULE_LABEL[action.module]}
           </p>
-          <span className="shrink-0 text-[11px] text-muted">
+          <span className="shrink-0 text-label text-muted">
             {formatRelativeTimeFR(action.dateISO)}
           </span>
         </div>
-        <p className="line-clamp-1 text-[11px] text-muted">{summary}</p>
+        <p className="line-clamp-1 text-label text-muted">{summary}</p>
       </div>
     </li>
   );

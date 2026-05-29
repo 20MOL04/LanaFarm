@@ -16,7 +16,7 @@ export function MultiDayModeToggle({ multiMode, onToggle, disabled }: Props) {
       type="button"
       variant={multiMode ? "primary" : "ghost"}
       size="sm"
-      className="h-8 gap-1.5 text-xs"
+      className="h-8 gap-1.5 text-label"
       onClick={onToggle}
       disabled={disabled}
     >

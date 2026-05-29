@@ -45,7 +45,7 @@ function SalesDayDetailItem({
           <span className="text-muted"> · </span>
           <span className="tabular-nums">{formatGNF(row.vente.prix)}/alv.</span>
         </p>
-        <p className="truncate text-[11px] text-muted">Client : {client}</p>
+        <p className="truncate text-label text-muted">Client : {client}</p>
         <div className="flex flex-wrap items-center gap-2">
           <AdaptiveMetric value={row.montant} kind="gnf" className="text-sm font-semibold" />
           <EntryStatusBadge statut={row.vente.statut} size="sm" masculine />

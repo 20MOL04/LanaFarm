@@ -4,6 +4,7 @@ import * as React from "react";
 import { ArrowDown, ArrowUp, ChevronsUpDown } from "lucide-react";
 
 import type { SortState } from "@/hooks/use-data-table-state";
+import { tableHeaderClass, tableTextClass } from "@/lib/typography-tokens";
 import { cn } from "@/lib/utils";
 
 export type DataTableColumn<T> = {
@@ -56,7 +57,7 @@ export function DataTable<T>({
 
   return (
     <div className={cn("w-full min-w-0 max-w-full", className)}>
-      <table className="w-full table-fixed border-collapse text-[13.5px]">
+      <table className={cn("w-full table-fixed border-collapse", tableTextClass)}>
         {caption ? <caption className="sr-only">{caption}</caption> : null}
         <thead>
           <tr className="border-b border-border bg-card-muted/30">
@@ -68,7 +69,8 @@ export function DataTable<T>({
                   scope="col"
                   style={col.width ? { width: col.width } : undefined}
                   className={cn(
-                    "px-2 py-2 text-[11px] font-medium text-muted sm:px-3",
+                    "px-2 py-2 sm:px-3",
+                    tableHeaderClass,
                     !col.noTruncate && "overflow-hidden",
                     col.hideBelow && hideClass[col.hideBelow],
                     col.align === "center" && "text-center",

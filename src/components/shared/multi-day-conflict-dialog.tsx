@@ -35,7 +35,7 @@ export function MultiDayConflictDialog({
         <DialogBody className="space-y-2 text-sm text-muted">
           <p>Ces jours ont déjà des données :</p>
           <p className="font-medium text-foreground">{formatDayListFR(conflictDays)}</p>
-          <p className="text-xs">Que souhaitez-vous faire ?</p>
+          <p className="text-label">Que souhaitez-vous faire ?</p>
         </DialogBody>
         <DialogFooter className="grid-cols-1 [&>button:only-child]:col-span-1">
           <Button

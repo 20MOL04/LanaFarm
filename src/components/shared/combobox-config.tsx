@@ -202,11 +202,11 @@ export function ComboboxConfig({
           ) : null}
 
           {suggestions.length === 0 && !showCreate ? (
-            <li className="px-2.5 py-1.5 text-xs text-muted">Aucune suggestion</li>
+            <li className="px-2.5 py-1.5 text-label text-muted">Aucune suggestion</li>
           ) : null}
         </ul>
         {createError ? (
-          <p className="border-t border-border px-2.5 py-1.5 text-[11px] text-danger">
+          <p className="border-t border-border px-2.5 py-1.5 text-label text-danger">
             {createError}
           </p>
         ) : null}

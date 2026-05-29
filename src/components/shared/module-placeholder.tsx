@@ -53,7 +53,7 @@ export function ModulePlaceholder({
                   <th
                     key={col.key}
                     className={cn(
-                      "px-4 py-3 text-[11px] font-medium uppercase tracking-wide text-muted",
+                      "px-4 py-3 text-label font-medium uppercase tracking-wide text-muted",
                       col.align === "right" && "text-right",
                       col.align === "center" && "text-center",
                       (!col.align || col.align === "left") && "text-left"

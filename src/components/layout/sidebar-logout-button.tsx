@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { LogOut } from "lucide-react";
 
 import { cn } from "@/lib/utils";
+import { textCaptionClass, textNavClass } from "@/lib/typography-tokens";
 
 type Props = {
   collapsed: boolean;
@@ -34,7 +35,9 @@ export function SidebarLogoutButton({ collapsed }: Props) {
       )}
     >
       {!collapsed ? (
-        <p className="mb-1.5 px-2 text-[10px] text-sidebar-muted">Session active</p>
+        <p className={cn("mb-1.5 px-2 text-sidebar-muted", textCaptionClass)}>
+          Session active
+        </p>
       ) : null}
       <button
         type="button"
@@ -43,7 +46,8 @@ export function SidebarLogoutButton({ collapsed }: Props) {
         title="Se déconnecter"
         aria-label="Se déconnecter"
         className={cn(
-          "flex w-full items-center gap-2 rounded-sm px-2 text-[13px] font-medium",
+          "flex w-full items-center gap-2 rounded-sm px-2",
+          textNavClass,
           "min-h-11 md:min-h-0 md:py-1.5",
           "text-white/90 transition-colors",
           "bg-white/10 hover:bg-white/20 hover:text-white",

@@ -12,6 +12,7 @@ import { PageHeader } from "@/components/shared/page-header";
 import { Button } from "@/components/ui/button";
 import { useModuleUrlFilters } from "@/hooks/use-module-url-filters";
 import { useProductionsInRange } from "@/hooks/use-productions-in-range";
+import { ACTION_LABEL } from "@/lib/terminology";
 import type { Production } from "@/types/domain";
 
 /**
@@ -58,7 +59,7 @@ function ProductionModuleContent() {
           <div className="flex flex-wrap items-center gap-2">
             <Button variant="outline" onClick={() => setSendStockOpen(true)}>
               <ArrowRight className="h-4 w-4" />
-              Envoyer au magasin
+              {ACTION_LABEL.envoyerEnVente}
             </Button>
             <Button variant="accent" onClick={openAddDialog}>
               <Plus className="h-4 w-4" />

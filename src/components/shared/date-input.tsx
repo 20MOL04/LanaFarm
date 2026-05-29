@@ -34,7 +34,7 @@ export function DateInput({
         id={id}
         type="date"
         className={cn(
-          "h-8 w-full min-w-0 max-w-full pl-2.5 text-base tabular-nums sm:pl-8 md:text-[13px]",
+          "h-8 w-full min-w-0 max-w-full pl-2.5 text-base tabular-nums sm:pl-8 md:text-body-sm",
           "[&::-webkit-date-and-time-value]:min-w-0",
           className
         )}

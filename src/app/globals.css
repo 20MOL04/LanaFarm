@@ -37,6 +37,22 @@
   --color-muted: #64748b;
   --color-muted-foreground: #94a3b8;
 
+  /* Typographie — poids */
+  --font-weight-body: 500;
+  --font-weight-label: 500;
+  --font-weight-heading: 600;
+  --font-weight-strong: 700;
+
+  /* Typographie — tailles (plancher relevé pour lisibilité mobile) */
+  --text-micro: 0.6875rem; /* 11px — was 9–10px */
+  --text-caption: 0.6875rem; /* 11px — was 10px */
+  --text-label: 0.75rem; /* 12px — was 10.5–11px */
+  --text-body-sm: 0.8125rem; /* 13px — was 11–13px */
+  --text-body: 0.875rem; /* 14px — base */
+  --text-nav: 0.875rem; /* 14px — was 13px sidebar */
+  --text-title: 0.9375rem; /* 15px */
+  --text-page: 1.375rem; /* 22px */
+
   /* Sidebar — palette bleue profonde brand */
   --color-sidebar: #1e3a8a;
   --color-sidebar-foreground: #e0e7ff;
@@ -112,6 +128,28 @@
 
   --font-sans: var(--font-inter, "Inter"), system-ui, -apple-system, sans-serif;
 
+  --font-weight-body: var(--font-weight-body);
+  --font-weight-label: var(--font-weight-label);
+  --font-weight-heading: var(--font-weight-heading);
+  --font-weight-strong: var(--font-weight-strong);
+
+  --text-micro: var(--text-micro);
+  --text-micro--line-height: 1.35;
+  --text-caption: var(--text-caption);
+  --text-caption--line-height: 1.4;
+  --text-label: var(--text-label);
+  --text-label--line-height: 1.4;
+  --text-body-sm: var(--text-body-sm);
+  --text-body-sm--line-height: 1.45;
+  --text-body: var(--text-body);
+  --text-body--line-height: 1.5;
+  --text-nav: var(--text-nav);
+  --text-nav--line-height: 1.45;
+  --text-title: var(--text-title);
+  --text-title--line-height: 1.3;
+  --text-page: var(--text-page);
+  --text-page--line-height: 1.2;
+
   --radius-card: var(--radius-card);
   --radius-button: var(--radius-button);
   --radius-input: var(--radius-input);
@@ -157,31 +195,38 @@ body {
   background: var(--color-background);
   color: var(--color-foreground);
   font-family: var(--font-inter, "Inter"), system-ui, -apple-system, sans-serif;
-  font-size: 14px;
+  font-size: var(--text-body);
+  font-weight: var(--font-weight-body);
   line-height: 1.5;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   font-feature-settings: "cv02", "cv03", "cv04", "cv11";
 }
 
+@media (max-width: 767px) {
+  body {
+    -webkit-font-smoothing: auto;
+  }
+}
+
 h1 {
-  font-size: 22px;
-  font-weight: 600;
+  font-size: var(--text-page);
+  font-weight: var(--font-weight-heading);
   line-height: 1.2;
   letter-spacing: -0.01em;
   color: var(--color-foreground);
 }
 
 h2 {
-  font-size: 15px;
-  font-weight: 600;
+  font-size: var(--text-title);
+  font-weight: var(--font-weight-heading);
   line-height: 1.3;
   color: var(--color-foreground);
 }
 
 h3 {
-  font-size: 13px;
-  font-weight: 600;
+  font-size: var(--text-body-sm);
+  font-weight: var(--font-weight-heading);
   line-height: 1.4;
   letter-spacing: 0.04em;
   text-transform: uppercase;

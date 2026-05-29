@@ -86,7 +86,7 @@ export function TresorerieMultiDayForm({
     <div className={MULTI_DAY_TABLE.wrap}>
       <table className={MULTI_DAY_TABLE.root}>
         <thead>
-          <tr className="border-b border-border bg-card-muted text-[10px] font-medium text-muted">
+          <tr className="border-b border-border bg-card-muted text-caption font-medium text-muted">
             <th className={cn(MULTI_DAY_TABLE.th, MULTI_DAY_TABLE.col.day)}>Jour</th>
             <th className={cn(MULTI_DAY_TABLE.th, MULTI_DAY_TABLE.col.category)}>Méthode</th>
             <th className={cn(MULTI_DAY_TABLE.th, MULTI_DAY_TABLE.col.montant)}>Montant versé</th>
@@ -111,11 +111,11 @@ export function TresorerieMultiDayForm({
                     className={cn(MULTI_DAY_TABLE.td, MULTI_DAY_TABLE.col.day)}
                   >
                     <div className="flex flex-wrap items-center gap-x-1.5 gap-y-0.5">
-                      <span className="text-[12px] font-medium capitalize leading-none text-foreground">
+                      <span className="text-body-sm font-medium capitalize leading-none text-foreground">
                         {dayLabel}
                       </span>
                       {hasConflict ? (
-                        <Badge tone="warning" className="px-1 py-0 text-[9px] leading-tight">
+                        <Badge tone="warning" className="px-1 py-0 text-micro leading-tight">
                           Déjà saisi
                         </Badge>
                       ) : null}
@@ -123,7 +123,7 @@ export function TresorerieMultiDayForm({
                         type="button"
                         variant="ghost"
                         size="sm"
-                        className="h-5 px-1 text-[10px] leading-none"
+                        className="h-5 px-1 text-caption leading-none"
                         onClick={() => addLine(blockIndex)}
                       >
                         <Plus className="h-3 w-3" />
@@ -133,7 +133,7 @@ export function TresorerieMultiDayForm({
                   </td>
                 ) : null}
                 <td className={cn(MULTI_DAY_TABLE.td, MULTI_DAY_TABLE.col.category)}>
-                  <div className="min-w-0 [&_input]:h-8 [&_input]:min-w-0 [&_input]:px-1.5 [&_input]:text-[13px]">
+                  <div className="min-w-0 [&_input]:h-8 [&_input]:min-w-0 [&_input]:px-1.5 [&_input]:text-body-sm">
                     <ComboboxMethode
                       value={ligne.methode}
                       onChange={(v) => updateLine(blockIndex, lineIndex, { methode: v })}

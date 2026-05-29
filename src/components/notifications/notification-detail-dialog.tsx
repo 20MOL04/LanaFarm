@@ -71,7 +71,7 @@ export function NotificationDetailDialog({
             <p className="font-medium tabular-nums text-foreground">{amountLine}</p>
           ) : null}
           <p className="tabular-nums leading-relaxed">{body}</p>
-          <p className="text-xs">{whenFull}</p>
+          <p className="text-label">{whenFull}</p>
         </DialogBody>
         <DialogFooter>
           {notification.meta?.seuilKey ? (

@@ -57,7 +57,7 @@ export function ReportFilters({
       <SectionHeader
         title="Filtres"
         actions={
-          <span className="hidden items-center gap-1.5 text-xs text-muted sm:inline-flex">
+          <span className="hidden items-center gap-1.5 text-label text-muted sm:inline-flex">
             <CalendarDays className="h-3.5 w-3.5" />
             {formatRange(range)}
             {archivedMode ? " · archivé" : null}
@@ -74,7 +74,7 @@ export function ReportFilters({
                 variant={presetId === p.id ? "primary" : "ghost"}
                 onClick={() => setPreset(p.id)}
                 className={cn(
-                  "h-7 px-3 text-xs",
+                  "h-7 px-3 text-label",
                   presetId !== p.id && "text-muted hover:text-foreground"
                 )}
               >
@@ -137,7 +137,7 @@ export function ReportTypeBadge({ type }: { type: ReportType }) {
   return (
     <span
       className={cn(
-        "inline-flex items-center gap-1 rounded-pill px-2 py-0.5 text-[11px] font-medium",
+        "inline-flex items-center gap-1 rounded-pill px-2 py-0.5 text-label font-medium",
         m.tone
       )}
     >

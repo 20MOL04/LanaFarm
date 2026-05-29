@@ -92,7 +92,7 @@ export function SalesMultiDayForm({ blocks, ventes, defaultPrix, onChange }: Pro
     <div className={MULTI_DAY_TABLE.wrap}>
       <table className={MULTI_DAY_TABLE.root}>
         <thead>
-          <tr className="border-b border-border bg-card-muted text-[10px] font-medium text-muted">
+          <tr className="border-b border-border bg-card-muted text-caption font-medium text-muted">
             <th className={cn(MULTI_DAY_TABLE.th, MULTI_DAY_TABLE.col.day)}>Jour</th>
             <th className={cn(MULTI_DAY_TABLE.th, MULTI_DAY_TABLE.col.vendus)}>Vendus (alv.)</th>
             <th className={cn(MULTI_DAY_TABLE.th, MULTI_DAY_TABLE.col.prix)}>
@@ -127,11 +127,11 @@ export function SalesMultiDayForm({ blocks, ventes, defaultPrix, onChange }: Pro
                     className={cn(MULTI_DAY_TABLE.td, MULTI_DAY_TABLE.col.day)}
                   >
                     <div className="flex flex-wrap items-center gap-x-1.5 gap-y-0.5">
-                      <span className="text-[12px] font-medium capitalize leading-none text-foreground">
+                      <span className="text-body-sm font-medium capitalize leading-none text-foreground">
                         {dayLabel}
                       </span>
                       {hasConflict ? (
-                        <Badge tone="warning" className="px-1 py-0 text-[9px] leading-tight">
+                        <Badge tone="warning" className="px-1 py-0 text-micro leading-tight">
                           Déjà saisi
                         </Badge>
                       ) : null}
@@ -139,7 +139,7 @@ export function SalesMultiDayForm({ blocks, ventes, defaultPrix, onChange }: Pro
                         type="button"
                         variant="ghost"
                         size="sm"
-                        className="h-5 px-1 text-[10px] leading-none"
+                        className="h-5 px-1 text-caption leading-none"
                         onClick={() => addLine(blockIndex)}
                       >
                         <Plus className="h-3 w-3" />

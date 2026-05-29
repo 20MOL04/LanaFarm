@@ -165,10 +165,10 @@ function AddMethodeForm({
         </Button>
       </div>
       {duplicate ? (
-        <p className="text-[11px] text-muted">Cette méthode existe déjà.</p>
+        <p className="text-label text-muted">Cette méthode existe déjà.</p>
       ) : null}
       {errorMessage ? (
-        <p className="text-[11px] text-danger">{errorMessage}</p>
+        <p className="text-label text-danger">{errorMessage}</p>
       ) : null}
     </div>
   );
@@ -230,12 +230,12 @@ function AddCategorieForm({
         </Button>
       </div>
       {duplicate ? (
-        <p className="text-[11px] text-muted">
+        <p className="text-label text-muted">
           Cette catégorie existe déjà.
         </p>
       ) : null}
       {errorMessage ? (
-        <p className="text-[11px] text-danger">{errorMessage}</p>
+        <p className="text-label text-danger">{errorMessage}</p>
       ) : null}
     </div>
   );
@@ -255,7 +255,7 @@ function ListColumn({
       <div className="space-y-0.5">
         <p className="text-sm font-semibold text-foreground">{title}</p>
         {description ? (
-          <p className="text-[11px] text-muted">{description}</p>
+          <p className="text-label text-muted">{description}</p>
         ) : null}
       </div>
       {children}

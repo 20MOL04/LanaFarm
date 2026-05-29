@@ -662,18 +662,18 @@ export function AddTresorerieDialog({ open, onOpenChange, editEntry = null }: Pr
                       />
                     </FormField>
                     {touched && editErrors.jourISO ? (
-                      <p className="text-[11px] text-danger">{editErrors.jourISO}</p>
+                      <p className="text-label text-danger">{editErrors.jourISO}</p>
                     ) : null}
                     {touched && storeBatchError ? (
-                      <p className="text-[11px] text-danger">{storeBatchError}</p>
+                      <p className="text-label text-danger">{storeBatchError}</p>
                     ) : null}
                     {rienAVerser ? (
-                      <p className="text-[11px] text-muted">
+                      <p className="text-label text-muted">
                         Rien à verser pour le moment.
                       </p>
                     ) : null}
                     {depasseReste ? (
-                      <p className="text-[11px] text-danger">
+                      <p className="text-label text-danger">
                         Le montant dépasse le reste à verser ({formatGNF(plafondVersement)}).
                       </p>
                     ) : null}
@@ -694,18 +694,18 @@ export function AddTresorerieDialog({ open, onOpenChange, editEntry = null }: Pr
                       />
                     ))}
                     {touched && dayErrors.form ? (
-                      <p className="text-[11px] text-danger">{dayErrors.form}</p>
+                      <p className="text-label text-danger">{dayErrors.form}</p>
                     ) : null}
                     {touched && storeBatchError ? (
-                      <p className="text-[11px] text-danger">{storeBatchError}</p>
+                      <p className="text-label text-danger">{storeBatchError}</p>
                     ) : null}
                     {!isEditMode && rienAVerser ? (
-                      <p className="text-[11px] text-muted">
+                      <p className="text-label text-muted">
                         Rien à verser pour le moment.
                       </p>
                     ) : null}
                     {!isEditMode && depasseReste ? (
-                      <p className="text-[11px] text-danger">
+                      <p className="text-label text-danger">
                         Le montant dépasse le reste à verser ({formatGNF(plafondVersement)}).
                       </p>
                     ) : null}
@@ -717,10 +717,10 @@ export function AddTresorerieDialog({ open, onOpenChange, editEntry = null }: Pr
             )}
 
             {!isEditMode && multiMode && rienAVerser ? (
-              <p className="text-[11px] text-muted">Rien à verser pour le moment.</p>
+              <p className="text-label text-muted">Rien à verser pour le moment.</p>
             ) : null}
             {!isEditMode && multiMode && multiDepasseReste ? (
-              <p className="text-[11px] text-danger">
+              <p className="text-label text-danger">
                 Le total dépasse le reste à verser ({formatGNF(resteGlobal)}).
               </p>
             ) : null}
@@ -950,7 +950,7 @@ function WeekContextPanel({
   const badge = resteApresPreview(resteGlobal);
   return (
     <details className="rounded-card border border-border bg-card-muted/40">
-      <summary className="flex cursor-pointer list-none items-center justify-between gap-2 px-3 py-2 text-[11px] font-medium text-foreground [&::-webkit-details-marker]:hidden">
+      <summary className="flex cursor-pointer list-none items-center justify-between gap-2 px-3 py-2 text-label font-medium text-foreground [&::-webkit-details-marker]:hidden">
         <span className="inline-flex items-center gap-1.5">
           <Info className="h-3.5 w-3.5 shrink-0 text-accent-blue" />
           Contexte
@@ -966,7 +966,7 @@ function WeekContextPanel({
           {badge.value}
         </span>
       </summary>
-      <dl className="space-y-1 border-t border-border px-3 py-2 text-[11px]">
+      <dl className="space-y-1 border-t border-border px-3 py-2 text-label">
         <FinanceRow label="CA période (info)" value={formatGNF(caPeriode)} />
         <FinanceRow label="Dépenses période (info)" value={formatGNF(depensesPeriode)} />
         <FinanceRow label="Reste à verser (global)" value={formatGNF(resteGlobal)} />

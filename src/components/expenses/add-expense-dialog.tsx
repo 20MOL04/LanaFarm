@@ -515,7 +515,7 @@ export function AddExpenseDialog({ open, onOpenChange, editEntry = null }: Props
                           />
                         ))}
                         {touched && dayErrors.form ? (
-                          <p className="text-[11px] text-danger">{dayErrors.form}</p>
+                          <p className="text-label text-danger">{dayErrors.form}</p>
                         ) : null}
                       </>
                     )}

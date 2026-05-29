@@ -50,7 +50,7 @@ export function HistoryDialog({
             <Clock className="h-4 w-4 text-muted" />
             {title}
           </DialogTitle>
-          {subtitle ? <p className="text-xs text-muted">{subtitle}</p> : null}
+          {subtitle ? <p className="text-label text-muted">{subtitle}</p> : null}
         </DialogHeader>
 
         <DialogBody className="max-h-[min(50vh,360px)] space-y-2 overflow-y-auto">
@@ -68,7 +68,7 @@ export function HistoryDialog({
                 className="rounded-card border border-border bg-card-muted/50 p-3"
               >
                 <div className="mb-2 flex items-center justify-between gap-2">
-                  <span className="text-xs text-muted tabular-nums">
+                  <span className="text-label text-muted tabular-nums">
                     {formatAbsoluteDateTimeFR(version.archivedAt)}
                   </span>
                   {version.archiveMotif ? (
@@ -92,7 +92,7 @@ export function HistoryDialog({
                     type="button"
                     variant="ghost"
                     size="sm"
-                    className="mt-2 h-7 gap-1.5 text-xs"
+                    className="mt-2 h-7 gap-1.5 text-label"
                     onClick={() => onRestore(version.id)}
                   >
                     <RotateCcw className="h-3.5 w-3.5" />

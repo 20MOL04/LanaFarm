@@ -13,7 +13,7 @@ type Props = {
 export function ReportPrintTimeline({ data }: Props) {
   if (data.length === 0) {
     return (
-      <p className="hidden text-xs text-muted print:block">
+      <p className="hidden text-label text-muted print:block">
         Aucune activité sur la période.
       </p>
     );
@@ -26,7 +26,7 @@ export function ReportPrintTimeline({ data }: Props) {
       <h2 className="mb-2 text-sm font-semibold text-foreground">
         Activité journalière
       </h2>
-      <table className="w-full border-collapse text-[10px]">
+      <table className="w-full border-collapse text-caption">
         <thead>
           <tr className="border-b border-border text-left">
             <th className="py-1 pr-2 font-medium">Jour</th>

@@ -45,8 +45,8 @@ export function ActivityChartTooltip({
       className="pointer-events-none max-w-[190px] rounded border border-border bg-card px-2 py-1.5 text-left shadow-sm"
       style={{ borderLeftWidth: 2, borderLeftColor: metricCfg.color }}
     >
-      <p className="truncate text-[10px] leading-tight text-muted">{shortDate}</p>
-      <p className="mt-0.5 text-[11px] font-semibold leading-tight text-foreground">
+      <p className="truncate text-caption leading-tight text-muted">{shortDate}</p>
+      <p className="mt-0.5 text-label font-semibold leading-tight text-foreground">
         {metricCfg.label}
         <span className="mx-1 font-normal text-muted">·</span>
         <span className="tabular-nums">
