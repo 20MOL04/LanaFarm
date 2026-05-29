@@ -12,6 +12,10 @@ const STORE_ERROR_MESSAGES: Record<string, string> = {
     "Stock insuffisant pour une ou plusieurs lignes.",
   DEPENSE_BATCH_INVALID:
     "Vérifiez les lignes : catégorie et montant requis.",
+  TRESORERIE_BATCH_INVALID:
+    "Chaque ligne doit avoir une méthode et un montant reçu supérieur à 0.",
+  VERSEMENT_DEPASSE_RESTE:
+    "Le versement dépasse le reste à verser.",
 };
 
 export function getStoreErrorMessage(

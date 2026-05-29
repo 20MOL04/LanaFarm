@@ -16,15 +16,13 @@ import {
   kpiAlveolesRamassees,
   kpiCA,
   kpiDepenses,
-  kpiMontantVerse,
   kpiPertesTotales,
   kpiProfit,
   kpiResteAVerser,
   kpiStockMagasin,
+  kpiTresorerieVersePeriode,
 } from "@/lib/kpi-sources";
 import { aggregateProductions } from "@/lib/production-calc";
-import { calcSaleLineMontant } from "@/lib/sales-calc";
-import { eggsToTrays } from "@/lib/units";
 import type {
   Depense,
   FarmConfig,
@@ -43,7 +41,7 @@ export type DashboardKpiSnapshot = {
   alveolesRamassees: number;
   /** Σ alvéoles mises en vente sur la période. */
   alveolesMisesEnVente: number;
-  /** Σ alvéoles restantes (par jour) sur la période. */
+  /** Stock ferme instantané (alvéoles) — cumulatif, pas Σ période. */
   alveolesRestantes: number;
   /** Stock magasin cumulé à la fin de la période (œufs — afficher en alvéoles). */
   stockMagasin: number;
@@ -117,8 +115,18 @@ export function buildDashboardKpis(
       cap
     ),
     oeufsCassesFerme: prodInRange.oeufsCasses,
-    montantRemis: kpiMontantVerse(input.tresorerieInRange),
-    montantEnAttente: kpiResteAVerser(input.allVentes, input.allTresorerie, cap),
+    montantRemis: kpiTresorerieVersePeriode(
+      input.allTresorerie,
+      rangeStart,
+      rangeEnd
+    ),
+    montantEnAttente: kpiResteAVerser(
+      input.allVentes,
+      input.allDepenses,
+      input.allTresorerie,
+      cap,
+      input.config
+    ),
   };
 }
 
@@ -150,51 +158,32 @@ export function buildActivityTimeline(
   productions: Production[],
   ventes: Vente[],
   depenses: Depense[],
-  capacitePlateau = 30
+  capacitePlateau: number,
+  config: FarmConfig
 ): ActivityPoint[] {
   const s = startOfDay(start);
   const e = startOfDay(end);
   if (e.getTime() < s.getTime()) return [];
 
-  // Index par jour — alvéoles (même unité que aggregateProductions.alveolesRamassees)
-  const prodByDay = new Map<string, number>();
-  for (const p of productions) {
-    if (p.statut !== "actif") continue;
-    const k = dayKey(new Date(p.jourISO));
-    prodByDay.set(
-      k,
-      (prodByDay.get(k) ?? 0) + eggsToTrays(p.production, capacitePlateau)
-    );
-  }
-  const caByDay = new Map<string, number>();
-  for (const v of ventes) {
-    if (v.statut !== "actif") continue;
-    const k = dayKey(new Date(v.jourISO));
-    // TODO-VagueB: migrer vers calculerCA par jour
-    caByDay.set(
-      k,
-      (caByDay.get(k) ?? 0) + calcSaleLineMontant(v.vendus, v.prix, capacitePlateau)
-    );
-  }
-  const depByDay = new Map<string, number>();
-  for (const d of depenses) {
-    if (d.statut !== "actif") continue;
-    const k = dayKey(new Date(d.jourISO));
-    depByDay.set(k, (depByDay.get(k) ?? 0) + d.montant);
-  }
-
   const points: ActivityPoint[] = [];
   let cur = s;
   while (cur.getTime() <= e.getTime()) {
+    const dayStart = startOfDay(cur);
+    const dayEnd = dayStart;
     const k = cur.toISOString();
-    const ca = caByDay.get(k) ?? 0;
-    const dep = depByDay.get(k) ?? 0;
+    const dayProductions = productions.filter(
+      (p) =>
+        p.statut === "actif" &&
+        dayKey(new Date(p.jourISO)) === dayKey(dayStart)
+    );
+    const ca = kpiCA(ventes, dayStart, dayEnd, capacitePlateau);
+    const dep = kpiDepenses(depenses, dayStart, dayEnd, config);
     points.push({
       dateISO: k,
-      profit: ca - dep,
       ca,
       depenses: dep,
-      production: prodByDay.get(k) ?? 0,
+      profit: kpiProfit(ventes, depenses, dayStart, dayEnd, capacitePlateau),
+      production: kpiAlveolesRamassees(dayProductions, capacitePlateau),
     });
     cur = addDays(cur, 1);
   }

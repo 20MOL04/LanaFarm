@@ -56,6 +56,7 @@ export function DashboardModule() {
   const { getAllTransfers } = useTransfersStore();
   const allTransferts = getAllTransfers();
   const config = useFarmConfig();
+  const cap = config.preferences.capacitePlateau;
 
   /* ===========================================================
      KPIs
@@ -106,9 +107,11 @@ export function DashboardModule() {
         range.to,
         productionsInRange,
         ventesInRange,
-        depensesInRange
+        depensesInRange,
+        cap,
+        config
       ),
-    [range, productionsInRange, ventesInRange, depensesInRange]
+    [range, productionsInRange, ventesInRange, depensesInRange, cap, config]
   );
 
   /* ===========================================================

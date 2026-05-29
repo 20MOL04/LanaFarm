@@ -4,9 +4,8 @@ import * as React from "react";
 import { isSameDay, parseISO, startOfDay } from "date-fns";
 import { Wallet } from "lucide-react";
 
-import { TresorerieRowActions } from "@/components/tresorerie/tresorerie-row-actions";
-import { MethodBadge } from "@/components/tresorerie/method-badge";
-import { EntryStatusBadge } from "@/components/shared/entry-status-badge";
+import { TresorerieDayGroupActions } from "@/components/tresorerie/tresorerie-day-group-actions";
+import { DayGroupStatusBadge } from "@/components/shared/entry-status-badge";
 import {
   DataTable,
   type DataTableColumn,
@@ -33,8 +32,14 @@ import {
   resolveMethodeLabel,
 } from "@/lib/config-defaults";
 import { formatDay } from "@/lib/date-ranges";
+import {
+  dayKeyFromISO,
+  formatMethodesSummary,
+  groupTresorerieByDay,
+  type TresorerieDayGroup,
+} from "@/lib/day-entry-grouping";
 import { AdaptiveMetric } from "@/components/shared/adaptive-metric";
-import { calcReste } from "@/lib/tresorerie-calc";
+import { formatGNF } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import type { Tresorerie, EntreeStatut } from "@/types/domain";
 
@@ -77,93 +82,95 @@ export function TresorerieTable({
     if (initialStatut) setStatusFilter(initialStatut);
   }, [initialStatut]);
 
-  const filters = React.useMemo(
-    () => [
-      (row: Tresorerie) => statusFilter === "tous" || row.statut === statusFilter,
-      (row: Tresorerie) =>
-        methodFilter === "toutes" ||
-        resolveMethodeLabel(row.methode, config.listes.methodesPaiement) ===
-          methodFilter,
-      (row: Tresorerie) => {
-        if (!initialJour) return true;
+  const dayGroups = React.useMemo(() => {
+    const visibleDayKeys = new Set<string>();
+    for (const row of data) {
+      if (statusFilter !== "tous" && row.statut !== statusFilter) continue;
+      if (
+        methodFilter !== "toutes" &&
+        resolveMethodeLabel(row.methode, config.listes.methodesPaiement) !== methodFilter
+      ) {
+        continue;
+      }
+      if (initialJour) {
         try {
-          return isSameDay(startOfDay(parseISO(initialJour)), new Date(row.jourISO));
+          if (!isSameDay(startOfDay(parseISO(initialJour)), new Date(row.jourISO))) {
+            continue;
+          }
         } catch {
-          return true;
+          /* ignore invalid deep link */
         }
-      },
-    ],
-    [statusFilter, methodFilter, config, initialJour]
-  );
+      }
+      visibleDayKeys.add(dayKeyFromISO(row.jourISO));
+    }
+    const rowsForDays = data.filter((r) => visibleDayKeys.has(dayKeyFromISO(r.jourISO)));
+    return groupTresorerieByDay(rowsForDays, config);
+  }, [data, statusFilter, methodFilter, config, initialJour]);
 
-  const table = useDataTableState<Tresorerie>({
-    data,
-    filters,
+  const table = useDataTableState<TresorerieDayGroup>({
+    data: dayGroups,
     searchAccessors: [
-      (r) => formatDay(new Date(r.jourISO)),
-      (r) => resolveMethodeLabel(r.methode, config.listes.methodesPaiement),
-      (r) => r.note,
-      (r) => String(r.montantRecu),
-      (r) => String(r.depose),
+      (g) => formatDay(new Date(g.jourISO)),
+      (g) => formatMethodesSummary(g.methodes),
+      (g) => formatGNF(g.totalDepose),
+      (g) => formatGNF(g.totalRecu),
+      (g) =>
+        g.entries
+          .map((e) => resolveMethodeLabel(e.methode, config.listes.methodesPaiement))
+          .join(" "),
+      (g) => g.entries.map((e) => e.note ?? "").join(" "),
     ],
     sortAccessors: {
-      jour: (r) => new Date(r.jourISO),
-      recu: (r) => r.montantRecu,
-      depose: (r) => r.depose,
-      reste: (r) => calcReste(r),
-      methode: (r) =>
-        resolveMethodeLabel(r.methode, config.listes.methodesPaiement),
+      jour: (g) => new Date(g.jourISO),
+      verse: (g) => g.totalDepose,
+      reste: (g) => g.totalReste,
+      methode: (g) => formatMethodesSummary(g.methodes),
     },
     initialSort: { key: "jour", direction: "desc" },
     pageSize: 10,
   });
 
-  const columns: DataTableColumn<Tresorerie>[] = [
+  const columns: DataTableColumn<TresorerieDayGroup>[] = [
     {
       key: "jour",
       header: "Jour",
       sortable: true,
       primary: true,
-      width: "30%",
-      cell: (row) => (
-        <span className="capitalize">{formatDay(new Date(row.jourISO))}</span>
+      width: "28%",
+      cell: (group) => (
+        <div className="min-w-0">
+          <span className="capitalize">{formatDay(new Date(group.jourISO))}</span>
+          {group.count > 1 ? (
+            <p className="text-[10px] text-muted">{group.count} versements</p>
+          ) : null}
+        </div>
       ),
     },
     {
-      key: "recu",
-      header: "Reçu",
-      sortable: true,
-      width: "22%",
-      cell: (row) => (
-        <AdaptiveMetric value={row.montantRecu} kind="gnf" className="font-semibold" />
-      ),
-    },
-    {
-      key: "depose",
+      key: "verse",
       header: "Versé",
       sortable: true,
-      hideBelow: "sm",
-      cell: (row) => (
-        <AdaptiveMetric value={row.depose} kind="gnf" className="text-success" />
+      width: "24%",
+      cell: (group) => (
+        <AdaptiveMetric value={group.totalDepose} kind="gnf" className="font-semibold text-success" />
       ),
     },
     {
       key: "reste",
       header: "Reste",
       sortable: true,
-      hideBelow: "md",
-      cell: (row) => {
-        const reste = calcReste(row);
-        if (reste === 0) {
+      hideBelow: "sm",
+      cell: (group) => {
+        if (group.totalReste === 0) {
           return <span className="text-muted">—</span>;
         }
         return (
           <AdaptiveMetric
-            value={reste}
+            value={group.totalReste}
             kind="gnf"
             className={cn(
-              reste > 0 && "text-warning",
-              reste < 0 && "text-danger"
+              group.totalReste > 0 && "text-warning",
+              group.totalReste < 0 && "text-danger"
             )}
           />
         );
@@ -173,20 +180,27 @@ export function TresorerieTable({
       key: "methode",
       header: "Méthode",
       sortable: true,
-      hideBelow: "lg",
-      cell: (row) => <MethodBadge method={row.methode} />,
+      hideBelow: "md",
+      cell: (group) => (
+        <span className="line-clamp-2 text-[12px] font-medium text-foreground">
+          {formatMethodesSummary(group.methodes)}
+        </span>
+      ),
     },
     {
       key: "statut",
       header: "Statut",
-      cell: (row) => <EntryStatusBadge statut={row.statut} masculine />,
+      width: "4.75rem",
+      noTruncate: true,
+      cell: (group) => <DayGroupStatusBadge group={group} masculine />,
     },
     {
       key: "actions",
       header: <span className="sr-only">Actions</span>,
-      width: "56px",
-      cell: (row) => (
-        <TresorerieRowActions entry={row} onRequestEdit={onRequestEdit} />
+      width: "48px",
+      noTruncate: true,
+      cell: (group) => (
+        <TresorerieDayGroupActions group={group} onRequestEdit={onRequestEdit} />
       ),
     },
   ];
@@ -237,25 +251,27 @@ export function TresorerieTable({
         </div>
 
         <div className="w-full min-w-0 max-w-full rounded-card border border-border shadow-card">
-          <DataTable<Tresorerie>
+          <DataTable<TresorerieDayGroup>
             data={table.visible}
             columns={columns}
-            rowKey={(r) => r.id}
+            rowKey={(g) => g.dayKey}
             sort={table.sort}
             onSortChange={table.toggleSort}
-            rowClassName={(r) => (r.statut === "annule" ? "opacity-60" : undefined)}
+            rowClassName={(g) =>
+              g.statut === "annule" ? "opacity-60" : undefined
+            }
             emptyState={
               <EmptyState
                 icon={Wallet}
                 title={
                   table.search || statusFilter !== "actif" || methodFilter !== "toutes"
-                    ? "Aucun trésorerie ne correspond aux filtres"
-                    : "Aucun trésorerie saisi pour cette période"
+                    ? "Aucun versement ne correspond aux filtres"
+                    : "Aucun versement saisi pour cette période"
                 }
                 description={
                   table.search || statusFilter !== "actif" || methodFilter !== "toutes"
                     ? "Ajuste la recherche, la méthode ou le statut."
-                    : "Utilise le bouton « Ajouter un trésorerie » pour démarrer."
+                    : "Utilise le bouton « Nouvelle saisie » pour démarrer."
                 }
               />
             }
@@ -276,4 +292,3 @@ export function TresorerieTable({
     </SectionCard>
   );
 }
-

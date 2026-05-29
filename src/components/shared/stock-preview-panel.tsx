@@ -14,6 +14,8 @@ type Props = {
   stockNegatif: boolean;
   deltaAlv?: number;
   caLabel?: string;
+  stockDebutLabel?: string;
+  stockFinLabel?: string;
 };
 
 export function StockPreviewPanel({
@@ -23,6 +25,8 @@ export function StockPreviewPanel({
   stockNegatif,
   deltaAlv,
   caLabel = "CA du jour",
+  stockDebutLabel = "Stock disponible",
+  stockFinLabel = "Après vente",
 }: Props) {
   return (
     <PreviewPanelShell
@@ -31,18 +35,20 @@ export function StockPreviewPanel({
     >
       <PreviewGrid>
         <PreviewCell
-          label="Stock disponible"
+          label={stockDebutLabel}
           value={`${formatNumber(stockDisponible)} alv.`}
         />
         <PreviewCell
-          label="Après vente"
+          label={stockFinLabel}
           value={`${formatNumber(stockApres)} alv.`}
           sub={
             deltaAlv != null && deltaAlv !== 0
-              ? `(${deltaAlv > 0 ? "+" : ""}${formatNumber(deltaAlv)})`
+              ? `${deltaAlv > 0 ? "+" : ""}${formatNumber(deltaAlv)} alv.`
               : undefined
           }
-          tone={stockNegatif ? "danger" : undefined}
+          tone={
+            stockNegatif ? "danger" : deltaAlv != null && deltaAlv > 0 ? "success" : undefined
+          }
         />
         <PreviewCell label={caLabel} value={formatGNF(montant)} />
       </PreviewGrid>

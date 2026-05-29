@@ -23,6 +23,7 @@ import {
 } from "@/components/shared/section-card";
 import type { ActivityPoint, ActivityMetricKey } from "@/lib/dashboard-calc";
 import { formatGNFCompact, formatCompact } from "@/lib/format";
+import { KPI_LABEL, MODULE_LABEL } from "@/lib/terminology";
 import { cn } from "@/lib/utils";
 
 import { ActivityChartTooltip } from "@/components/dashboard/activity-chart-tooltip";
@@ -40,28 +41,28 @@ type MetricConfig = {
 const METRICS: Record<MetricKey, MetricConfig> = {
   profit: {
     key: "profit",
-    label: "Profit",
+    label: KPI_LABEL.profit,
     unit: "GNF",
     color: "var(--color-success)",
     gradient: "lf-grad-profit",
   },
   ca: {
     key: "ca",
-    label: "CA",
+    label: KPI_LABEL.chiffreAffaires,
     unit: "GNF",
     color: "var(--color-accent-blue)",
     gradient: "lf-grad-ca",
   },
   depenses: {
     key: "depenses",
-    label: "Dépenses",
+    label: KPI_LABEL.depenses,
     unit: "GNF",
     color: "var(--color-danger)",
     gradient: "lf-grad-depenses",
   },
   production: {
     key: "production",
-    label: "Production",
+    label: MODULE_LABEL.production,
     unit: "alv",
     color: "var(--color-warning)",
     gradient: "lf-grad-production",

@@ -58,7 +58,7 @@ function buildSynthèseRows(p: ReportPayload): (string | number)[][] {
     ["Profit", formatGNFForExport(k.profit)],
     ["Pertes totales", k.pertesTotales],
     ["Montant remis", formatGNFForExport(k.montantRemis)],
-    ["Reste a verser (periode)", formatGNFForExport(k.montantEnAttente)],
+    ["Reste a verser (cumul global)", formatGNFForExport(k.montantEnAttente)],
     ["Marge brute", k.margeBrutePct != null ? `${k.margeBrutePct} %` : "—"],
     [],
     ["Production", ""],

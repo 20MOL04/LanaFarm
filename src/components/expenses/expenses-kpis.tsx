@@ -12,6 +12,7 @@ import { useDateRange } from "@/contexts/date-range-context";
 import { useExpensesStore, useFarmConfig } from "@/contexts/farm-store";
 import { kpiDepenses } from "@/lib/kpi-sources";
 import { aggregateExpenses } from "@/lib/expenses-calc";
+import { KPI_LABEL } from "@/lib/terminology";
 
 export function ExpensesKpis() {
   const expenses = useExpensesInRange();
@@ -38,19 +39,19 @@ export function ExpensesKpis() {
     ? getCategoryMeta(totals.topCategorie.id)
     : null;
 
-  const labelTotal = useKpiPeriodLabel("Total dépenses");
-  const labelMoyenne = useKpiPeriodLabel("Moyenne / jour");
+  const labelTotal = useKpiPeriodLabel(KPI_LABEL.totalDepenses);
+  const labelMoyenne = useKpiPeriodLabel(KPI_LABEL.moyenneJour);
 
   const topCategoryCard: KpiCardProps = topMeta && totals.topCategorie
     ? {
-        label: "Catégorie principale",
+        label: KPI_LABEL.categoriePrincipale,
         value: totals.topCategorie.label,
         hint: undefined,
         icon: topMeta.icon,
         tone: "neutral",
       }
     : {
-        label: "Catégorie principale",
+        label: KPI_LABEL.categoriePrincipale,
         value: "—",
         icon: PieChart,
         tone: "neutral",

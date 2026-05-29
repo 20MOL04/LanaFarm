@@ -188,12 +188,15 @@ export function ExpensesTable({
     {
       key: "statut",
       header: "Statut",
+      width: "4.75rem",
+      noTruncate: true,
       cell: (group) => <DayGroupStatusBadge group={group} />,
     },
     {
       key: "actions",
       header: <span className="sr-only">Actions</span>,
-      width: "56px",
+      width: "48px",
+      noTruncate: true,
       cell: (group) => (
         <ExpensesDayGroupActions group={group} onRequestEdit={onRequestEdit} />
       ),

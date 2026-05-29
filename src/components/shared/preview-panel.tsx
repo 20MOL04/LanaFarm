@@ -40,7 +40,7 @@ export function PreviewGrid({ children, cols = 3, className }: PreviewGridProps)
   return (
     <div
       className={cn(
-        "grid gap-2 text-sm",
+        "grid min-w-0 gap-x-3 gap-y-2 text-sm",
         cols === 3 ? "grid-cols-3" : "grid-cols-2",
         className
       )}
@@ -62,10 +62,10 @@ type PreviewCellProps = {
 export function PreviewCell({ label, value, sub, tone }: PreviewCellProps) {
   return (
     <div className="min-w-0">
-      <p className="whitespace-nowrap text-[9.5px] font-medium text-muted">{label}</p>
+      <p className="text-[10px] font-medium leading-tight text-muted">{label}</p>
       <p
         className={cn(
-          "font-semibold tabular-nums",
+          "text-[13px] font-semibold tabular-nums leading-snug",
           tone === "danger" && "text-danger",
           tone === "success" && "text-success",
           !tone && "text-foreground"
@@ -73,7 +73,16 @@ export function PreviewCell({ label, value, sub, tone }: PreviewCellProps) {
       >
         {value}
       </p>
-      {sub ? <p className="text-[10px] text-muted tabular-nums">{sub}</p> : null}
+      {sub ? (
+        <p
+          className={cn(
+            "text-[10px] tabular-nums leading-tight",
+            tone === "danger" ? "text-danger" : "text-muted"
+          )}
+        >
+          {sub}
+        </p>
+      ) : null}
     </div>
   );
 }

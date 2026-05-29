@@ -20,10 +20,19 @@ export type SalesPreviewSnapshot = {
   montantTotal: number;
   stockNegatif: boolean;
   caLabel: string;
+  stockDebutLabel?: string;
+  stockFinLabel?: string;
 };
+
+function isSameCalendarDay(a: string, b: string): boolean {
+  return (
+    startOfDay(new Date(a)).getTime() === startOfDay(new Date(b)).getTime()
+  );
+}
 
 /**
  * Preview ventes — une source pour 1 jour (lignes + cassés) ou plusieurs jours.
+ * Multi-jours : stock vente actuel (aujourd'hui) vs après simulation des lignes saisies.
  */
 export function computeSalesPreview(
   ventes: Vente[],
@@ -67,6 +76,8 @@ export function computeSalesPreview(
       montantTotal,
       stockNegatif: stockApres < 0,
       caLabel: "CA du jour",
+      stockDebutLabel: "Stock vente",
+      stockFinLabel: "Après saisie",
     };
   }
 
@@ -80,16 +91,24 @@ export function computeSalesPreview(
 
   if (filled.length === 0) return null;
 
+  const today = startOfDay(new Date());
+  const stockActuelOeufs = stockMagasinInstantane(transferts, ventes, today);
+  const stockActuelAlv = eggsToTrays(stockActuelOeufs, capacitePlateau);
+
   let ventesSim = [...ventes];
   let montantTotal = 0;
   let stockNegatif = false;
-  let firstStockAlv = 0;
-  let lastStockApresAlv = 0;
   let draftIndex = 0;
 
-  for (let i = 0; i < filled.length; i++) {
-    const block = filled[i]!;
+  for (const block of filled) {
     const jourISO = startOfDay(new Date(block.jourISO)).toISOString();
+
+    // Jour déjà saisi → preview en mode remplacement (comme à l'enregistrement).
+    ventesSim = ventesSim.filter(
+      (v) =>
+        v.statut !== "actif" || !isSameCalendarDay(v.jourISO, block.jourISO)
+    );
+
     const drafts = saleDayUiToStorageDrafts(
       {
         jourISO,
@@ -102,18 +121,23 @@ export function computeSalesPreview(
     );
 
     for (const draft of drafts) {
-      const { errors, stockDisponible } = validateSaleDraftWithCumulativeStock(draft, {
-        transferts,
-        toutesVentes: ventesSim,
-      });
+      const { errors, stockDisponible } = validateSaleDraftWithCumulativeStock(
+        draft,
+        {
+          transferts,
+          toutesVentes: ventesSim,
+        }
+      );
       const vendus = draft.vendus + draft.cassesVente;
-      const stockApres = stockDisponible - vendus;
-      if (draftIndex === 0) {
-        firstStockAlv = eggsToTrays(stockDisponible, capacitePlateau);
+      const stockApresLigne = stockDisponible - vendus;
+      if (Object.keys(errors).length > 0 || stockApresLigne < 0) {
+        stockNegatif = true;
       }
-      lastStockApresAlv = eggsToTrays(Math.max(0, stockApres), capacitePlateau);
-      if (Object.keys(errors).length > 0 || stockApres < 0) stockNegatif = true;
-      montantTotal += calcSaleLineMontant(draft.vendus, draft.prix, capacitePlateau);
+      montantTotal += calcSaleLineMontant(
+        draft.vendus,
+        draft.prix,
+        capacitePlateau
+      );
 
       ventesSim = [
         ...ventesSim,
@@ -134,12 +158,18 @@ export function computeSalesPreview(
     }
   }
 
+  const stockApresOeufs = stockMagasinInstantane(transferts, ventesSim, today);
+  const stockApresAlv = eggsToTrays(stockApresOeufs, capacitePlateau);
+  const deltaAlv = stockApresAlv - stockActuelAlv;
+
   return {
-    stockDisponibleAlv: firstStockAlv,
-    stockApresAlv: lastStockApresAlv,
-    deltaAlv: lastStockApresAlv - firstStockAlv,
+    stockDisponibleAlv: stockActuelAlv,
+    stockApresAlv,
+    deltaAlv,
     montantTotal,
     stockNegatif,
-    caLabel: "CA période",
+    caLabel: "CA saisi",
+    stockDebutLabel: "Stock vente",
+    stockFinLabel: "Après saisie",
   };
 }

@@ -2,36 +2,59 @@
 
 import * as React from "react";
 import { format, startOfDay } from "date-fns";
-import { Info, PiggyBank, Plus, Trash2 } from "lucide-react";
+import { Info, PiggyBank, Trash2 } from "lucide-react";
 
+import {
+  isTresorerieBlockFilled,
+  TresorerieMultiDayForm,
+  type TresorerieMultiDayBlock,
+} from "@/components/tresorerie/tresorerie-multi-day-form";
 import { ComboboxMethode } from "@/components/shared/combobox-methode";
 import { DateInput } from "@/components/shared/date-input";
+import { DialogDateRow } from "@/components/shared/dialog-date-row";
+import { DialogDayLinesToolbar } from "@/components/shared/dialog-day-lines-toolbar";
+import { DialogFormShell } from "@/components/shared/dialog-form-shell";
+import { MultiDayConflictDialog } from "@/components/shared/multi-day-conflict-dialog";
+import { MultiDayModeToggle } from "@/components/shared/multi-day-mode-toggle";
+import { MultiDayPeriodPicker } from "@/components/shared/multi-day-period-picker";
 import { FormField } from "@/components/shared/form-field";
-import { Button } from "@/components/ui/button";
 import {
-  Dialog,
-  DialogContent,
-  DialogBody,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+  DIALOG_SCROLL,
+  FORM_INPUT_MONTANT,
+  FORM_INPUT_NOTES,
+  FORM_LINE_CARD,
+  FORM_LINE_GRID_2,
+  FORM_LINE_GRID_3,
+} from "@/components/shared/form-dialog-styles";
+import { PreviewCell, PreviewGrid, PreviewPanelShell } from "@/components/shared/preview-panel";
+import { StoreErrorBanner } from "@/components/shared/store-error-banner";
+import { Button } from "@/components/ui/button";
+import { DialogScrollRegion } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { useTresorerieStore, useFarmConfig, useSalesStore } from "@/contexts/farm-store";
+import {
+  useExpensesStore,
+  useFarmConfig,
+  useSalesStore,
+  useTresorerieStore,
+} from "@/contexts/farm-store";
 import { UnsavedChangesConfirm } from "@/components/shared/unsaved-changes-confirm";
 import { useStoreSubmitGuard } from "@/hooks/use-store-submit-guard";
 import { useUnsavedDialogClose } from "@/hooks/use-unsaved-dialog-close";
 import { isDirtyComparedToSnapshot, stableStringify } from "@/lib/form-dirty";
 import { useDateRange } from "@/contexts/date-range-context";
-import { kpiCA, kpiDepenses } from "@/lib/kpi-sources";
+import { kpiCA, kpiDepenses, kpiResteAVerser } from "@/lib/kpi-sources";
 import { formatDay } from "@/lib/date-ranges";
 import { formatGNF } from "@/lib/format";
 import {
-  type TresorerieDraft,
-  type TresorerieFormErrors,
-  validateTresorerieDraft,
-} from "@/lib/tresorerie-calc";
+  clampMultiDayPeriod,
+  enumerateDayISOs,
+  getActiveTresorerieForDay,
+  hasActiveTresorerieForDay,
+  syncLinesWithPeriod,
+  type MultiDayConflictResolution,
+} from "@/lib/multi-day";
+import { type TresorerieDraft, type TresorerieFormErrors } from "@/lib/tresorerie-calc";
 import { cn } from "@/lib/utils";
 import type { FarmConfig, Tresorerie } from "@/types/domain";
 
@@ -79,18 +102,33 @@ function emptyDayDraft(): TresorerieDayFormState {
   return { jourISO: todayIso(), lignes: [emptyLine()] };
 }
 
+function emptyTresorerieBlock(jourISO: string): TresorerieMultiDayBlock {
+  return { jourISO, lignes: [emptyLine()] };
+}
+
 function draftFromTresorerie(entry: Tresorerie): TresorerieDraft {
   const d = new Date(entry.jourISO);
   const jourISO = Number.isNaN(d.getTime())
     ? todayIso()
     : format(startOfDay(d), "yyyy-MM-dd");
+  const montant = entry.depose > 0 ? entry.depose : entry.montantRecu;
   return {
     jourISO,
-    montantRecu: entry.montantRecu,
-    depose: entry.depose,
+    montantRecu: montant,
+    depose: montant,
     methode: entry.methode,
     note: entry.note ?? "",
   };
+}
+
+function validateEditDraft(draft: TresorerieDraft): TresorerieFormErrors {
+  const errors: TresorerieFormErrors = {};
+  if (!draft.jourISO) errors.jourISO = "Date requise.";
+  if (!draft.methode.trim()) errors.methode = "Méthode requise.";
+  if (!Number.isFinite(draft.montantRecu) || draft.montantRecu <= 0) {
+    errors.montantRecu = "Montant invalide.";
+  }
+  return errors;
 }
 
 function validateTresorerieDayDraft(draft: TresorerieDayFormState): TresorerieDayFormErrors {
@@ -121,10 +159,28 @@ function validateTresorerieDayDraft(draft: TresorerieDayFormState): TresorerieDa
   return errors;
 }
 
+/** Preview « Reste à verser » après saisie — distingue soldé, reste et dépassement. */
+function resteApresPreview(resteApres: number): {
+  value: string;
+  tone?: "danger" | "success";
+} {
+  if (resteApres < 0) {
+    return {
+      value: `Dépassement : ${formatGNF(-resteApres)}`,
+      tone: "danger",
+    };
+  }
+  if (resteApres === 0) {
+    return { value: "Tout versé", tone: "success" };
+  }
+  return { value: formatGNF(resteApres) };
+}
+
 export function AddTresorerieDialog({ open, onOpenChange, editEntry = null }: Props) {
-  const { addTresorerieDay, updateTresorerie, state, clearError } =
+  const { addTresorerieDay, updateTresorerie, cancelTresorerie, state, clearError } =
     useTresorerieStore();
   const { state: salesState } = useSalesStore();
+  const { state: expensesState } = useExpensesStore();
   const { range } = useDateRange();
   const config = useFarmConfig();
   const cap = config.preferences.capacitePlateau;
@@ -138,6 +194,13 @@ export function AddTresorerieDialog({ open, onOpenChange, editEntry = null }: Pr
     note: "",
   }));
   const [touched, setTouched] = React.useState(false);
+  const [multiMode, setMultiMode] = React.useState(false);
+  const [periodFrom, setPeriodFrom] = React.useState(todayIso);
+  const [periodTo, setPeriodTo] = React.useState(todayIso);
+  const [multiBlocks, setMultiBlocks] = React.useState<TresorerieMultiDayBlock[]>([]);
+  const [conflictOpen, setConflictOpen] = React.useState(false);
+  const [conflictDays, setConflictDays] = React.useState<string[]>([]);
+  const pendingMultiRef = React.useRef<TresorerieMultiDayBlock[]>([]);
   const openSnapshotRef = React.useRef<string | null>(null);
 
   React.useEffect(() => {
@@ -145,6 +208,11 @@ export function AddTresorerieDialog({ open, onOpenChange, editEntry = null }: Pr
       openSnapshotRef.current = null;
       return;
     }
+    const rawFrom = format(startOfDay(range.from), "yyyy-MM-dd");
+    const rawTo = format(startOfDay(range.to), "yyyy-MM-dd");
+    const { fromIso, toIso } = clampMultiDayPeriod(rawFrom, rawTo, todayIso());
+    const days = enumerateDayISOs(fromIso, toIso);
+    const blocks = days.map(emptyTresorerieBlock);
     const edit = editEntry ? draftFromTresorerie(editEntry) : null;
     const day = emptyDayDraft();
 
@@ -154,6 +222,13 @@ export function AddTresorerieDialog({ open, onOpenChange, editEntry = null }: Pr
       setDayDraft(day);
     }
     setTouched(false);
+    setMultiMode(false);
+    setPeriodFrom(fromIso);
+    setPeriodTo(toIso);
+    setMultiBlocks(blocks);
+    setConflictOpen(false);
+    setConflictDays([]);
+    pendingMultiRef.current = [];
     clearError();
 
     openSnapshotRef.current = stableStringify(
@@ -167,9 +242,13 @@ export function AddTresorerieDialog({ open, onOpenChange, editEntry = null }: Pr
           note: "",
         },
         dayDraft: day,
+        multiMode: false,
+        periodFrom: fromIso,
+        periodTo: toIso,
+        multiBlocks: blocks,
       })
     );
-  }, [open, editEntry, clearError]);
+  }, [open, editEntry, clearError, range.from, range.to]);
 
   const formComparable = React.useMemo(
     () =>
@@ -177,8 +256,20 @@ export function AddTresorerieDialog({ open, onOpenChange, editEntry = null }: Pr
         isEditMode,
         editDraft,
         dayDraft,
+        multiMode,
+        periodFrom,
+        periodTo,
+        multiBlocks,
       }),
-    [isEditMode, editDraft, dayDraft]
+    [
+      isEditMode,
+      editDraft,
+      dayDraft,
+      multiMode,
+      periodFrom,
+      periodTo,
+      multiBlocks,
+    ]
   );
 
   const isDirty = isDirtyComparedToSnapshot(formComparable, openSnapshotRef.current);
@@ -203,8 +294,13 @@ export function AddTresorerieDialog({ open, onOpenChange, editEntry = null }: Pr
   );
 
   const editErrors: TresorerieFormErrors = React.useMemo(
-    () => (isEditMode ? validateTresorerieDraft(editDraft) : {}),
+    () => (isEditMode ? validateEditDraft(editDraft) : {}),
     [isEditMode, editDraft]
+  );
+
+  const editVersePending = React.useMemo(
+    () => (isEditMode ? Math.max(0, editDraft.montantRecu) : 0),
+    [isEditMode, editDraft.montantRecu]
   );
 
   const dayDate = React.useMemo(() => {
@@ -222,33 +318,53 @@ export function AddTresorerieDialog({ open, onOpenChange, editEntry = null }: Pr
     [dayDraft.lignes]
   );
 
-  const weekFinance = React.useMemo(() => {
-    if (!dayDate || isEditMode) return null;
+  const resteGlobal = React.useMemo(
+    () =>
+      kpiResteAVerser(
+        salesState.ventes,
+        expensesState.depenses,
+        state.tresorerie,
+        cap,
+        config
+      ),
+    [salesState.ventes, expensesState.depenses, state.tresorerie, cap, config]
+  );
+
+  const resteGlobalSansEntree = React.useMemo(() => {
+    if (!editEntry) return resteGlobal;
+    return kpiResteAVerser(
+      salesState.ventes,
+      expensesState.depenses,
+      state.tresorerie.filter((t) => t.id !== editEntry.id),
+      cap,
+      config
+    );
+  }, [
+    resteGlobal,
+    editEntry,
+    salesState.ventes,
+    expensesState.depenses,
+    state.tresorerie,
+    cap,
+    config,
+  ]);
+
+  const financeContext = React.useMemo(() => {
+    if (!dayDate) return null;
 
     const from = startOfDay(range.from);
     const to = startOfDay(range.to);
     const caPeriode = kpiCA(salesState.ventes, from, to, cap);
-    const depensesPeriode = kpiDepenses(state.depenses, from, to, config);
-    const netARemettre = caPeriode - depensesPeriode;
-
-    const dejaVerse = state.tresorerie
-      .filter((t) => t.statut === "actif")
-      .filter((t) => {
-        const tDate = new Date(t.jourISO);
-        return tDate.getTime() >= from.getTime() && tDate.getTime() <= to.getTime();
-      })
-      .reduce((sum, t) => sum + t.depose, 0);
-
-    const reste = netARemettre - dejaVerse;
-    const resteApres = reste - draftVersePending;
+    const depensesPeriode = kpiDepenses(expensesState.depenses, from, to, config);
+    const plafond = isEditMode ? resteGlobalSansEntree : resteGlobal;
+    const verseSaisi = isEditMode ? editVersePending : draftVersePending;
 
     return {
       caPeriode,
       depensesPeriode,
-      netARemettre,
-      dejaVerse,
-      reste,
-      resteApres,
+      restePlafond: plafond,
+      resteApres: plafond - verseSaisi,
+      verseSaisi,
     };
   }, [
     dayDate,
@@ -256,24 +372,113 @@ export function AddTresorerieDialog({ open, onOpenChange, editEntry = null }: Pr
     range.from,
     range.to,
     salesState.ventes,
-    state.depenses,
-    state.tresorerie,
+    expensesState.depenses,
     config,
     cap,
     draftVersePending,
+    editVersePending,
+    resteGlobal,
+    resteGlobalSansEntree,
   ]);
 
   const hasActiveLine = isEditMode
     ? editDraft.methode.trim().length > 0 && editDraft.montantRecu > 0
     : dayDraft.lignes.some((l) => l.methode.trim().length > 0 && l.montantRecu > 0);
 
+  const editLineErrors: LineFormErrors | undefined = React.useMemo(() => {
+    if (!isEditMode || !touched) return undefined;
+    return {
+      methode: editErrors.methode,
+      montantRecu: editErrors.montantRecu,
+    };
+  }, [isEditMode, touched, editErrors]);
+
   const hasErrors = isEditMode
     ? Object.keys(editErrors).length > 0
     : Object.keys(dayErrors).length > 0;
 
-  const canSubmit = !!dayDate && hasActiveLine && !hasErrors;
+  const versementPending = isEditMode ? editVersePending : draftVersePending;
 
-  const editReste = editDraft.montantRecu - editDraft.depose;
+  const plafondVersement = isEditMode ? resteGlobalSansEntree : resteGlobal;
+
+  const rienAVerser = plafondVersement <= 0;
+  const depasseReste =
+    versementPending > 0 && versementPending > plafondVersement;
+
+  const canSubmit =
+    !!dayDate &&
+    hasActiveLine &&
+    !hasErrors &&
+    !rienAVerser &&
+    versementPending > 0 &&
+    !depasseReste;
+
+  const multiDayISOs = React.useMemo(
+    () => enumerateDayISOs(periodFrom, periodTo),
+    [periodFrom, periodTo]
+  );
+
+  React.useEffect(() => {
+    if (!multiMode) return;
+    setMultiBlocks((prev) =>
+      syncLinesWithPeriod(prev, multiDayISOs, emptyTresorerieBlock)
+    );
+  }, [multiMode, multiDayISOs]);
+
+  const filledMultiBlocks = React.useMemo(
+    () => multiBlocks.filter(isTresorerieBlockFilled),
+    [multiBlocks]
+  );
+
+  const multiDraftTotal = React.useMemo(
+    () =>
+      filledMultiBlocks.reduce(
+        (sum, block) =>
+          sum +
+          block.lignes.reduce((s, l) => {
+            if (l.methode.trim() && l.montantRecu > 0) return s + l.montantRecu;
+            return s;
+          }, 0),
+        0
+      ),
+    [filledMultiBlocks]
+  );
+
+  const multiDepasseReste =
+    multiDraftTotal > 0 && multiDraftTotal > resteGlobal;
+
+  const canSubmitMulti =
+    multiDayISOs.length > 0 &&
+    filledMultiBlocks.length > 0 &&
+    resteGlobal > 0 &&
+    multiDraftTotal > 0 &&
+    !multiDepasseReste;
+
+  const persistMultiBlocks = React.useCallback(
+    (blocks: TresorerieMultiDayBlock[], resolution: MultiDayConflictResolution | null) => {
+      clearError();
+      runSubmit(() => {
+        for (const block of blocks) {
+          const existing = getActiveTresorerieForDay(state.tresorerie, block.jourISO);
+          if (existing.length > 0) {
+            if (resolution === "ignore") continue;
+            for (const entry of existing) {
+              cancelTresorerie(entry.id);
+            }
+          }
+          const lignes = block.lignes
+            .filter((l) => l.methode.trim().length > 0 && l.montantRecu > 0)
+            .map((l) => ({
+              methode: l.methode.trim(),
+              montantRecu: l.montantRecu,
+            }));
+          if (lignes.length === 0) continue;
+          addTresorerieDay(startOfDay(new Date(block.jourISO)).toISOString(), lignes);
+        }
+      });
+    },
+    [addTresorerieDay, cancelTresorerie, clearError, runSubmit, state.tresorerie]
+  );
 
   const updateLine = (index: number, patch: Partial<TresorerieLineUi>) => {
     setDayDraft((d) => ({
@@ -295,16 +500,33 @@ export function AddTresorerieDialog({ open, onOpenChange, editEntry = null }: Pr
 
   const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+
+    if (multiMode && !isEditMode) {
+      if (!canSubmitMulti) return;
+      const conflicts = filledMultiBlocks
+        .filter((block) => hasActiveTresorerieForDay(state.tresorerie, block.jourISO))
+        .map((block) => block.jourISO);
+      if (conflicts.length > 0) {
+        pendingMultiRef.current = filledMultiBlocks;
+        setConflictDays(conflicts);
+        setConflictOpen(true);
+        return;
+      }
+      persistMultiBlocks(filledMultiBlocks, null);
+      return;
+    }
+
     setTouched(true);
     if (!canSubmit || !dayDate) return;
 
     clearError();
     runSubmit(() => {
       if (isEditMode && editEntry) {
+        const montant = editDraft.montantRecu;
         updateTresorerie(editEntry.id, {
           jourISO: dayDate.toISOString(),
-          montantRecu: editDraft.montantRecu,
-          depose: editDraft.depose,
+          montantRecu: montant,
+          depose: montant,
           methode: editDraft.methode.trim(),
           note: editDraft.note?.trim() ? editDraft.note.trim() : undefined,
         });
@@ -321,140 +543,292 @@ export function AddTresorerieDialog({ open, onOpenChange, editEntry = null }: Pr
   };
 
   const storeBatchError =
-    state.errors?.code === "TRESORERIE_BATCH_INVALID"
+    state.errors?.code === "TRESORERIE_BATCH_INVALID" ||
+    state.errors?.code === "VERSEMENT_DEPASSE_RESTE"
       ? state.errors.message
       : undefined;
 
+  const modeToggle = !isEditMode ? (
+    <MultiDayModeToggle multiMode={multiMode} onToggle={() => setMultiMode((m) => !m)} />
+  ) : null;
+
   return (
     <>
-    <Dialog open={open} onOpenChange={unsaved.dialogProps.onOpenChange}>
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>
-            {isEditMode ? "Modifier la saisie" : "Versements du jour"}
-          </DialogTitle>
-        </DialogHeader>
-
-        <form onSubmit={handleSubmit} className="flex flex-1 flex-col overflow-hidden">
-          <DialogBody className="space-y-3">
-            <FormField
-              label="Jour"
-              htmlFor="treso-day"
-              required
-              error={
-                touched
-                  ? isEditMode
-                    ? editErrors.jourISO
-                    : dayErrors.jourISO
-                  : undefined
-              }
-              hint={dayDate ? formatDay(dayDate) : undefined}
-            >
-              <DateInput
-                id="treso-day"
-                value={isEditMode ? editDraft.jourISO : dayDraft.jourISO}
-                max={todayIso()}
-                onChange={(e) => {
-                  const v = e.target.value;
-                  if (isEditMode) {
-                    setEditDraft((d) => ({ ...d, jourISO: v }));
-                  } else {
-                    setDayDraft((d) => ({ ...d, jourISO: v }));
-                  }
-                }}
-                required
-              />
-            </FormField>
-
-            {!isEditMode && weekFinance ? (
-              <WeekContextPanel
-                caPeriode={weekFinance.caPeriode}
-                depensesPeriode={weekFinance.depensesPeriode}
-                netARemettre={weekFinance.netARemettre}
-                dejaVerse={weekFinance.dejaVerse}
-                reste={weekFinance.reste}
-              />
-            ) : null}
-
-            {isEditMode ? (
-              <EditTresorerieForm
-                draft={editDraft}
-                setDraft={setEditDraft}
-                errors={touched ? editErrors : undefined}
-                methodes={config.listes.methodesPaiement}
-                reste={editReste}
-              />
-            ) : (
-              <div className="space-y-2">
-                <div className="flex items-center justify-between gap-2">
-                  <p className="text-[11px] font-medium uppercase tracking-wide text-muted">
-                    Versements
-                  </p>
-                  <Button type="button" variant="ghost" size="sm" onClick={addLine}>
-                    <Plus className="h-4 w-4" />
-                    Ajouter
-                  </Button>
-                </div>
-
-                {dayDraft.lignes.map((ligne, index) => (
-                  <TresorerieLineCard
-                    key={index}
-                    methode={ligne.methode}
-                    montantRecu={ligne.montantRecu}
-                    methodes={config.listes.methodesPaiement}
-                    onMethodeChange={(v) => updateLine(index, { methode: v })}
-                    onMontantRecuChange={(v) => updateLine(index, { montantRecu: v })}
-                    errors={touched ? dayErrors.lignes?.[index] : undefined}
-                    onDelete={() => removeLine(index)}
-                    deleteDisabled={dayDraft.lignes.length <= 1}
+      <DialogFormShell
+        open={open}
+        onOpenChange={unsaved.dialogProps.onOpenChange}
+        title={isEditMode ? "Modifier la saisie" : "Versements du jour"}
+        onSubmit={handleSubmit}
+        body={
+          <>
+            {multiMode && !isEditMode ? (
+              <>
+                <DialogDateRow toggle={modeToggle}>
+                  <MultiDayPeriodPicker
+                    fromIso={periodFrom}
+                    toIso={periodTo}
+                    onFromChange={setPeriodFrom}
+                    onToChange={setPeriodTo}
+                    maxDateIso={todayIso()}
                   />
-                ))}
+                </DialogDateRow>
+                <DialogScrollRegion className={DIALOG_SCROLL}>
+                  <TresorerieMultiDayForm
+                    blocks={multiBlocks}
+                    tresorerie={state.tresorerie}
+                    config={config}
+                    onChange={setMultiBlocks}
+                  />
+                </DialogScrollRegion>
+              </>
+            ) : (
+              <>
+                <DialogDateRow toggle={modeToggle}>
+                  <FormField
+                    label="Jour"
+                    htmlFor="treso-day"
+                    required
+                    error={
+                      touched
+                        ? isEditMode
+                          ? editErrors.jourISO
+                          : dayErrors.jourISO
+                        : undefined
+                    }
+                    hint={dayDate ? formatDay(dayDate) : undefined}
+                  >
+                    <DateInput
+                      id="treso-day"
+                      value={isEditMode ? editDraft.jourISO : dayDraft.jourISO}
+                      max={todayIso()}
+                      onChange={(e) => {
+                        const v = e.target.value;
+                        if (isEditMode) {
+                          setEditDraft((d) => ({ ...d, jourISO: v }));
+                        } else {
+                          setDayDraft((d) => ({ ...d, jourISO: v }));
+                        }
+                      }}
+                      required
+                    />
+                  </FormField>
+                </DialogDateRow>
 
-                {touched && dayErrors.form ? (
-                  <p className="text-[11px] text-danger">{dayErrors.form}</p>
+                <DialogScrollRegion className={DIALOG_SCROLL}>
+              <div className="space-y-2">
+                {financeContext ? (
+                  <WeekContextPanel
+                    caPeriode={financeContext.caPeriode}
+                    depensesPeriode={financeContext.depensesPeriode}
+                    resteGlobal={financeContext.restePlafond}
+                  />
                 ) : null}
-                {touched && storeBatchError ? (
-                  <p className="text-[11px] text-danger">{storeBatchError}</p>
-                ) : null}
+
+                <DialogDayLinesToolbar
+                  label={isEditMode ? "Versement" : "Versements"}
+                  onAdd={isEditMode ? undefined : addLine}
+                />
+
+                {isEditMode ? (
+                  <>
+                    <TresorerieLineCard
+                      methode={editDraft.methode}
+                      montantRecu={editDraft.montantRecu}
+                      methodes={config.listes.methodesPaiement}
+                      onMethodeChange={(v) =>
+                        setEditDraft((d) => ({ ...d, methode: v }))
+                      }
+                      onMontantRecuChange={(v) =>
+                        setEditDraft((d) => ({
+                          ...d,
+                          montantRecu: v,
+                          depose: v,
+                        }))
+                      }
+                      errors={editLineErrors}
+                      showDelete={false}
+                    />
+                    <FormField label="Notes (optionnel)" htmlFor="treso-edit-note">
+                      <Textarea
+                        id="treso-edit-note"
+                        value={editDraft.note ?? ""}
+                        onChange={(e) =>
+                          setEditDraft((d) => ({ ...d, note: e.target.value }))
+                        }
+                        placeholder="Optionnel"
+                        rows={2}
+                        maxLength={240}
+                        className={FORM_INPUT_NOTES}
+                      />
+                    </FormField>
+                    {touched && editErrors.jourISO ? (
+                      <p className="text-[11px] text-danger">{editErrors.jourISO}</p>
+                    ) : null}
+                    {touched && storeBatchError ? (
+                      <p className="text-[11px] text-danger">{storeBatchError}</p>
+                    ) : null}
+                    {rienAVerser ? (
+                      <p className="text-[11px] text-muted">
+                        Rien à verser pour le moment.
+                      </p>
+                    ) : null}
+                    {depasseReste ? (
+                      <p className="text-[11px] text-danger">
+                        Le montant dépasse le reste à verser ({formatGNF(plafondVersement)}).
+                      </p>
+                    ) : null}
+                  </>
+                ) : (
+                  <>
+                    {dayDraft.lignes.map((ligne, index) => (
+                      <TresorerieLineCard
+                        key={index}
+                        methode={ligne.methode}
+                        montantRecu={ligne.montantRecu}
+                        methodes={config.listes.methodesPaiement}
+                        onMethodeChange={(v) => updateLine(index, { methode: v })}
+                        onMontantRecuChange={(v) => updateLine(index, { montantRecu: v })}
+                        errors={touched ? dayErrors.lignes?.[index] : undefined}
+                        onDelete={() => removeLine(index)}
+                        deleteDisabled={dayDraft.lignes.length <= 1}
+                      />
+                    ))}
+                    {touched && dayErrors.form ? (
+                      <p className="text-[11px] text-danger">{dayErrors.form}</p>
+                    ) : null}
+                    {touched && storeBatchError ? (
+                      <p className="text-[11px] text-danger">{storeBatchError}</p>
+                    ) : null}
+                    {!isEditMode && rienAVerser ? (
+                      <p className="text-[11px] text-muted">
+                        Rien à verser pour le moment.
+                      </p>
+                    ) : null}
+                    {!isEditMode && depasseReste ? (
+                      <p className="text-[11px] text-danger">
+                        Le montant dépasse le reste à verser ({formatGNF(plafondVersement)}).
+                      </p>
+                    ) : null}
+                  </>
+                )}
               </div>
+                </DialogScrollRegion>
+              </>
             )}
 
-            {!isEditMode && weekFinance ? (
-              <DayVerseSummaryPanel
-                totalJour={draftVersePending}
-                resteApres={weekFinance.resteApres}
-              />
+            {!isEditMode && multiMode && rienAVerser ? (
+              <p className="text-[11px] text-muted">Rien à verser pour le moment.</p>
             ) : null}
-          </DialogBody>
+            {!isEditMode && multiMode && multiDepasseReste ? (
+              <p className="text-[11px] text-danger">
+                Le total dépasse le reste à verser ({formatGNF(resteGlobal)}).
+              </p>
+            ) : null}
 
-          <DialogFooter>
+            <StoreErrorBanner error={state.errors} />
+          </>
+        }
+        preview={
+          multiMode && !isEditMode ? (
+            <PreviewPanelShell variant={multiDepasseReste ? "danger" : "default"}>
+              <PreviewGrid cols={2}>
+                <PreviewCell
+                  label="Jours saisis"
+                  value={String(filledMultiBlocks.length)}
+                />
+                <PreviewCell label="Total saisi" value={formatGNF(multiDraftTotal)} />
+                <PreviewCell
+                  label="Reste à verser"
+                  value={formatGNF(resteGlobal)}
+                />
+                <PreviewCell
+                  label="Après saisie"
+                  {...resteApresPreview(resteGlobal - multiDraftTotal)}
+                />
+              </PreviewGrid>
+            </PreviewPanelShell>
+          ) : financeContext ? (
+            <PreviewPanelShell
+              variant={financeContext.resteApres < 0 ? "danger" : "default"}
+            >
+              <PreviewGrid cols={2}>
+                <PreviewCell
+                  label={isEditMode ? "Montant saisi" : "Versé ce jour"}
+                  value={formatGNF(financeContext.verseSaisi)}
+                />
+                <PreviewCell
+                  label="Reste à verser"
+                  {...resteApresPreview(financeContext.resteApres)}
+                />
+              </PreviewGrid>
+            </PreviewPanelShell>
+          ) : null
+        }
+        footer={
+          <>
             <Button type="button" variant="ghost" size="sm" onClick={unsaved.requestClose}>
               Annuler
             </Button>
-            <Button type="submit" variant="accent" size="sm" disabled={!canSubmit}>
+            <Button
+              type="submit"
+              variant="accent"
+              size="sm"
+              disabled={multiMode && !isEditMode ? !canSubmitMulti : !canSubmit}
+            >
               {isEditMode ? "Enregistrer les modifications" : "Enregistrer"}
             </Button>
-          </DialogFooter>
-        </form>
-      </DialogContent>
-    </Dialog>
+          </>
+        }
+      />
 
-    <UnsavedChangesConfirm {...unsaved.confirmDialogProps} />
+      <MultiDayConflictDialog
+        open={conflictOpen}
+        onOpenChange={setConflictOpen}
+        conflictDays={conflictDays}
+        onResolve={(resolution) => {
+          const blocks =
+            pendingMultiRef.current.length > 0
+              ? pendingMultiRef.current
+              : filledMultiBlocks;
+          pendingMultiRef.current = [];
+          persistMultiBlocks(blocks, resolution);
+        }}
+      />
+
+      <UnsavedChangesConfirm {...unsaved.confirmDialogProps} />
     </>
   );
 }
 
 type TresorerieFormComparable =
   | { mode: "edit"; editDraft: TresorerieDraft }
-  | { mode: "day"; dayDraft: TresorerieDayFormState };
+  | { mode: "day"; dayDraft: TresorerieDayFormState }
+  | {
+      mode: "multi";
+      periodFrom: string;
+      periodTo: string;
+      multiBlocks: TresorerieMultiDayBlock[];
+    };
 
 function tresorerieFormComparable(input: {
   isEditMode: boolean;
   editDraft: TresorerieDraft;
   dayDraft: TresorerieDayFormState;
+  multiMode: boolean;
+  periodFrom: string;
+  periodTo: string;
+  multiBlocks: TresorerieMultiDayBlock[];
 }): TresorerieFormComparable {
   if (input.isEditMode) {
     return { mode: "edit", editDraft: input.editDraft };
+  }
+  if (input.multiMode) {
+    return {
+      mode: "multi",
+      periodFrom: input.periodFrom,
+      periodTo: input.periodTo,
+      multiBlocks: input.multiBlocks,
+    };
   }
   return { mode: "day", dayDraft: input.dayDraft };
 }
@@ -468,6 +842,7 @@ function TresorerieLineCard({
   errors,
   onDelete,
   deleteDisabled,
+  showDelete = true,
 }: {
   methode: string;
   montantRecu: number;
@@ -475,12 +850,13 @@ function TresorerieLineCard({
   onMethodeChange: (v: string) => void;
   onMontantRecuChange: (v: number) => void;
   errors?: LineFormErrors;
-  onDelete: () => void;
-  deleteDisabled: boolean;
+  onDelete?: () => void;
+  deleteDisabled?: boolean;
+  showDelete?: boolean;
 }) {
   return (
-    <div className="rounded-card border border-border bg-card-muted/30 p-2.5">
-      <div className="grid gap-2 sm:grid-cols-[1fr_1fr_auto] sm:items-end">
+    <div className={FORM_LINE_CARD}>
+      <div className={showDelete ? FORM_LINE_GRID_3 : FORM_LINE_GRID_2}>
         <FormField
           label="Méthode"
           htmlFor={`treso-meth-${methode}-${montantRecu}`}
@@ -496,93 +872,26 @@ function TresorerieLineCard({
         </FormField>
         <MoneyField
           id={`treso-mnt-${methode}-${montantRecu}`}
-          label="Montant reçu"
+          label="Montant versé"
           value={montantRecu}
           onChange={onMontantRecuChange}
           error={errors?.montantRecu}
           required
         />
-        <Button
-          type="button"
-          variant="ghost"
-          size="icon-sm"
-          className="mb-0.5 shrink-0"
-          onClick={onDelete}
-          disabled={deleteDisabled}
-          title="Supprimer la ligne"
-        >
-          <Trash2 className="h-4 w-4 text-muted" />
-        </Button>
+        {showDelete && onDelete ? (
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon-sm"
+            className="mb-0.5 shrink-0 self-end"
+            onClick={onDelete}
+            disabled={deleteDisabled}
+            title="Supprimer la ligne"
+          >
+            <Trash2 className="h-4 w-4 text-muted" />
+          </Button>
+        ) : null}
       </div>
-    </div>
-  );
-}
-
-/** Formulaire édition — inchangé (reçu + versé + notes). */
-function EditTresorerieForm({
-  draft,
-  setDraft,
-  errors,
-  methodes,
-  reste,
-}: {
-  draft: TresorerieDraft;
-  setDraft: React.Dispatch<React.SetStateAction<TresorerieDraft>>;
-  errors?: TresorerieFormErrors;
-  methodes: FarmConfig["listes"]["methodesPaiement"];
-  reste: number;
-}) {
-  return (
-    <div className="space-y-3">
-      <div className="grid gap-3 sm:grid-cols-2">
-        <FormField
-          label="Méthode"
-          htmlFor="treso-edit-methode"
-          required
-          error={errors?.methode}
-        >
-          <ComboboxMethode
-            id="treso-edit-methode"
-            value={draft.methode}
-            onChange={(v) => setDraft((d) => ({ ...d, methode: v }))}
-            methodes={methodes}
-            placeholder="Ex : Orange Money"
-          />
-        </FormField>
-        <MoneyField
-          id="treso-edit-recu"
-          label="Montant reçu"
-          value={draft.montantRecu}
-          onChange={(v) => setDraft((d) => ({ ...d, montantRecu: v }))}
-          error={errors?.montantRecu}
-          required
-        />
-        <MoneyField
-          id="treso-edit-depose"
-          label="Montant versé"
-          value={draft.depose}
-          onChange={(v) => setDraft((d) => ({ ...d, depose: v }))}
-          error={errors?.depose}
-          required
-        />
-      </div>
-
-      <FormField label="Notes (optionnel)" htmlFor="treso-edit-note">
-        <Textarea
-          id="treso-edit-note"
-          value={draft.note ?? ""}
-          onChange={(e) => setDraft((d) => ({ ...d, note: e.target.value }))}
-          placeholder="Ex : Reste à remettre la semaine prochaine."
-          rows={2}
-          maxLength={240}
-        />
-      </FormField>
-
-      <EditRestePanel
-        recu={draft.montantRecu}
-        depose={draft.depose}
-        reste={reste}
-      />
     </div>
   );
 }
@@ -607,7 +916,7 @@ function MoneyField({
   return (
     <FormField label={label} htmlFor={id} required={required} error={error}>
       <div className="relative">
-        <PiggyBank className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-accent-blue" />
+        <PiggyBank className="pointer-events-none absolute left-2 top-1/2 h-4 w-4 -translate-y-1/2 text-accent-blue" />
         <Input
           id={id}
           type="number"
@@ -620,7 +929,7 @@ function MoneyField({
             onChange(Number.isNaN(n) ? 0 : Math.max(0, Math.floor(n)));
           }}
           onFocus={(e) => e.currentTarget.select()}
-          className="pl-9 tabular-nums"
+          className={FORM_INPUT_MONTANT}
           required={required}
         />
       </div>
@@ -628,81 +937,41 @@ function MoneyField({
   );
 }
 
-/** Contexte période — lecture seule (hors saisie du jour). */
+/** Contexte période — replié par défaut pour garder la saisie compacte. */
 function WeekContextPanel({
   caPeriode,
   depensesPeriode,
-  netARemettre,
-  dejaVerse,
-  reste,
+  resteGlobal,
 }: {
   caPeriode: number;
   depensesPeriode: number;
-  netARemettre: number;
-  dejaVerse: number;
-  reste: number;
+  resteGlobal: number;
 }) {
-  const soldeOk = reste <= 0;
+  const badge = resteApresPreview(resteGlobal);
   return (
-    <div className="rounded-card border border-border bg-card-muted/50 px-3 py-2.5">
-      <div className="mb-2 flex items-center gap-2">
-        <Info className="h-3.5 w-3.5 shrink-0 text-accent-blue" />
-        <p className="text-[11px] font-semibold uppercase tracking-wide text-foreground">
-          Cette semaine
-        </p>
-      </div>
-      <dl className="space-y-1 text-[12px]">
-        <FinanceRow label="CA période" value={formatGNF(caPeriode)} />
-        <FinanceRow label="Dépenses" value={formatGNF(depensesPeriode)} />
-        <div className="border-t border-border pt-1">
-          <FinanceRow label="Net à remettre" value={formatGNF(netARemettre)} />
-        </div>
-        <FinanceRow label="Déjà remis" value={formatGNF(dejaVerse)} />
-        <div className="flex justify-between gap-3 border-t border-border pt-1">
-          <dt className="font-medium text-foreground">Reste</dt>
-          <dd
-            className={cn(
-              "font-semibold tabular-nums",
-              soldeOk ? "text-success" : "text-danger"
-            )}
-          >
-            {soldeOk ? "Tout versé ✅" : formatGNF(reste)}
-          </dd>
-        </div>
-      </dl>
-    </div>
-  );
-}
-
-/** Synthèse du jour — mise à jour live avec les lignes saisies. */
-function DayVerseSummaryPanel({
-  totalJour,
-  resteApres,
-}: {
-  totalJour: number;
-  resteApres: number;
-}) {
-  const depasse = resteApres < 0;
-  const soldeOk = resteApres <= 0 && !depasse;
-  return (
-    <div className="space-y-1 rounded-card border border-border bg-card-muted px-3 py-2.5">
-      <FinanceRow label="Total ce jour" value={formatGNF(totalJour)} />
-      <div className="flex justify-between gap-3 border-t border-border pt-1">
-        <dt className="text-[11px] font-medium uppercase tracking-wide text-muted">
-          Reste après
-        </dt>
-        <dd
+    <details className="rounded-card border border-border bg-card-muted/40">
+      <summary className="flex cursor-pointer list-none items-center justify-between gap-2 px-3 py-2 text-[11px] font-medium text-foreground [&::-webkit-details-marker]:hidden">
+        <span className="inline-flex items-center gap-1.5">
+          <Info className="h-3.5 w-3.5 shrink-0 text-accent-blue" />
+          Contexte
+        </span>
+        <span
           className={cn(
-            "text-sm font-semibold tabular-nums",
-            depasse && "text-danger",
-            soldeOk && "text-success",
-            !depasse && !soldeOk && "text-foreground"
+            "shrink-0 tabular-nums",
+            badge.tone === "danger" && "text-danger",
+            badge.tone === "success" && "text-success",
+            !badge.tone && "text-warning"
           )}
         >
-          {soldeOk ? "Tout versé ✅" : formatGNF(resteApres)}
-        </dd>
-      </div>
-    </div>
+          {badge.value}
+        </span>
+      </summary>
+      <dl className="space-y-1 border-t border-border px-3 py-2 text-[11px]">
+        <FinanceRow label="CA période (info)" value={formatGNF(caPeriode)} />
+        <FinanceRow label="Dépenses période (info)" value={formatGNF(depensesPeriode)} />
+        <FinanceRow label="Reste à verser (global)" value={formatGNF(resteGlobal)} />
+      </dl>
+    </details>
   );
 }
 
@@ -711,68 +980,6 @@ function FinanceRow({ label, value }: { label: string; value: string }) {
     <div className="flex justify-between gap-3">
       <dt className="text-muted">{label}</dt>
       <dd className="font-medium tabular-nums text-foreground">{value}</dd>
-    </div>
-  );
-}
-
-function EditRestePanel({
-  recu,
-  depose,
-  reste,
-}: {
-  recu: number;
-  depose: number;
-  reste: number;
-}) {
-  const negative = reste < 0;
-  const zero = reste === 0;
-  return (
-    <div
-      className={cn(
-        "rounded-card border px-3 py-2.5",
-        negative && "bg-danger-soft border-danger/30",
-        !negative && zero && "bg-success-soft/60 border-success/20",
-        !negative && !zero && "bg-warning-soft/60 border-warning/20"
-      )}
-    >
-      <div className="grid grid-cols-3 gap-2">
-        <SummaryCell label="Reçu" value={formatGNF(recu)} />
-        <SummaryCell label="Versé" value={formatGNF(depose)} />
-        <SummaryCell
-          label="Reste"
-          value={formatGNF(reste)}
-          tone={negative ? "danger" : zero ? "success" : "warning"}
-        />
-      </div>
-    </div>
-  );
-}
-
-function SummaryCell({
-  label,
-  value,
-  tone,
-}: {
-  label: string;
-  value: string;
-  tone?: "danger" | "success" | "warning";
-}) {
-  return (
-    <div className="min-w-0">
-      <p className="truncate text-[9.5px] font-medium uppercase tracking-wide text-muted">
-        {label}
-      </p>
-      <p
-        className={cn(
-          "truncate text-[13px] font-semibold tabular-nums",
-          tone === "danger" && "text-danger",
-          tone === "success" && "text-success",
-          tone === "warning" && "text-warning",
-          !tone && "text-foreground"
-        )}
-      >
-        {value}
-      </p>
     </div>
   );
 }

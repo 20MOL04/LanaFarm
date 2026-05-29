@@ -1,18 +1,19 @@
 /**
  * Source unique — conditions « quoi notifier » (R1).
- * Portage de buildDashboardInsights + catalogue cahier v2.0.
+ * 11 règles essentielles — argent, stock, saisie, pertes.
  */
 
-import { isSameDay, startOfDay, subDays } from "date-fns";
+import { isSameDay, startOfDay } from "date-fns";
 
 import { lastNDays } from "@/lib/dashboard-calc";
 import { formatGNF, formatNumber, formatPercent } from "@/lib/format";
 import {
   kpiAlveolesFerme,
-  kpiProfit,
+  kpiPertesTotales,
   kpiResteAVerser,
   kpiStockMagasin,
 } from "@/lib/kpi-sources";
+import { aggregateProductions } from "@/lib/production-calc";
 import { aggregateTransfers } from "@/lib/transfers-calc";
 import type {
   Depense,
@@ -43,34 +44,6 @@ function hasActiveEntryOnDay(
   );
 }
 
-function sumDepensesRange(depenses: Depense[], start: Date, end: Date): number {
-  let total = 0;
-  for (const d of depenses) {
-    if (d.statut !== "actif") continue;
-    const t = new Date(d.jourISO).getTime();
-    if (t >= start.getTime() && t <= end.getTime()) total += d.montant;
-  }
-  return total;
-}
-
-function sumProductionJour(productions: Production[], target: Date): number {
-  let q = 0;
-  for (const p of productions) {
-    if (p.statut !== "actif") continue;
-    if (isSameDay(new Date(p.jourISO), target)) q += p.production;
-  }
-  return q;
-}
-
-function listesIncompletes(config: FarmConfig): boolean {
-  const cats = config.listes.categoriesDepense.filter((c) => c.actif);
-  const meths = config.listes.methodesPaiement.filter((m) => m.actif);
-  if (cats.length < 2 || meths.length < 2) return true;
-  return (
-    cats.some((c) => !c.label.trim()) || meths.some((m) => !m.label.trim())
-  );
-}
-
 /**
  * Évalue toutes les règles actives — retourne les brouillons à synchroniser.
  */
@@ -93,8 +66,10 @@ export function evaluateNotificationRules(
   );
   const resteAVerser = kpiResteAVerser(
     input.ventes,
+    input.depenses,
     input.tresorerie,
-    cap
+    cap,
+    input.config
   );
 
   // —— Stock magasin ——
@@ -118,15 +93,6 @@ export function evaluateNotificationRules(
       href: "/ventes",
       meta: { seuilKey: "stockMagasinFaiblePlateaux" },
     });
-  } else if (seuilStockOeufs > 0 && stockMagasinOeufs >= seuilStockOeufs) {
-    out.push({
-      key: "stock-retabli",
-      level: "positive",
-      module: "ventes",
-      title: "Stock vente rétabli",
-      description: "Le stock vente est de nouveau au-dessus du seuil configuré.",
-      href: "/ventes",
-    });
   }
 
   // —— Stock ferme ——
@@ -143,7 +109,6 @@ export function evaluateNotificationRules(
 
   // —— Transferts ——
   const tAgg = aggregateTransfers(input.transferts);
-  const enAttente = tAgg.parStatut.en_attente;
   const contestes = tAgg.parStatut.conteste;
   if (contestes > 0) {
     out.push({
@@ -152,16 +117,6 @@ export function evaluateNotificationRules(
       module: "transferts",
       title: "Transfert(s) contesté(s)",
       description: `${contestes} transfert${contestes > 1 ? "s" : ""} contesté${contestes > 1 ? "s" : ""} — à régulariser.`,
-      href: "/ventes",
-      query: { focus: "receptions" },
-    });
-  } else if (enAttente > 0) {
-    out.push({
-      key: "transfert-en-attente",
-      level: "important",
-      module: "transferts",
-      title: "Transfert(s) en attente",
-      description: `${enAttente} transfert${enAttente > 1 ? "s" : ""} en attente de confirmation.`,
       href: "/ventes",
       query: { focus: "receptions" },
     });
@@ -183,86 +138,21 @@ export function evaluateNotificationRules(
     });
   }
 
-  // —— Dépenses / profit semaine ——
+  // —— Pertes 7 j ——
   const sCur = lastNDays(today, 7);
-  const sPrev = lastNDays(
-    new Date(sCur.start.getTime() - 24 * 60 * 60 * 1000),
-    7
-  );
-  const depActuelle = sumDepensesRange(input.depenses, sCur.start, sCur.end);
-  const depPrecedente = sumDepensesRange(input.depenses, sPrev.start, sPrev.end);
-  if (depPrecedente > 0 && depActuelle > depPrecedente * 1.15) {
-    const ecart = Math.round(((depActuelle - depPrecedente) / depPrecedente) * 100);
-    out.push({
-      key: "depenses-hausse",
-      level: "important",
-      module: "depenses",
-      title: "Dépenses en hausse",
-      description: `+${ecart} % par rapport à la semaine précédente.`,
-      href: "/depenses",
-    });
-  }
-
-  const profitActuel = kpiProfit(
+  const prod7j = input.productions.filter((p) => {
+    if (p.statut !== "actif") return false;
+    const t = new Date(p.jourISO).getTime();
+    return t >= sCur.start.getTime() && t <= sCur.end.getTime();
+  });
+  const productionDernier7j = aggregateProductions(prod7j, cap).productionEggs;
+  const pertesDernier7j = kpiPertesTotales(
+    input.productions,
     input.ventes,
-    input.depenses,
     sCur.start,
     sCur.end,
     cap
   );
-  const profitPrecedent = kpiProfit(
-    input.ventes,
-    input.depenses,
-    sPrev.start,
-    sPrev.end,
-    cap
-  );
-  if (profitPrecedent > 0 && profitActuel < profitPrecedent) {
-    const ecart = Math.round(
-      ((profitPrecedent - profitActuel) / profitPrecedent) * 100
-    );
-    out.push({
-      key: "profit-baisse",
-      level: "important",
-      module: "rapports",
-      title: "Profit en baisse",
-      description: `Estimation en recul de ${ecart} % sur la semaine.`,
-      href: "/rapports",
-      query: { preset: "week" },
-    });
-  } else if (profitPrecedent > 0 && profitActuel > profitPrecedent) {
-    const ecart = Math.round(
-      ((profitActuel - profitPrecedent) / profitPrecedent) * 100
-    );
-    out.push({
-      key: "profit-hausse",
-      level: "positive",
-      module: "rapports",
-      title: "Le profit progresse",
-      description: `+${ecart} % par rapport à la semaine précédente.`,
-      href: "/rapports",
-      query: { preset: "week" },
-    });
-  }
-
-  // —— Pertes 7 j ——
-  let productionDernier7j = 0;
-  let pertesDernier7j = 0;
-  for (const p of input.productions) {
-    if (p.statut !== "actif") continue;
-    const t = new Date(p.jourISO).getTime();
-    if (t >= sCur.start.getTime() && t <= sCur.end.getTime()) {
-      productionDernier7j += p.production;
-      pertesDernier7j += p.casses;
-    }
-  }
-  for (const v of input.ventes) {
-    if (v.statut !== "actif") continue;
-    const t = new Date(v.jourISO).getTime();
-    if (t >= sCur.start.getTime() && t <= sCur.end.getTime()) {
-      pertesDernier7j += v.cassesVente;
-    }
-  }
   if (productionDernier7j > 0 && seuils.pertesHebdoMaxPct > 0) {
     const pctPertes = (pertesDernier7j / productionDernier7j) * 100;
     if (pctPertes > seuils.pertesHebdoMaxPct) {
@@ -317,7 +207,6 @@ export function evaluateNotificationRules(
   }
 
   // —— Saisies du jour ——
-  const hier = subDays(today, 1);
   if (!hasActiveEntryOnDay(input.productions, today)) {
     out.push({
       key: "production-jour-manquante",
@@ -341,52 +230,6 @@ export function evaluateNotificationRules(
       query: { action: "ajouter" },
       meta: { jourISO: today.toISOString() },
     });
-  }
-
-  // —— Listes ——
-  if (listesIncompletes(input.config)) {
-    out.push({
-      key: "listes-incompletes",
-      level: "important",
-      module: "parametres",
-      title: "Listes métier incomplètes",
-      description:
-        "Vérifie les catégories de dépenses et les méthodes de paiement dans les paramètres.",
-      href: "/parametres",
-      query: { section: "listes" },
-    });
-  }
-
-  // —— Fallback positif (si aucune alerte critique/importante) ——
-  const hasSerious = out.some(
-    (d) => d.level === "critical" || d.level === "important"
-  );
-  if (!hasSerious) {
-    const jourN = sumProductionJour(input.productions, hier);
-    const jourN1 = sumProductionJour(input.productions, subDays(hier, 1));
-    if (jourN > 0) {
-      out.push({
-        key: "tout-controle",
-        level: "positive",
-        module: "system",
-        title: "Tout est sous contrôle",
-        description:
-          jourN === jourN1
-            ? "La production est stable et les flux financiers sont synchronisés."
-            : `Production récente enregistrée.`,
-        href: "/dashboard",
-      });
-    } else {
-      out.push({
-        key: "pret-saisie",
-        level: "normal",
-        module: "production",
-        title: "Prêt à saisir la journée",
-        description: "Aucune anomalie. Saisis tes premières opérations du jour.",
-        href: "/production",
-        query: { action: "ajouter" },
-      });
-    }
   }
 
   return out;

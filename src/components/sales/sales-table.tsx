@@ -208,8 +208,9 @@ export function SalesTable({
     },
     {
       key: "prix",
-      header: "Prix/casier",
+      header: "Prix",
       sortable: true,
+      width: "18%",
       hideBelow: "md",
       cell: (group) =>
         group.count > 1 && group.prixMin !== group.prixMax ? (
@@ -230,12 +231,15 @@ export function SalesTable({
     {
       key: "statut",
       header: "Statut",
+      width: "4.75rem",
+      noTruncate: true,
       cell: (group) => <DayGroupStatusBadge group={group} masculine />,
     },
     {
       key: "actions",
       header: <span className="sr-only">Actions</span>,
-      width: "56px",
+      width: "48px",
+      noTruncate: true,
       cell: (group) => (
         <SalesDayGroupActions group={group} onRequestEdit={onRequestEdit} />
       ),

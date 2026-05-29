@@ -261,6 +261,8 @@ export type Module =
 
 export type ActionLog = {
   id: string;
+  /** farm_id — requis pour Supabase RLS. Assigné automatiquement à la connexion. */
+  farm_id?: string;
   dateISO: ISODate;
   type: ActionType;
   module: Module;

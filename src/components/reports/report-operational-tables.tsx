@@ -15,7 +15,13 @@ import {
 } from "@/lib/reports-calc";
 import type { Depense, Tresorerie, Production, Vente } from "@/types/domain";
 import { SummaryMetricValue } from "@/components/shared/summary-metric-value";
-import { useFarmConfig } from "@/contexts/farm-store";
+import { useDateRange } from "@/contexts/date-range-context";
+import {
+  useExpensesStore,
+  useFarmConfig,
+  useSalesStore,
+  useTresorerieStore,
+} from "@/contexts/farm-store";
 import { cn } from "@/lib/utils";
 
 type Props = {
@@ -35,12 +41,32 @@ export function ReportOperationalTables({
   depenses,
   tresorerie,
 }: Props) {
+  const { range } = useDateRange();
   const config = useFarmConfig();
+  const { state: salesState } = useSalesStore();
+  const { state: expensesState } = useExpensesStore();
+  const { state: tresorerieState } = useTresorerieStore();
   const cap = config.preferences.capacitePlateau;
-  const production = buildProductionSummary(productions, cap);
-  const sales = buildSalesSummary(ventes, productions, cap);
-  const expenses = buildExpensesSummary(depenses);
-  const treasury = buildTreasurySummary(tresorerie);
+  const rangeStart = range.from;
+  const rangeEnd = range.to;
+  const production = buildProductionSummary(
+    productions,
+    cap,
+    rangeStart,
+    rangeEnd
+  );
+  const sales = buildSalesSummary(ventes, productions, cap, rangeStart, rangeEnd);
+  const expenses = buildExpensesSummary(depenses, rangeStart, rangeEnd, config);
+  const treasury = buildTreasurySummary({
+    tresorerieInRange: tresorerie,
+    allTresorerie: tresorerieState.tresorerie,
+    ventes: salesState.ventes,
+    depenses: expensesState.depenses,
+    config,
+    capacitePlateau: cap,
+    rangeStart,
+    rangeEnd,
+  });
 
   return (
     <div className="grid gap-4 md:grid-cols-2 print:break-inside-avoid">

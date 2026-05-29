@@ -1,7 +1,7 @@
 import { eachDayOfInterval, format, startOfDay } from "date-fns";
 import { fr } from "date-fns/locale";
 
-import type { Depense, Production, Vente } from "@/types/domain";
+import type { Depense, Production, Tresorerie, Vente } from "@/types/domain";
 
 export const MULTI_DAY_MAX = 31;
 
@@ -86,6 +86,24 @@ export function getActiveDepensesForDay(depenses: Depense[], jourISO: string): D
 
 export function hasActiveDepensesForDay(depenses: Depense[], jourISO: string): boolean {
   return getActiveDepensesForDay(depenses, jourISO).length > 0;
+}
+
+export function getActiveTresorerieForDay(
+  tresorerie: Tresorerie[],
+  jourISO: string
+): Tresorerie[] {
+  const key = dayKeyFromISO(jourISO);
+  if (Number.isNaN(key)) return [];
+  return tresorerie.filter(
+    (t) => t.statut === "actif" && dayKeyFromISO(t.jourISO) === key
+  );
+}
+
+export function hasActiveTresorerieForDay(
+  tresorerie: Tresorerie[],
+  jourISO: string
+): boolean {
+  return getActiveTresorerieForDay(tresorerie, jourISO).length > 0;
 }
 
 export type MultiDayConflictResolution = "replace" | "ignore";

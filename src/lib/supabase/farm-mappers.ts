@@ -319,6 +319,7 @@ export function actionLogToRow(a: ActionLog, farmId: string): ActionLogRow {
 export function rowToActionLog(r: ActionLogRow): ActionLog {
   return {
     id: r.id,
+    farm_id: r.farm_id,
     dateISO: r.date_iso,
     type: r.type as ActionLog["type"],
     module: r.module as ActionLog["module"],

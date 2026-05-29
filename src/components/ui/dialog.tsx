@@ -82,8 +82,8 @@ function DialogHeader({
 }
 
 /**
- * Footer du dialog — barre compacte avec bordure haute.
- * Toujours visible en bas (le body scrolle entre header et footer).
+ * Footer du dialog — 2 colonnes côte à côte (compact, une seule ligne).
+ * Un seul bouton → pleine largeur. Surcharger className pour d'autres layouts.
  */
 function DialogFooter({
   className,
@@ -92,8 +92,9 @@ function DialogFooter({
   return (
     <div
       className={cn(
-        "flex flex-col-reverse gap-1.5 border-t border-border bg-card px-4 py-2.5",
-        "sm:flex-row sm:justify-end",
+        "grid shrink-0 grid-cols-2 gap-2 border-t border-border bg-card px-4 py-2.5",
+        "[&>button]:w-full [&>button]:min-w-0",
+        "[&>button:only-child]:col-span-2",
         className
       )}
       {...props}
@@ -125,8 +126,22 @@ function DialogScrollRegion({
   className,
   ...props
 }: React.HTMLAttributes<HTMLDivElement>) {
+  const ref = React.useRef<HTMLDivElement>(null);
+
+  const handleWheelCapture = React.useCallback((e: React.WheelEvent<HTMLDivElement>) => {
+    const region = ref.current;
+    if (!region) return;
+    const target = e.target;
+    if (!(target instanceof HTMLInputElement) || target.type !== "number") return;
+    region.scrollTop += e.deltaY;
+    e.preventDefault();
+  }, []);
+
   return (
     <div
+      ref={ref}
+      data-dialog-scroll=""
+      onWheelCapture={handleWheelCapture}
       className={cn(
         "overflow-auto overscroll-contain",
         className

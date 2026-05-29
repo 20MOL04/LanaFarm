@@ -35,8 +35,12 @@ export function NotificationPanel({ notifications, onSelect }: Props) {
   const unreadImportant = countUnreadNotifications(important);
 
   return (
-    <div className="flex w-64 flex-col">
-      <div className="flex border-b border-border">
+    <div className="flex w-80 flex-col">
+      <header className="border-b border-border px-4 py-3">
+        <h2 className="text-sm font-semibold text-foreground">Notifications</h2>
+      </header>
+
+      <div className="flex gap-1 border-b border-border px-4 py-2">
         {(
           [
             {
@@ -58,14 +62,14 @@ export function NotificationPanel({ notifications, onSelect }: Props) {
             type="button"
             onClick={() => setTab(t.id)}
             className={cn(
-              "flex flex-1 items-center justify-center gap-1 px-1.5 py-1.5 text-[11px] font-medium transition-colors",
+              "flex flex-1 items-center justify-center gap-1.5 rounded-md px-2 py-1.5 text-xs font-medium transition-colors",
               tab === t.id
-                ? "border-b-2 border-foreground text-foreground"
-                : "text-muted hover:text-foreground"
+                ? "bg-card-muted text-foreground"
+                : "text-muted hover:bg-muted/40 hover:text-foreground"
             )}
           >
             <span>{t.label}</span>
-            <span className="tabular-nums text-[10px] font-normal text-muted">
+            <span className="tabular-nums text-xs font-normal text-muted">
               ({t.count}
               {t.unread > 0 ? (
                 <span className="text-accent-blue"> · {t.unread}</span>
@@ -75,7 +79,8 @@ export function NotificationPanel({ notifications, onSelect }: Props) {
           </button>
         ))}
       </div>
-      <div className="max-h-64 overflow-y-auto py-0.5">
+
+      <div className="max-h-72 overflow-y-auto px-2 py-2">
         {visible.length === 0 ? (
           <EmptyState
             title={
@@ -83,10 +88,10 @@ export function NotificationPanel({ notifications, onSelect }: Props) {
                 ? "Aucune notification récente."
                 : "Aucune alerte importante."
             }
-            className="py-6"
+            className="py-8"
           />
         ) : (
-          <ul role="list" className="divide-y divide-border/60">
+          <ul role="list" className="flex flex-col gap-1">
             {visible.map((n) => (
               <li key={n.id}>
                 <NotificationListItem notification={n} onSelect={onSelect} />

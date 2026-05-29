@@ -61,7 +61,10 @@ export function NotificationBell() {
             ) : null}
           </Button>
         </PopoverTrigger>
-        <PopoverContent align="end" className="w-auto p-0">
+        <PopoverContent
+          align="end"
+          className="w-80 rounded-card border-border p-0 shadow-modal"
+        >
           <NotificationPanel
             notifications={notifications}
             onSelect={handleSelect}

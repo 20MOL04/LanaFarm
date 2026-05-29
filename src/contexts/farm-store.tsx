@@ -35,6 +35,7 @@ import { stockFermeDisponiblePourEnvoi } from "@/lib/transfers-calc";
 export { stockFermeDisponiblePourEnvoi };
 import { computeVenteSnapshot } from "@/lib/sales-calc";
 import { eggsToTrays, traysToEggs } from "@/lib/units";
+import { kpiResteAVerser } from "@/lib/kpi-sources";
 import { evaluateNotificationRules } from "@/lib/notifications/notification-rules";
 import { getNotificationRepository } from "@/lib/notifications/notification-storage";
 import { mergeNotificationSync } from "@/lib/notifications/notification-sync";
@@ -257,6 +258,31 @@ type Action =
       payload: { code: string; message: string; meta?: Record<string, unknown> };
     }
   | { type: "store/clearError" };
+
+function resteAVerserGlobal(state: State): number {
+  const cap = state.config.preferences.capacitePlateau;
+  return kpiResteAVerser(
+    state.ventes,
+    state.depenses,
+    state.tresorerie,
+    cap,
+    state.config
+  );
+}
+
+function resteAVerserSansEntree(state: State, excludeId: string): number {
+  const cap = state.config.preferences.capacitePlateau;
+  const tresorerie = state.tresorerie.filter(
+    (t) => t.statut === "actif" && t.id !== excludeId
+  );
+  return kpiResteAVerser(
+    state.ventes,
+    state.depenses,
+    tresorerie,
+    cap,
+    state.config
+  );
+}
 
 function setStoreError(
   state: State,
@@ -1119,6 +1145,15 @@ function reducer(state: State, action: Action): State {
 
     /* -------- Trésorerie -------- */
     case "tresorerie/add": {
+      const depose = Math.max(0, Math.floor(action.payload.draft.depose));
+      const reste = resteAVerserGlobal(state);
+      if (depose > reste) {
+        return setStoreError(state, {
+          code: "VERSEMENT_DEPASSE_RESTE",
+          message: "Le versement dépasse le reste à verser.",
+          meta: { reste, depose },
+        });
+      }
       const now = new Date().toISOString();
       const entryId = createId("tresorerie");
       const entry: Tresorerie = {
@@ -1170,6 +1205,16 @@ function reducer(state: State, action: Action): State {
         };
       });
 
+      const total = normalized.reduce((sum, l) => sum + l.montantRecu, 0);
+      const reste = resteAVerserGlobal(state);
+      if (total > reste) {
+        return setStoreError(state, {
+          code: "VERSEMENT_DEPASSE_RESTE",
+          message: "Le versement dépasse le reste à verser.",
+          meta: { reste, depose: total },
+        });
+      }
+
       const entries: Tresorerie[] = normalized.map((l) => {
         const entryId = createId("tresorerie");
         return {
@@ -1187,7 +1232,6 @@ function reducer(state: State, action: Action): State {
         };
       });
 
-      const total = normalized.reduce((sum, l) => sum + l.montantRecu, 0);
       const s2: State = {
         ...state,
         errors: null,
@@ -1215,8 +1259,18 @@ function reducer(state: State, action: Action): State {
         ...merged,
         reste: merged.montantRecu - merged.depose,
       };
+      const depose = Math.max(0, Math.floor(updated.depose));
+      const reste = resteAVerserSansEntree(state, target.id);
+      if (depose > reste) {
+        return setStoreError(state, {
+          code: "VERSEMENT_DEPASSE_RESTE",
+          message: "Le versement dépasse le reste à verser.",
+          meta: { reste, depose },
+        });
+      }
       let s1: State = {
         ...state,
+        errors: null,
         tresorerie: [
           ...(archived ? [archived] : []),
           ...state.tresorerie.map((d) => (d.id === target.id ? updated : d)),

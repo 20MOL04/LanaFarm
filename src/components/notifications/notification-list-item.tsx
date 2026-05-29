@@ -34,33 +34,34 @@ export function NotificationListItem({ notification, onSelect }: Props) {
       type="button"
       onClick={() => onSelect(notification)}
       className={cn(
-        "flex w-full items-start gap-1.5 px-1.5 py-1 text-left transition-colors hover:bg-muted/40",
-        unread && "bg-accent-blue-soft/20"
+        "flex w-full items-start gap-2.5 rounded-md px-3 py-2.5 text-left transition-colors",
+        "hover:bg-muted/50",
+        unread && "bg-accent-blue-soft/25"
       )}
       aria-label={`${notification.title}, ${unread ? "non lue" : "lue"}`}
     >
       <span
         className={cn(
-          "mt-1 h-1.5 w-1.5 shrink-0 rounded-full",
+          "mt-1.5 h-2 w-2 shrink-0 rounded-full",
           LEVEL_DOT[notification.level],
-          unread && "ring-1 ring-accent-blue/40"
+          unread && "ring-2 ring-accent-blue/30"
         )}
         aria-hidden
       />
       <span className="min-w-0 flex-1">
-        <span className="flex items-baseline justify-between gap-1.5">
+        <span className="flex items-baseline justify-between gap-2">
           <span
             className={cn(
-              "truncate text-[12px] leading-tight text-foreground",
-              unread ? "font-medium" : "font-normal text-muted"
+              "truncate text-sm leading-snug text-foreground",
+              unread ? "font-medium" : "font-normal"
             )}
           >
             {notification.title}
           </span>
           <NotificationReadBadge unread={unread} />
         </span>
-        <span className="mt-px block truncate text-[10px] leading-tight text-muted">
-          {description}
+        <span className="mt-0.5 block text-xs leading-snug text-muted">
+          <span className="line-clamp-2">{description}</span>
           <span className="text-muted/80"> · {when}</span>
         </span>
       </span>

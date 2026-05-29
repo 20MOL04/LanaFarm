@@ -16,6 +16,18 @@
 
 import { formatGNF, formatNumber } from "@/lib/format";
 import { aggregateExpenses, type ExpensesTotals } from "@/lib/expenses-calc";
+import {
+  kpiAlveolesMisesEnVente,
+  kpiAlveolesRamassees,
+  kpiAlveolesRestantesPeriode,
+  kpiCA,
+  kpiDepenses,
+  kpiMargeBrutePct,
+  kpiPrixMoyenVente,
+  kpiResteAVerser,
+  kpiTresorerieRecuPeriode,
+  kpiTresorerieVersePeriode,
+} from "@/lib/kpi-sources";
 import { aggregateTresorerie, type TresorerieTotals } from "@/lib/tresorerie-calc";
 import {
   aggregateProductions,
@@ -74,11 +86,14 @@ export type ReportSummaryInput = DashboardAggregateInput;
 
 export function buildReportSnapshot(input: ReportSummaryInput): ReportKpiSnapshot {
   const base = buildDashboardKpis(input);
-  const prod = aggregateProductions(input.productionsInRange, input.capacitePlateau);
+  const cap = input.capacitePlateau;
+  const rangeStart = input.rangeStart;
+  const rangeEnd = input.rangeEnd;
+  const prod = aggregateProductions(input.productionsInRange, cap);
   const sales = aggregateSales(
     input.ventesInRange,
     input.productionsInRange,
-    input.capacitePlateau
+    cap
   );
   const exp = aggregateExpenses(input.depensesInRange);
   const deps = aggregateTresorerie(input.tresorerieInRange);
@@ -88,10 +103,14 @@ export function buildReportSnapshot(input: ReportSummaryInput): ReportKpiSnapsho
   });
   const tAgg = aggregateTransfers(transfertsInRange);
 
-  const margeBrutePct =
-    sales.montant > 0
-      ? Math.round(((sales.montant - exp.total) / sales.montant) * 100)
-      : null;
+  const margeBrutePct = kpiMargeBrutePct(
+    input.allVentes,
+    input.allDepenses,
+    rangeStart,
+    rangeEnd,
+    cap,
+    input.config
+  );
 
   return {
     ...base,
@@ -122,23 +141,34 @@ export type ProductionSummaryRow = {
 
 export function buildProductionSummary(
   productions: Production[],
-  capacitePlateau = 30
+  capacitePlateau = 30,
+  rangeStart: Date,
+  rangeEnd: Date
 ): { totals: ProductionTotals; rows: ProductionSummaryRow[] } {
   const totals = aggregateProductions(productions, capacitePlateau);
+  const ramassees = kpiAlveolesRamassees(productions, capacitePlateau);
+  const mises = kpiAlveolesMisesEnVente(productions, capacitePlateau);
+  const restantes = kpiAlveolesRestantesPeriode(
+    productions,
+    rangeStart,
+    rangeEnd,
+    capacitePlateau
+  );
   return {
     totals,
     rows: [
       {
         label: KPI_LABEL.alveolesRamassees,
-        value: formatAlveolesNumber(totals.alveolesRamassees),
+        value: formatAlveolesNumber(ramassees),
       },
       {
         label: KPI_LABEL.alveolesMisesEnVente,
-        value: formatAlveolesNumber(totals.alveolesMisesEnVente),
+        value: formatAlveolesNumber(mises),
       },
       {
-        label: KPI_LABEL.alveolesRestantes,
-        value: formatAlveolesNumber(totals.alveolesRestantes),
+        label: KPI_LABEL.restantesPeriode,
+        value: formatAlveolesNumber(restantes),
+        hint: "Σ restantes par jour sur la période",
       },
       {
         label: KPI_LABEL.oeufsCasses,
@@ -155,13 +185,13 @@ export type SalesSummaryRow = ProductionSummaryRow;
 export function buildSalesSummary(
   ventes: Vente[],
   productions: Production[],
-  capacitePlateau = 30
+  capacitePlateau = 30,
+  rangeStart: Date,
+  rangeEnd: Date
 ): { totals: SalesTotals; rows: SalesSummaryRow[] } {
   const totals = aggregateSales(ventes, productions, capacitePlateau);
-  const prixMoyen =
-    totals.alveolesVendues > 0
-      ? Math.round(totals.montant / totals.alveolesVendues)
-      : 0;
+  const ca = kpiCA(ventes, rangeStart, rangeEnd, capacitePlateau);
+  const prixMoyen = kpiPrixMoyenVente(ventes, rangeStart, rangeEnd, capacitePlateau);
   return {
     totals,
     rows: [
@@ -174,7 +204,7 @@ export function buildSalesSummary(
         value: formatEggsNumber(totals.casses),
         variant: "broken-eggs",
       },
-      { label: "Chiffre d'affaires", value: formatGNF(totals.montant) },
+      { label: KPI_LABEL.chiffreAffaires, value: formatGNF(ca) },
       {
         label: SALES_LABEL.prixCasier,
         value: prixMoyen > 0 ? formatGNF(prixMoyen) : "—",
@@ -188,22 +218,26 @@ export function buildSalesSummary(
 export type ExpensesSummaryRow = ProductionSummaryRow;
 
 export function buildExpensesSummary(
-  depenses: Depense[]
+  depenses: Depense[],
+  rangeStart: Date,
+  rangeEnd: Date,
+  config: FarmConfig
 ): { totals: ExpensesTotals; rows: ExpensesSummaryRow[] } {
   const totals = aggregateExpenses(depenses);
+  const totalKpi = kpiDepenses(depenses, rangeStart, rangeEnd, config);
   return {
     totals,
     rows: [
-      { label: "Total dépenses", value: formatGNF(totals.total) },
+      { label: KPI_LABEL.totalDepenses, value: formatGNF(totalKpi) },
       {
-        label: "Catégorie principale",
+        label: KPI_LABEL.categoriePrincipale,
         value: totals.topCategorie ? totals.topCategorie.label : "—",
         hint: totals.topCategorie
           ? `${formatGNF(totals.topCategorie.montant)} · ${formatNumber(totals.topCategorie.part)} %`
           : undefined,
       },
       {
-        label: "Moyenne journalière",
+        label: KPI_LABEL.moyenneJour,
         value: formatGNF(totals.moyenneJournaliere),
         hint: `${totals.joursActifs} j actifs`,
       },
@@ -214,22 +248,46 @@ export function buildExpensesSummary(
 
 export type TreasurySummaryRow = ProductionSummaryRow;
 
-export function buildTreasurySummary(
-  tresorerie: Tresorerie[]
-): { totals: TresorerieTotals; rows: TreasurySummaryRow[] } {
-  const totals = aggregateTresorerie(tresorerie);
+export function buildTreasurySummary(args: {
+  tresorerieInRange: Tresorerie[];
+  allTresorerie: Tresorerie[];
+  ventes: Vente[];
+  depenses: Depense[];
+  config: FarmConfig;
+  capacitePlateau: number;
+  rangeStart: Date;
+  rangeEnd: Date;
+}): { totals: TresorerieTotals; rows: TreasurySummaryRow[] } {
+  const totals = aggregateTresorerie(args.tresorerieInRange, args.config);
+  const totalRecu = kpiTresorerieRecuPeriode(
+    args.allTresorerie,
+    args.rangeStart,
+    args.rangeEnd
+  );
+  const totalVerse = kpiTresorerieVersePeriode(
+    args.allTresorerie,
+    args.rangeStart,
+    args.rangeEnd
+  );
+  const resteAVerser = kpiResteAVerser(
+    args.ventes,
+    args.depenses,
+    args.allTresorerie,
+    args.capacitePlateau,
+    args.config
+  );
   return {
     totals,
     rows: [
-      { label: "Total reçu", value: formatGNF(totals.totalRecu) },
-      { label: "Montant versé", value: formatGNF(totals.totalDepose) },
+      { label: KPI_LABEL.totalRecu, value: formatGNF(totalRecu) },
+      { label: KPI_LABEL.montantVerse, value: formatGNF(totalVerse) },
       {
-        label: "Reste à verser",
-        value: formatGNF(totals.enAttente),
-        hint: "Encaissements non encore versés",
+        label: KPI_LABEL.resteAVerser,
+        value: formatGNF(resteAVerser),
+        hint: "Cumul global (CA − dépenses − versé)",
       },
       {
-        label: "Méthode principale",
+        label: KPI_LABEL.methodePrincipale,
         value: totals.topMethode ? totals.topMethode.label : "—",
         hint: totals.topMethode
           ? `${totals.topMethode.part} % des recettes`
@@ -438,6 +496,9 @@ export function buildReportPayload(args: {
   ventes: Vente[];
   depenses: Depense[];
   tresorerie: Tresorerie[];
+  allVentes: Vente[];
+  allDepenses: Depense[];
+  allTresorerie: Tresorerie[];
   transferts: TransfertStock[];
   farm: FarmProfil;
   config: FarmConfig;
@@ -462,10 +523,24 @@ export function buildReportPayload(args: {
     farm: args.farm,
     capacitePlateau: cap,
     kpis: args.snapshot,
-    productionRows: buildProductionSummary(args.productions, cap).rows,
-    salesRows: buildSalesSummary(args.ventes, args.productions, cap).rows,
-    expensesRows: buildExpensesSummary(args.depenses).rows,
-    treasuryRows: buildTreasurySummary(args.tresorerie).rows,
+    productionRows: buildProductionSummary(
+      args.productions,
+      cap,
+      rs,
+      re
+    ).rows,
+    salesRows: buildSalesSummary(args.ventes, args.productions, cap, rs, re).rows,
+    expensesRows: buildExpensesSummary(args.depenses, rs, re, args.config).rows,
+    treasuryRows: buildTreasurySummary({
+      tresorerieInRange: args.tresorerie,
+      allTresorerie: args.allTresorerie,
+      ventes: args.allVentes,
+      depenses: args.allDepenses,
+      config: args.config,
+      capacitePlateau: args.capacitePlateau,
+      rangeStart: rs,
+      rangeEnd: re,
+    }).rows,
     detail: {
       production: buildProductionDetailRows(args.productions, cap, rs, re),
       ventes: buildVenteDetailRows(args.ventes, cap, rs, re),
@@ -480,6 +555,14 @@ export function buildReportPayload(args: {
     },
     timeline:
       args.timeline ??
-      buildActivityTimeline(rs, re, args.productions, args.ventes, args.depenses, cap),
+      buildActivityTimeline(
+        rs,
+        re,
+        args.productions,
+        args.ventes,
+        args.depenses,
+        cap,
+        args.config
+      ),
   };
 }

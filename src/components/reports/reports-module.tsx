@@ -104,8 +104,16 @@ export function ReportsModule() {
 
   const liveTimeline = React.useMemo(
     () =>
-      buildActivityTimeline(range.from, range.to, productions, ventes, depenses, cap),
-    [range, productions, ventes, depenses, cap]
+      buildActivityTimeline(
+        range.from,
+        range.to,
+        productions,
+        ventes,
+        depenses,
+        cap,
+        config
+      ),
+    [range, productions, ventes, depenses, cap, config]
   );
 
   const buildLivePayload = React.useCallback(
@@ -116,6 +124,9 @@ export function ReportsModule() {
         ventes,
         depenses,
         tresorerie,
+        allVentes: salesState.ventes,
+        allDepenses: expState.depenses,
+        allTresorerie: tresorerieState.tresorerie,
         transferts: transfertsInRange,
         farm: config.profil,
         config,
@@ -134,6 +145,9 @@ export function ReportsModule() {
       ventes,
       depenses,
       tresorerie,
+      salesState.ventes,
+      expState.depenses,
+      tresorerieState.tresorerie,
       transfertsInRange,
       config,
       cap,

@@ -51,7 +51,7 @@ export function PriceSelect({
   };
 
   return (
-    <Popover open={open} onOpenChange={setOpen}>
+    <Popover modal={false} open={open} onOpenChange={setOpen}>
       <PopoverAnchor asChild>
         <Input
           ref={inputRef}
@@ -87,12 +87,18 @@ export function PriceSelect({
         />
       </PopoverAnchor>
       <PopoverContent
-        className="w-[min(100vw-2rem,var(--radix-popover-trigger-width,12rem))] p-1"
+        className="z-[100] w-[min(100vw-2rem,var(--radix-popover-trigger-width,12rem))] p-1"
         align="start"
         side="bottom"
+        sideOffset={4}
         onOpenAutoFocus={(e) => e.preventDefault()}
+        onWheel={(e) => e.stopPropagation()}
       >
-        <ul role="listbox" className="max-h-48 overflow-y-auto">
+        <ul
+          role="listbox"
+          className="max-h-48 overflow-y-auto overscroll-contain"
+          onWheel={(e) => e.stopPropagation()}
+        >
           {priceOptions.map((p) => (
             <li key={p}>
               <button

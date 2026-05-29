@@ -482,6 +482,8 @@ export function AddSaleDialog({ open, onOpenChange, editEntry = null }: Props) {
         stockNegatif={multiPreview.stockNegatif}
         deltaAlv={multiPreview.deltaAlv}
         caLabel={multiPreview.caLabel}
+        stockDebutLabel={multiPreview.stockDebutLabel}
+        stockFinLabel={multiPreview.stockFinLabel}
       />
     ) : isEditMode && editValidation ? (
       <StockPreviewPanel
@@ -568,6 +570,10 @@ export function AddSaleDialog({ open, onOpenChange, editEntry = null }: Props) {
                 </DialogDateRow>
                 <DialogScrollRegion className={DIALOG_SCROLL}>
                   <div className="space-y-2">
+                    <DialogDayLinesToolbar
+                      label={isEditMode ? "Ligne de vente" : "Lignes de vente"}
+                      onAdd={isEditMode ? undefined : addLine}
+                    />
                     {isEditMode ? (
                       <SaleLineCard
                         alveoles={editDraft.alveoles}
@@ -589,7 +595,6 @@ export function AddSaleDialog({ open, onOpenChange, editEntry = null }: Props) {
                       />
                     ) : (
                       <>
-                        <DialogDayLinesToolbar label="Lignes de vente" onAdd={addLine} />
                         {draft.lignes.map((ligne, index) => (
                           <SaleLineCard
                             key={index}

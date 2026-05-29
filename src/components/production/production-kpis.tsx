@@ -33,7 +33,7 @@ export function ProductionKpis() {
 
   const labelRamassees = useKpiPeriodLabel(KPI_LABEL.alveolesRamassees);
   const labelMises = useKpiPeriodLabel(KPI_LABEL.alveolesMisesEnVente);
-  const labelRestantes = useKpiPeriodLabel(KPI_LABEL.alveolesRestantes);
+  const labelRestantes = useKpiPeriodLabel(KPI_LABEL.stockFerme, "snapshot");
   const labelCasses = useKpiPeriodLabel(KPI_LABEL.oeufsCasses);
 
   return (

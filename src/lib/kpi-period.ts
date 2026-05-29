@@ -11,6 +11,7 @@ import {
   type DateRangePresetId,
   formatRange,
 } from "@/lib/date-ranges";
+import { KPI_LABEL } from "@/lib/terminology";
 
 export type KpiPeriodKind = "flow" | "snapshot";
 
@@ -48,7 +49,7 @@ export function getKpiPeriodPhrase(
     : flowPeriodPhrase(presetId, range);
 }
 
-/** Titre carte : « Alvéoles dispo (Ferme) cette semaine », « Stock vente », etc. */
+/** Titre carte : « Stock ferme », « Stock vente », etc. */
 export function kpiLabelWithPeriod(
   baseLabel: string,
   presetId: DateRangePresetId,
@@ -57,9 +58,9 @@ export function kpiLabelWithPeriod(
 ): string {
   // Décision CEO — 3 KPI fixes : jamais suffixés par une période.
   if (
-    baseLabel === "Alvéoles dispo (Ferme)" ||
-    baseLabel === "Stock vente" ||
-    baseLabel === "Reste à verser"
+    baseLabel === KPI_LABEL.stockFerme ||
+    baseLabel === KPI_LABEL.stockVente ||
+    baseLabel === KPI_LABEL.resteAVerser
   ) {
     return baseLabel;
   }

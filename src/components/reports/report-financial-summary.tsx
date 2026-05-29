@@ -39,11 +39,6 @@ export function ReportFinancialSummary({ snapshot }: Props) {
                 value: formatGNF(snapshot.chiffreAffaires),
                 emphasis: true,
               },
-              {
-                label: "Argent encaissé",
-                value: formatGNF(snapshot.montantRemis + snapshot.montantEnAttente),
-                hint: "Somme reçus déposés + en attente",
-              },
               { label: "Montant versé", value: formatGNF(snapshot.montantRemis) },
               {
                 label: "Reste à verser",

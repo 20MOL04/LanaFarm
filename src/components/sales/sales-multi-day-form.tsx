@@ -121,28 +121,33 @@ export function SalesMultiDayForm({ blocks, ventes, defaultPrix, onChange }: Pro
                   isSalesBlockFilled(block) && "bg-card"
                 )}
               >
-                <td className={cn(MULTI_DAY_TABLE.td, MULTI_DAY_TABLE.col.day, "align-top")}>
-                  {lineIndex === 0 ? (
-                    <div className="flex flex-col gap-0.5 pt-0.5">
-                      <span className="font-medium capitalize text-foreground">{dayLabel}</span>
+                {lineIndex === 0 ? (
+                  <td
+                    rowSpan={block.lignes.length}
+                    className={cn(MULTI_DAY_TABLE.td, MULTI_DAY_TABLE.col.day)}
+                  >
+                    <div className="flex flex-wrap items-center gap-x-1.5 gap-y-0.5">
+                      <span className="text-[12px] font-medium capitalize leading-none text-foreground">
+                        {dayLabel}
+                      </span>
                       {hasConflict ? (
-                        <Badge tone="warning" className="w-fit text-[10px]">
-                          Jour déjà saisi
+                        <Badge tone="warning" className="px-1 py-0 text-[9px] leading-tight">
+                          Déjà saisi
                         </Badge>
                       ) : null}
                       <Button
                         type="button"
                         variant="ghost"
                         size="sm"
-                        className="mt-0.5 h-6 w-fit px-1 text-[10px]"
+                        className="h-5 px-1 text-[10px] leading-none"
                         onClick={() => addLine(blockIndex)}
                       >
                         <Plus className="h-3 w-3" />
                         Ligne
                       </Button>
                     </div>
-                  ) : null}
-                </td>
+                  </td>
+                ) : null}
                 <td className={cn(MULTI_DAY_TABLE.td, MULTI_DAY_TABLE.col.vendus)}>
                   <Input
                     type="number"
@@ -182,8 +187,11 @@ export function SalesMultiDayForm({ blocks, ventes, defaultPrix, onChange }: Pro
                   />
                 </td>
                 {SHOW_VENTE_CASSES ? (
-                  <td className={cn(MULTI_DAY_TABLE.td, MULTI_DAY_TABLE.col.cassesAlv)}>
-                    {lineIndex === 0 ? (
+                  lineIndex === 0 ? (
+                    <td
+                      rowSpan={block.lignes.length}
+                      className={cn(MULTI_DAY_TABLE.td, MULTI_DAY_TABLE.col.cassesAlv, "align-top")}
+                    >
                       <Input
                         type="number"
                         min={0}
@@ -200,10 +208,10 @@ export function SalesMultiDayForm({ blocks, ventes, defaultPrix, onChange }: Pro
                         onFocus={(e) => e.currentTarget.select()}
                         className={MULTI_DAY_INPUT_NUM}
                       />
-                    ) : null}
-                  </td>
+                    </td>
+                  ) : null
                 ) : null}
-                <td className={cn(MULTI_DAY_TABLE.td, MULTI_DAY_TABLE.col.action, "align-top")}>
+                <td className={cn(MULTI_DAY_TABLE.td, MULTI_DAY_TABLE.col.action)}>
                   <Button
                     type="button"
                     variant="ghost"

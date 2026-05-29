@@ -37,7 +37,7 @@ export function MultiDayConflictDialog({
           <p className="font-medium text-foreground">{formatDayListFR(conflictDays)}</p>
           <p className="text-xs">Que souhaitez-vous faire ?</p>
         </DialogBody>
-        <DialogFooter className="flex-col gap-2 sm:flex-col">
+        <DialogFooter className="grid-cols-1 [&>button:only-child]:col-span-1">
           <Button
             type="button"
             variant="accent"

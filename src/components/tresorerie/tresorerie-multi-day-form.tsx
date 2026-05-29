@@ -4,56 +4,59 @@ import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 import { Plus, Trash2 } from "lucide-react";
 
-import { ComboboxCategorie } from "@/components/shared/combobox-categorie";
+import { ComboboxMethode } from "@/components/shared/combobox-methode";
 import {
   MULTI_DAY_INPUT_PRICE,
-  MULTI_DAY_INPUT_TEXT,
   MULTI_DAY_TABLE,
 } from "@/components/shared/form-dialog-styles";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { hasActiveDepensesForDay } from "@/lib/multi-day";
+import { hasActiveTresorerieForDay } from "@/lib/multi-day";
 import { cn } from "@/lib/utils";
-import type { Depense, FarmConfig } from "@/types/domain";
+import type { FarmConfig, Tresorerie } from "@/types/domain";
 
-export type ExpenseMultiDayLine = {
-  categorie: string;
-  montant: number;
-  description: string;
+export type TresorerieMultiDayLine = {
+  methode: string;
+  montantRecu: number;
 };
 
-export type ExpenseMultiDayBlock = {
+export type TresorerieMultiDayBlock = {
   jourISO: string;
-  lignes: ExpenseMultiDayLine[];
+  lignes: TresorerieMultiDayLine[];
 };
 
-function emptyExpenseLine(): ExpenseMultiDayLine {
-  return { categorie: "", montant: 0, description: "" };
+function emptyTresorerieLine(): TresorerieMultiDayLine {
+  return { methode: "", montantRecu: 0 };
 }
 
-export function isExpenseBlockFilled(block: ExpenseMultiDayBlock): boolean {
+export function isTresorerieBlockFilled(block: TresorerieMultiDayBlock): boolean {
   return block.lignes.some(
-    (l) => l.categorie.trim().length > 0 && l.montant > 0
+    (l) => l.methode.trim().length > 0 && l.montantRecu > 0
   );
 }
 
 type Props = {
-  blocks: ExpenseMultiDayBlock[];
-  depenses: Depense[];
+  blocks: TresorerieMultiDayBlock[];
+  tresorerie: Tresorerie[];
   config: FarmConfig;
-  onChange: (blocks: ExpenseMultiDayBlock[]) => void;
+  onChange: (blocks: TresorerieMultiDayBlock[]) => void;
 };
 
-export function ExpensesMultiDayForm({ blocks, depenses, config, onChange }: Props) {
-  const updateBlock = (blockIndex: number, next: ExpenseMultiDayBlock) => {
+export function TresorerieMultiDayForm({
+  blocks,
+  tresorerie,
+  config,
+  onChange,
+}: Props) {
+  const updateBlock = (blockIndex: number, next: TresorerieMultiDayBlock) => {
     onChange(blocks.map((b, i) => (i === blockIndex ? next : b)));
   };
 
   const updateLine = (
     blockIndex: number,
     lineIndex: number,
-    patch: Partial<ExpenseMultiDayLine>
+    patch: Partial<TresorerieMultiDayLine>
   ) => {
     const block = blocks[blockIndex];
     updateBlock(blockIndex, {
@@ -66,7 +69,7 @@ export function ExpensesMultiDayForm({ blocks, depenses, config, onChange }: Pro
     const block = blocks[blockIndex];
     updateBlock(blockIndex, {
       ...block,
-      lignes: [...block.lignes, emptyExpenseLine()],
+      lignes: [...block.lignes, emptyTresorerieLine()],
     });
   };
 
@@ -85,24 +88,21 @@ export function ExpensesMultiDayForm({ blocks, depenses, config, onChange }: Pro
         <thead>
           <tr className="border-b border-border bg-card-muted text-[10px] font-medium text-muted">
             <th className={cn(MULTI_DAY_TABLE.th, MULTI_DAY_TABLE.col.day)}>Jour</th>
-            <th className={cn(MULTI_DAY_TABLE.th, MULTI_DAY_TABLE.col.category)}>Catégorie</th>
-            <th className={cn(MULTI_DAY_TABLE.th, MULTI_DAY_TABLE.col.montant)}>Montant (GNF)</th>
-            <th className={cn(MULTI_DAY_TABLE.th, MULTI_DAY_TABLE.col.description)}>
-              Description (optionnel)
-            </th>
+            <th className={cn(MULTI_DAY_TABLE.th, MULTI_DAY_TABLE.col.category)}>Méthode</th>
+            <th className={cn(MULTI_DAY_TABLE.th, MULTI_DAY_TABLE.col.montant)}>Montant versé</th>
             <th className={cn(MULTI_DAY_TABLE.th, MULTI_DAY_TABLE.col.action)} />
           </tr>
         </thead>
         <tbody>
           {blocks.map((block, blockIndex) => {
             const dayLabel = format(new Date(block.jourISO), "EEE d/MM", { locale: fr });
-            const hasConflict = hasActiveDepensesForDay(depenses, block.jourISO);
+            const hasConflict = hasActiveTresorerieForDay(tresorerie, block.jourISO);
             return block.lignes.map((ligne, lineIndex) => (
               <tr
                 key={`${block.jourISO}-${lineIndex}`}
                 className={cn(
                   "border-b border-border last:border-0",
-                  isExpenseBlockFilled(block) && "bg-card"
+                  isTresorerieBlockFilled(block) && "bg-card"
                 )}
               >
                 {lineIndex === 0 ? (
@@ -134,11 +134,11 @@ export function ExpensesMultiDayForm({ blocks, depenses, config, onChange }: Pro
                 ) : null}
                 <td className={cn(MULTI_DAY_TABLE.td, MULTI_DAY_TABLE.col.category)}>
                   <div className="min-w-0 [&_input]:h-8 [&_input]:min-w-0 [&_input]:px-1.5 [&_input]:text-[13px]">
-                    <ComboboxCategorie
-                      value={ligne.categorie}
-                      onChange={(v) => updateLine(blockIndex, lineIndex, { categorie: v })}
-                      categories={config.listes.categoriesDepense}
-                      placeholder="Catégorie"
+                    <ComboboxMethode
+                      value={ligne.methode}
+                      onChange={(v) => updateLine(blockIndex, lineIndex, { methode: v })}
+                      methodes={config.listes.methodesPaiement}
+                      placeholder="Méthode"
                     />
                   </div>
                 </td>
@@ -148,26 +148,15 @@ export function ExpensesMultiDayForm({ blocks, depenses, config, onChange }: Pro
                     min={0}
                     step={500}
                     inputMode="numeric"
-                    value={ligne.montant || ""}
+                    value={ligne.montantRecu || ""}
                     onChange={(e) => {
                       const n = e.target.valueAsNumber;
                       updateLine(blockIndex, lineIndex, {
-                        montant: Number.isNaN(n) ? 0 : Math.max(0, Math.floor(n)),
+                        montantRecu: Number.isNaN(n) ? 0 : Math.max(0, Math.floor(n)),
                       });
                     }}
                     onFocus={(e) => e.currentTarget.select()}
                     className={MULTI_DAY_INPUT_PRICE}
-                  />
-                </td>
-                <td className={cn(MULTI_DAY_TABLE.td, MULTI_DAY_TABLE.col.description)}>
-                  <Input
-                    value={ligne.description}
-                    onChange={(e) =>
-                      updateLine(blockIndex, lineIndex, { description: e.target.value })
-                    }
-                    placeholder="Optionnel"
-                    className={MULTI_DAY_INPUT_TEXT}
-                    maxLength={240}
                   />
                 </td>
                 <td className={cn(MULTI_DAY_TABLE.td, MULTI_DAY_TABLE.col.action, "align-top")}>

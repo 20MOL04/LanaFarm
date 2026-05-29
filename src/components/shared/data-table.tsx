@@ -15,8 +15,10 @@ export type DataTableColumn<T> = {
   className?: string;
   sortable?: boolean;
   primary?: boolean;
-  /** Masque la colonne en dessous du breakpoint (évite scroll horizontal). */
+  /** Masque la colonne en dessous du breakpoint. */
   hideBelow?: "sm" | "md" | "lg";
+  /** Ne pas tronquer le contenu (statut, actions). */
+  noTruncate?: boolean;
 };
 
 const hideClass: Record<NonNullable<DataTableColumn<unknown>["hideBelow"]>, string> = {
@@ -66,7 +68,8 @@ export function DataTable<T>({
                   scope="col"
                   style={col.width ? { width: col.width } : undefined}
                   className={cn(
-                    "overflow-hidden px-2 py-2.5 text-[11px] font-medium uppercase tracking-wide text-muted sm:px-3",
+                    "px-2 py-2 text-[11px] font-medium text-muted sm:px-3",
+                    !col.noTruncate && "overflow-hidden",
                     col.hideBelow && hideClass[col.hideBelow],
                     col.align === "center" && "text-center",
                     (!col.align || col.align === "left" || col.align === "right") &&
@@ -85,7 +88,7 @@ export function DataTable<T>({
                         isSorted && "text-accent-blue"
                       )}
                     >
-                      <span className="truncate">{col.header}</span>
+                      <span className={cn(!col.noTruncate && "truncate")}>{col.header}</span>
                       {isSorted ? (
                         sort?.direction === "asc" ? (
                           <ArrowUp className="h-3 w-3 shrink-0" />
@@ -97,7 +100,9 @@ export function DataTable<T>({
                       )}
                     </button>
                   ) : (
-                    <span className="block truncate">{col.header}</span>
+                    <span className={cn("block", !col.noTruncate && "truncate")}>
+                      {col.header}
+                    </span>
                   )}
                 </th>
               );
@@ -118,7 +123,8 @@ export function DataTable<T>({
                 <td
                   key={col.key}
                   className={cn(
-                    "overflow-hidden px-2 py-2.5 text-foreground sm:px-3",
+                    "px-2 py-2 text-foreground sm:px-3",
+                    !col.noTruncate && "overflow-hidden",
                     col.hideBelow && hideClass[col.hideBelow],
                     col.primary && "font-semibold",
                     col.align === "center" && "text-center",
@@ -127,7 +133,12 @@ export function DataTable<T>({
                     col.className
                   )}
                 >
-                  <div className="min-w-0 max-w-full truncate [&>*]:truncate">
+                  <div
+                    className={cn(
+                      "min-w-0 max-w-full",
+                      !col.noTruncate && "[&>*]:truncate"
+                    )}
+                  >
                     {col.cell(row, index)}
                   </div>
                 </td>

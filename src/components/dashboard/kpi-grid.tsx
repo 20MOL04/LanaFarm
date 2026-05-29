@@ -25,15 +25,20 @@ export function KpiGrid({ kpis }: Props) {
   const config = useFarmConfig();
   const capacite = config.preferences.capacitePlateau;
   const profitTone = kpis.profit < 0 ? "danger" : "neutral";
-  const attenteTone = kpis.montantEnAttente > 0 ? "warning" : "neutral";
+  const attenteTone =
+    kpis.montantEnAttente < 0
+      ? "danger"
+      : kpis.montantEnAttente > 0
+        ? "warning"
+        : "neutral";
 
-  const labelRestantes = useKpiPeriodLabel(KPI_LABEL.alveolesRestantes);
+  const labelRestantes = useKpiPeriodLabel(KPI_LABEL.stockFerme, "snapshot");
   const labelStockVente = useKpiPeriodLabel(KPI_LABEL.stockVente, "snapshot");
   const labelCa = useKpiPeriodLabel(KPI_LABEL.chiffreAffaires);
   const labelProfit = useKpiPeriodLabel(KPI_LABEL.profit);
   const labelVerse = useKpiPeriodLabel(KPI_LABEL.montantVerse);
   const labelResteVerser = useKpiPeriodLabel(KPI_LABEL.resteAVerser);
-  const labelDepenses = useKpiPeriodLabel("Dépenses");
+  const labelDepenses = useKpiPeriodLabel(KPI_LABEL.depenses);
   const labelCasses = useKpiPeriodLabel(KPI_LABEL.oeufsCasses);
 
   return (

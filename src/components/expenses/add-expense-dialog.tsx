@@ -469,6 +469,10 @@ export function AddExpenseDialog({ open, onOpenChange, editEntry = null }: Props
                 </DialogDateRow>
                 <DialogScrollRegion className={DIALOG_SCROLL}>
                   <div className="space-y-2">
+                    <DialogDayLinesToolbar
+                      label={isEditMode ? "Ligne de dépense" : "Lignes de dépense"}
+                      onAdd={isEditMode ? undefined : addLine}
+                    />
                     {isEditMode ? (
                       <ExpenseLineCard
                         categorie={editDraft.categorie}
@@ -493,7 +497,6 @@ export function AddExpenseDialog({ open, onOpenChange, editEntry = null }: Props
                       />
                     ) : (
                       <>
-                        <DialogDayLinesToolbar label="Lignes de dépense" onAdd={addLine} />
                         {dayDraft.lignes.map((ligne, index) => (
                           <ExpenseLineCard
                             key={index}

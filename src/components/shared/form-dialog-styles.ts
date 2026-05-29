@@ -4,15 +4,15 @@ export const DIALOG_FIT_CONTENT = "!w-max !max-w-[min(100vw-1rem,100%)]";
 /** Plafond mode 1 jour (saisie terrain). */
 export const DIALOG_SINGLE_MAX = "sm:!max-w-[min(100vw-1rem,28rem)]";
 
-/** Enveloppe interne (header + form). */
-export const DIALOG_INNER = "flex w-full min-w-0 max-w-full flex-col";
+/** Enveloppe interne (header + form) — occupe la hauteur dispo sans écraser le footer. */
+export const DIALOG_INNER = "flex min-h-0 w-full min-w-0 max-w-full flex-1 flex-col";
 
-export const DIALOG_BODY = "w-full min-w-0 shrink-0 gap-3";
-export const DIALOG_FORM = "flex w-full min-w-0 flex-col overflow-visible";
+export const DIALOG_BODY = "flex min-h-0 w-full min-w-0 flex-1 flex-col gap-3 overflow-hidden";
+export const DIALOG_FORM = "flex min-h-0 w-full min-w-0 flex-1 flex-col overflow-hidden";
 
-/** Scroll lignes uniquement si > ~6 lignes. */
+/** Zone scrollable — prend l'espace restant entre header/date et preview/footer. */
 export const DIALOG_SCROLL =
-  "w-full min-w-0 max-h-[min(14rem,40dvh)] overflow-y-auto overflow-x-visible overscroll-contain";
+  "min-h-0 w-full min-w-0 flex-1 overflow-y-auto overflow-x-auto overscroll-contain";
 
 /** Champs mode 1 jour */
 export const FORM_INPUT_NUM = "h-8 w-full tabular-nums px-1.5";
@@ -23,7 +23,11 @@ export const FORM_INPUT_TEXT = "h-8 w-full min-w-0 px-1.5";
 export const FORM_INPUT_NOTES = "h-8 w-full min-w-0 px-1.5";
 
 export const FORM_LINE_CARD =
-  "w-full space-y-2.5 rounded-card border border-border bg-card-muted p-2.5";
+  "w-full rounded-card border border-border bg-card-muted/40 p-2";
+
+/** Ligne compacte : 2 champs + action (supprimer) sur une seule rangée. */
+export const FORM_LINE_GRID_3 =
+  "grid grid-cols-[minmax(0,1fr)_minmax(0,1fr)_2rem] items-end gap-2";
 
 /** Ligne 1 : deux champs côte à côte (qté + prix, catégorie + montant). */
 export const FORM_LINE_GRID_2 = "grid grid-cols-2 gap-x-3 gap-y-2";
@@ -38,8 +42,8 @@ export const FORM_NUM_FIELDS_ROW = "flex flex-wrap items-start gap-x-3 gap-y-2";
 export const MULTI_DAY_TABLE = {
   root: "w-max max-w-full border-collapse text-left text-sm",
   wrap: "inline-block max-w-full overflow-x-auto rounded-card border border-border",
-  th: "whitespace-nowrap px-2 py-2 text-left text-[10px] font-medium text-muted",
-  td: "px-2 py-1.5 align-top",
+  th: "whitespace-nowrap px-2 py-1.5 text-left text-[10px] font-medium text-muted",
+  td: "px-2 py-1 align-middle",
   col: {
     day: "min-w-[5.75rem]",
     vendus: "min-w-[6.25rem]",

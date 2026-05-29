@@ -135,7 +135,7 @@ export function ComboboxConfig({
   }, [items, createError, duplicateErrorCode]);
 
   return (
-    <Popover open={open} onOpenChange={setOpen}>
+    <Popover modal={false} open={open} onOpenChange={setOpen}>
       <PopoverAnchor asChild>
         <Input
           ref={inputRef}
@@ -146,25 +146,33 @@ export function ComboboxConfig({
             setOpen(true);
             setInputValue((prev) => prev || displayLabel);
           }}
+          onClick={() => setOpen(true)}
           onBlur={() => {
             window.setTimeout(() => {
               if (!inputRef.current?.matches(":focus")) setOpen(false);
             }, 120);
           }}
           placeholder={placeholder}
-          className={cn("h-8 w-full min-w-0 tabular-nums", className)}
+          className={cn("h-8 w-full min-w-0", className)}
           autoComplete="off"
           aria-expanded={open}
           aria-haspopup="listbox"
         />
       </PopoverAnchor>
       <PopoverContent
-        className="w-[min(100vw-2rem,var(--radix-popover-trigger-width,12rem))] p-1"
+        className="z-[100] w-[min(100vw-2rem,var(--radix-popover-trigger-width,12rem))] p-1"
         align="start"
         side="bottom"
+        sideOffset={4}
         onOpenAutoFocus={(e) => e.preventDefault()}
+        onCloseAutoFocus={(e) => e.preventDefault()}
+        onWheel={(e) => e.stopPropagation()}
       >
-        <ul role="listbox" className="max-h-48 overflow-y-auto">
+        <ul
+          role="listbox"
+          className="max-h-48 overflow-y-auto overscroll-contain"
+          onWheel={(e) => e.stopPropagation()}
+        >
           {suggestions.map((item) => (
             <li key={item.id}>
               <button

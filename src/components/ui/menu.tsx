@@ -24,7 +24,7 @@ type MenuProps = {
 
 export function Menu({ trigger, children, align = "end", className }: MenuProps) {
   return (
-    <Popover>
+    <Popover modal={false}>
       <PopoverTrigger asChild>{trigger}</PopoverTrigger>
       <PopoverContent
         align={align}

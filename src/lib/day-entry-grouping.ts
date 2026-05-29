@@ -1,10 +1,10 @@
 import { startOfDay } from "date-fns";
 
 import type { SaleRowView } from "@/lib/sales-calc";
-import { resolveCategorieLabel } from "@/lib/config-defaults";
+import { resolveCategorieLabel, resolveMethodeLabel } from "@/lib/config-defaults";
 import { formatGNF } from "@/lib/format";
 import { eggsToTrays } from "@/lib/terminology";
-import type { Depense, EntreeStatut, FarmConfig } from "@/types/domain";
+import type { Depense, EntreeStatut, FarmConfig, Tresorerie } from "@/types/domain";
 
 export type AggregatedDayStatut = EntreeStatut | "mixte";
 
@@ -41,6 +41,15 @@ export type ExpenseDayGroup = DayGroupBase & {
   entries: Depense[];
 };
 
+export type TresorerieDayGroup = DayGroupBase & {
+  kind: "tresorerie";
+  totalRecu: number;
+  totalDepose: number;
+  totalReste: number;
+  methodes: string[];
+  entries: Tresorerie[];
+};
+
 export function dayKeyFromISO(jourISO: string): string {
   return startOfDay(new Date(jourISO)).toISOString();
 }
@@ -69,6 +78,10 @@ export function formatCategoriesSummary(labels: string[]): string {
   if (labels.length === 1) return labels[0]!;
   if (labels.length === 2) return `${labels[0]}, ${labels[1]}`;
   return `${labels[0]}, ${labels[1]} (+${labels.length - 2})`;
+}
+
+export function formatMethodesSummary(labels: string[]): string {
+  return formatCategoriesSummary(labels);
 }
 
 export function formatSalesClientsSummary(clients: string[], count: number): string {
@@ -210,6 +223,52 @@ export function groupExpensesByDay(rows: Depense[], config: FarmConfig): Expense
       totalMontant,
       categories,
       descriptionLabel,
+      entries: sorted,
+    });
+  }
+
+  return groups.sort(
+    (a, b) => new Date(b.jourISO).getTime() - new Date(a.jourISO).getTime()
+  );
+}
+
+export function groupTresorerieByDay(
+  rows: Tresorerie[],
+  config: FarmConfig
+): TresorerieDayGroup[] {
+  const byDay = new Map<string, Tresorerie[]>();
+  for (const row of rows) {
+    const key = dayKeyFromISO(row.jourISO);
+    const list = byDay.get(key) ?? [];
+    list.push(row);
+    byDay.set(key, list);
+  }
+
+  const groups: TresorerieDayGroup[] = [];
+  for (const entries of byDay.values()) {
+    const sorted = [...entries].sort(
+      (a, b) => new Date(b.jourISO).getTime() - new Date(a.jourISO).getTime()
+    );
+    const base = buildDayGroupBase(sorted);
+    const actives = sorted.filter((e) => e.statut === "actif");
+
+    let totalRecu = 0;
+    let totalDepose = 0;
+    const methodes: string[] = [];
+    for (const row of actives) {
+      totalRecu += row.montantRecu;
+      totalDepose += row.depose;
+      const label = resolveMethodeLabel(row.methode, config.listes.methodesPaiement);
+      if (!methodes.includes(label)) methodes.push(label);
+    }
+
+    groups.push({
+      ...base,
+      kind: "tresorerie",
+      totalRecu,
+      totalDepose,
+      totalReste: totalRecu - totalDepose,
+      methodes,
       entries: sorted,
     });
   }

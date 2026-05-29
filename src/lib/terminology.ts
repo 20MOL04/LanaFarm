@@ -14,13 +14,21 @@ export { EGGS_PER_TRAY_DEFAULT, eggsToTrays } from "@/lib/units";
 export const KPI_LABEL = {
   alveolesRamassees: "Alvéoles ramassées",
   alveolesMisesEnVente: "Alvéoles mises en vente",
-  alveolesRestantes: "Alvéoles dispo (Ferme)",
+  /** Σ restantes par jour sur la période (rapports) — distinct du stock instantané. */
+  restantesPeriode: "Restantes sur la période",
+  stockFerme: "Stock ferme",
   oeufsCasses: "Œufs cassés",
   stockVente: "Stock vente",
   chiffreAffaires: "Chiffre d'affaires",
   montantVerse: "Montant versé",
   resteAVerser: "Reste à verser",
   profit: "Profit",
+  totalRecu: "Total reçu",
+  depenses: "Dépenses",
+  totalDepenses: "Total dépenses",
+  methodePrincipale: "Méthode principale",
+  moyenneJour: "Moyenne / jour",
+  categoriePrincipale: "Catégorie principale",
 } as const;
 
 /** Hints KPI Production / stock — cohérence inter-modules. */

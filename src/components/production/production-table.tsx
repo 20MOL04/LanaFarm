@@ -170,12 +170,15 @@ export function ProductionTable({
     {
       key: "statut",
       header: "Statut",
+      width: "4.75rem",
+      noTruncate: true,
       cell: (row) => <EntryStatusBadge statut={row.statut} />,
     },
     {
       key: "actions",
       header: <span className="sr-only">Actions</span>,
-      width: "56px",
+      width: "48px",
+      noTruncate: true,
       cell: (row) => (
         <ProductionRowActions entry={row} onRequestEdit={onRequestEdit} />
       ),

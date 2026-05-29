@@ -40,10 +40,10 @@ export function ReportKpiSummary({ snapshot }: Props) {
 
   const labelRamassees = useKpiPeriodLabel(KPI_LABEL.alveolesRamassees);
   const labelMises = useKpiPeriodLabel(KPI_LABEL.alveolesMisesEnVente);
-  const labelRestantes = useKpiPeriodLabel(KPI_LABEL.alveolesRestantes);
+  const labelRestantes = useKpiPeriodLabel(KPI_LABEL.stockFerme, "snapshot");
   const labelStockVente = useKpiPeriodLabel(KPI_LABEL.stockVente, "snapshot");
   const labelCa = useKpiPeriodLabel(KPI_LABEL.chiffreAffaires);
-  const labelDepenses = useKpiPeriodLabel("Dépenses");
+  const labelDepenses = useKpiPeriodLabel(KPI_LABEL.depenses);
   const labelProfit = useKpiPeriodLabel(KPI_LABEL.profit);
   const labelCasses = useKpiPeriodLabel(KPI_LABEL.oeufsCasses);
   const labelVerse = useKpiPeriodLabel(KPI_LABEL.montantVerse);

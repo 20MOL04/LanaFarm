@@ -1,15 +1,27 @@
 "use client";
 
-import { CircleDollarSign, PackageOpen, ShoppingBag, TrendingDown } from "lucide-react";
+import {
+  CircleDollarSign,
+  Hourglass,
+  PackageOpen,
+  ShoppingBag,
+  TrendingDown,
+} from "lucide-react";
 
 import { KpiCard } from "@/components/shared/kpi-card";
 import { SHOW_VENTE_CASSES } from "@/lib/feature-flags";
 import { useDateRange } from "@/contexts/date-range-context";
-import { useFarmConfig, useTransfersStore, useSalesStore } from "@/contexts/farm-store";
+import {
+  useExpensesStore,
+  useFarmConfig,
+  useSalesStore,
+  useTransfersStore,
+  useTresorerieStore,
+} from "@/contexts/farm-store";
 import { useKpiPeriodLabel } from "@/hooks/use-kpi-period-label";
 import { useProductionsInRange } from "@/hooks/use-productions-in-range";
 import { useSalesInRange } from "@/hooks/use-sales-in-range";
-import { kpiCA, kpiStockMagasin } from "@/lib/kpi-sources";
+import { kpiCA, kpiResteAVerser, kpiStockMagasin } from "@/lib/kpi-sources";
 import { aggregateSales } from "@/lib/sales-calc";
 import { KPI_LABEL, SALES_LABEL } from "@/lib/terminology";
 
@@ -22,6 +34,8 @@ export function SalesKpis() {
 
   const { range } = useDateRange();
   const { state: salesState } = useSalesStore();
+  const { state: expensesState } = useExpensesStore();
+  const { state: tresorerieState } = useTresorerieStore();
   const { getAllTransfers } = useTransfersStore();
 
   const stockMagasin = kpiStockMagasin(
@@ -35,20 +49,22 @@ export function SalesKpis() {
     range.to,
     cap
   );
+  const resteAVerser = kpiResteAVerser(
+    salesState.ventes,
+    expensesState.depenses,
+    tresorerieState.tresorerie,
+    cap,
+    config
+  );
 
   const labelStockVente = useKpiPeriodLabel(KPI_LABEL.stockVente, "snapshot");
   const labelVendues = useKpiPeriodLabel(SALES_LABEL.alveolesVendues);
   const labelCasses = useKpiPeriodLabel(KPI_LABEL.oeufsCasses);
   const labelCa = useKpiPeriodLabel(KPI_LABEL.chiffreAffaires);
+  const labelReste = useKpiPeriodLabel(KPI_LABEL.resteAVerser);
 
   return (
-    <div
-      className={
-        SHOW_VENTE_CASSES
-          ? "grid-contained grid-cols-2 gap-3 lg:grid-cols-4"
-          : "grid-contained grid-cols-2 gap-3 lg:grid-cols-3"
-      }
-    >
+    <div className="grid-contained grid-cols-2 gap-3 lg:grid-cols-4">
       <KpiCard
         label={labelStockVente}
         amount={stockMagasin}
@@ -81,6 +97,15 @@ export function SalesKpis() {
         amountKind="gnf"
         icon={CircleDollarSign}
         tone="neutral"
+      />
+      <KpiCard
+        label={labelReste}
+        amount={resteAVerser}
+        amountKind="gnf"
+        icon={Hourglass}
+        tone={
+          resteAVerser < 0 ? "danger" : resteAVerser > 0 ? "warning" : "neutral"
+        }
       />
     </div>
   );
