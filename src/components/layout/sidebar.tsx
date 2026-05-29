@@ -193,12 +193,7 @@ function SidebarNavGroups({
   onNavigate: () => void;
 }) {
   return (
-    <ul
-      className={cn(
-        "flex flex-col",
-        collapsed ? "gap-2" : "gap-3 md:gap-3"
-      )}
-    >
+    <ul className={cn("flex flex-col", collapsed && "gap-2")}>
       {groups.map((group, index) => {
         const isAssistance = group.title === "Assistance";
 
@@ -206,16 +201,18 @@ function SidebarNavGroups({
           <li
             key={group.title}
             className={cn(
-              isAssistance &&
-                !collapsed &&
-                "mt-1 border-t border-sidebar-border pt-3 md:mt-0 md:border-sidebar-border/50 md:pt-2.5"
+              !collapsed &&
+                index > 0 &&
+                (isAssistance
+                  ? "mt-5 border-t border-sidebar-border pt-3 md:mt-4 md:border-sidebar-border/50 md:pt-2.5"
+                  : "mt-5 md:mt-4")
             )}
           >
             {!collapsed ? (
               <p
                 className={cn(
-                  "px-1 pb-1 text-sm font-semibold uppercase tracking-wide text-sidebar-muted",
-                  "md:px-2 md:pb-1 md:text-micro"
+                  "px-1 pb-0.5 text-sm font-semibold uppercase tracking-wide text-sidebar-muted/90",
+                  "md:px-2 md:pb-0 md:text-micro md:text-sidebar-muted"
                 )}
               >
                 {group.title}
@@ -223,7 +220,7 @@ function SidebarNavGroups({
             ) : index > 0 ? (
               <div className="mx-2 my-1.5 h-px bg-sidebar-border/80" />
             ) : null}
-            <ul className="space-y-0.5 md:space-y-0">
+            <ul className="space-y-0">
               {group.items.map((item) => (
                 <li key={item.href}>
                   <SidebarLink
