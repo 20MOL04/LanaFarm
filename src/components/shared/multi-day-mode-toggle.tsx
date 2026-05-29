@@ -3,6 +3,7 @@
 import { CalendarRange, X } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+import { segmentToggleClass } from "@/lib/segment-toggle-styles";
 
 type Props = {
   multiMode: boolean;
@@ -14,9 +15,9 @@ export function MultiDayModeToggle({ multiMode, onToggle, disabled }: Props) {
   return (
     <Button
       type="button"
-      variant={multiMode ? "primary" : "ghost"}
+      variant="ghost"
       size="sm"
-      className="h-8 gap-1.5 text-label"
+      className={segmentToggleClass(multiMode, "h-8 gap-1.5")}
       onClick={onToggle}
       disabled={disabled}
     >

@@ -17,9 +17,9 @@ const buttonVariants = cva(
     variants: {
       variant: {
         primary:
-          "bg-primary text-white hover:bg-secondary shadow-[0_1px_2px_rgba(15,23,42,0.08)]",
+          "bg-primary !text-white hover:bg-secondary shadow-[0_1px_2px_rgba(15,23,42,0.08)] [&>svg]:!text-white",
         accent:
-          "bg-accent-blue text-white hover:bg-[var(--color-sidebar)] active:bg-[var(--color-sidebar)] shadow-[0_1px_2px_rgba(29,78,216,0.18)]",
+          "bg-accent-blue !text-white hover:bg-[var(--color-sidebar)] active:bg-[var(--color-sidebar)] shadow-[0_1px_2px_rgba(29,78,216,0.18)] [&>svg]:!text-white",
         secondary:
           "bg-card-muted text-foreground hover:bg-border",
         outline:
@@ -27,14 +27,14 @@ const buttonVariants = cva(
         ghost:
           "text-foreground [&>svg]:text-accent-blue hover:bg-accent-blue-soft/40 hover:text-accent-blue",
         danger:
-          "bg-danger text-white hover:bg-[color-mix(in_srgb,var(--color-danger)_88%,var(--color-primary))] active:bg-[color-mix(in_srgb,var(--color-danger)_80%,var(--color-primary))]",
+          "bg-danger !text-white hover:bg-[color-mix(in_srgb,var(--color-danger)_88%,var(--color-primary))] active:bg-[color-mix(in_srgb,var(--color-danger)_80%,var(--color-primary))] [&>svg]:!text-white",
         link:
           "text-accent-blue underline-offset-4 hover:underline",
       },
       size: {
-        sm: "h-8 px-3 text-body-sm",
-        md: "h-9 px-3.5 text-body-sm",
-        lg: "h-10 px-4 text-body",
+        sm: "h-8 px-3",
+        md: "h-9 px-3.5",
+        lg: "h-10 px-4",
         icon: "h-9 w-9",
         "icon-sm": "h-8 w-8",
       },

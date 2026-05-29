@@ -1,5 +1,27 @@
 import { clsx, type ClassValue } from "clsx";
-import { twMerge } from "tailwind-merge";
+import { extendTailwindMerge } from "tailwind-merge";
+
+/** Tailles typo custom — groupe font-size pour ne pas écraser text-white sur les boutons. */
+const twMerge = extendTailwindMerge({
+  extend: {
+    classGroups: {
+      "font-size": [
+        {
+          text: [
+            "micro",
+            "caption",
+            "label",
+            "body-sm",
+            "body",
+            "nav",
+            "title",
+            "page",
+          ],
+        },
+      ],
+    },
+  },
+});
 
 /**
  * Concatène et déduplique des classes Tailwind.

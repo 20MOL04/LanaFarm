@@ -10,7 +10,6 @@ import { SidebarLogoutButton } from "@/components/layout/sidebar-logout-button";
 import { navigation, type NavItem } from "@/config/navigation";
 import { useSidebar } from "@/contexts/sidebar-context";
 import { useUnsavedNavigation } from "@/contexts/unsaved-navigation-context";
-import { textNavClass, textNavGroupClass } from "@/lib/typography-tokens";
 import { cn } from "@/lib/utils";
 
 /**
@@ -163,7 +162,7 @@ function SidebarNav({
         {navigation.map((group) => (
           <li key={group.title}>
             {!collapsed ? (
-              <p className={cn("px-2 pb-1.5", textNavGroupClass)}>
+              <p className={cn("px-2 pb-2 text-caption font-semibold uppercase tracking-wider text-sidebar-muted md:pb-1.5 md:text-micro")}>
                 {group.title}
               </p>
             ) : (
@@ -237,16 +236,17 @@ function SidebarLink({
       aria-current={isActive ? "page" : undefined}
       title={collapsed ? item.label : undefined}
       className={cn(
-        "group flex items-center gap-2.5 rounded-sm px-2 py-1.5",
-        textNavClass,
+        "group flex items-center gap-3 rounded-sm px-3 py-3",
+        "text-base font-semibold leading-snug",
+        "md:gap-2.5 md:px-2 md:py-1.5 md:text-nav md:font-medium",
         "transition-colors",
-        collapsed ? "justify-center" : "justify-start",
+        collapsed ? "justify-center md:justify-center" : "justify-start",
         isActive
-          ? "bg-sidebar-active text-sidebar-active-foreground font-semibold"
+          ? "bg-sidebar-active text-sidebar-active-foreground md:font-semibold"
           : "text-sidebar-foreground hover:bg-sidebar-hover hover:text-white"
       )}
     >
-      <Icon className="h-4 w-4 shrink-0" />
+      <Icon className="h-5 w-5 shrink-0 md:h-4 md:w-4" />
       {!collapsed ? <span className="truncate">{item.label}</span> : null}
     </Link>
   );

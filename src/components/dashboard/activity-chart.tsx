@@ -24,7 +24,7 @@ import {
 import type { ActivityPoint, ActivityMetricKey } from "@/lib/dashboard-calc";
 import { formatGNFCompact, formatCompact } from "@/lib/format";
 import { KPI_LABEL, MODULE_LABEL } from "@/lib/terminology";
-import { cn } from "@/lib/utils";
+import { segmentToggleClass } from "@/lib/segment-toggle-styles";
 
 import { ActivityChartTooltip } from "@/components/dashboard/activity-chart-tooltip";
 
@@ -100,12 +100,9 @@ export function ActivityChart({ data }: ActivityChartProps) {
               <Button
                 key={key}
                 size="sm"
-                variant={metric === key ? "primary" : "ghost"}
+                variant="ghost"
                 onClick={() => setMetric(key)}
-                className={cn(
-                  "h-7 px-3 text-label",
-                  metric !== key && "text-muted hover:text-foreground"
-                )}
+                className={segmentToggleClass(metric === key)}
               >
                 {METRICS[key].label}
               </Button>

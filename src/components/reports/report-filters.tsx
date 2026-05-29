@@ -20,6 +20,7 @@ import { useDateRange } from "@/contexts/date-range-context";
 import { formatRange } from "@/lib/date-ranges";
 import type { DateRangePresetId } from "@/lib/date-ranges";
 import type { ReportType } from "@/lib/reports-calc";
+import { segmentToggleClass } from "@/lib/segment-toggle-styles";
 import { cn } from "@/lib/utils";
 
 type Props = {
@@ -71,12 +72,9 @@ export function ReportFilters({
               <Button
                 key={p.id}
                 size="sm"
-                variant={presetId === p.id ? "primary" : "ghost"}
+                variant="ghost"
                 onClick={() => setPreset(p.id)}
-                className={cn(
-                  "h-7 px-3 text-label",
-                  presetId !== p.id && "text-muted hover:text-foreground"
-                )}
+                className={segmentToggleClass(presetId === p.id)}
               >
                 {p.label}
               </Button>
