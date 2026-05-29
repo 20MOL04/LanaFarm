@@ -33,15 +33,21 @@ function ProductionModuleContent() {
   const searchParams = useSearchParams();
   const urlFilters = useModuleUrlFilters();
 
-  const openAddDialog = () => {
+  const openAddDialog = React.useCallback(() => {
     setEditingEntry(null);
     setOpen(true);
-  };
+  }, []);
 
-  const handleDialogOpenChange = (next: boolean) => {
+  const handleDialogOpenChange = React.useCallback((next: boolean) => {
     setOpen(next);
     if (!next) setEditingEntry(null);
-  };
+  }, []);
+
+  const openSendStock = React.useCallback(() => setSendStockOpen(true), []);
+  const handleRequestEdit = React.useCallback((entry: Production) => {
+    setEditingEntry(entry);
+    setOpen(true);
+  }, []);
 
   // Auto-ouverture si on arrive depuis "/production?action=ajouter"
   React.useEffect(() => {
@@ -57,7 +63,7 @@ function ProductionModuleContent() {
         title="Production"
         actions={
           <div className="flex flex-wrap items-center gap-2">
-            <Button variant="outline" onClick={() => setSendStockOpen(true)}>
+            <Button variant="outline" onClick={openSendStock}>
               <ArrowRight className="h-4 w-4" />
               {ACTION_LABEL.envoyerEnVente}
             </Button>
@@ -76,10 +82,7 @@ function ProductionModuleContent() {
         initialStatut={urlFilters.statut}
         initialJour={urlFilters.jour}
         initialQ={urlFilters.q}
-        onRequestEdit={(entry) => {
-          setEditingEntry(entry);
-          setOpen(true);
-        }}
+        onRequestEdit={handleRequestEdit}
         headerActions={
           <Button variant="outline" size="sm" onClick={openAddDialog}>
             <Plus className="h-4 w-4" />

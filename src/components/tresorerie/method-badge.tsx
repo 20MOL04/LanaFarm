@@ -13,7 +13,7 @@ type Props = {
   withIcon?: boolean;
 };
 
-export function MethodBadge({ method, withIcon = true }: Props) {
+function MethodBadgeComponent({ method, withIcon = true }: Props) {
   const config = useFarmConfig();
   const label = resolveMethodeLabel(method, config.listes.methodesPaiement);
   const meta = getMethodMeta(method);
@@ -25,3 +25,5 @@ export function MethodBadge({ method, withIcon = true }: Props) {
     </Badge>
   );
 }
+
+export const MethodBadge = React.memo(MethodBadgeComponent);

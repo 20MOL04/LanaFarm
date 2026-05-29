@@ -82,13 +82,16 @@ function SidebarHeader({
         "h-[var(--topbar-height)]",
         collapsed
           ? "flex-col items-center justify-center gap-0.5 px-1 md:gap-1"
-          : "items-center gap-2 px-2"
+          : "items-center gap-2 px-3 md:px-2"
       )}
     >
       {!collapsed ? (
         <>
-          <div className="flex min-w-0 flex-1 items-center justify-start text-white">
-            <BrandLogo size="sm" showWordmark className="[&_span]:text-white" />
+          <div className="flex min-w-0 flex-1 items-center text-white">
+            <BrandLogo
+              showWordmark
+              className="items-center [&_span:last-child]:text-white"
+            />
           </div>
           <button
             type="button"
@@ -205,33 +208,41 @@ function SidebarLink({
     (item.href !== "/" && pathname.startsWith(`${item.href}/`));
   const Icon = item.icon;
 
-  const handleClick = (event: React.MouseEvent<HTMLAnchorElement>) => {
-    if (
-      event.defaultPrevented ||
-      event.button !== 0 ||
-      event.metaKey ||
-      event.ctrlKey ||
-      event.shiftKey ||
-      event.altKey
-    ) {
-      return;
-    }
+  React.useEffect(() => {
+    router.prefetch(item.href);
+  }, [router, item.href]);
 
-    if (isActive) {
-      onClick();
-      return;
-    }
+  const handleClick = React.useCallback(
+    (event: React.MouseEvent<HTMLAnchorElement>) => {
+      if (
+        event.defaultPrevented ||
+        event.button !== 0 ||
+        event.metaKey ||
+        event.ctrlKey ||
+        event.shiftKey ||
+        event.altKey
+      ) {
+        return;
+      }
 
-    event.preventDefault();
-    guardNavigation(() => {
-      router.push(item.href);
-      onClick();
-    });
-  };
+      if (isActive) {
+        onClick();
+        return;
+      }
+
+      event.preventDefault();
+      guardNavigation(() => {
+        router.push(item.href);
+        onClick();
+      });
+    },
+    [guardNavigation, isActive, item.href, onClick, router]
+  );
 
   return (
     <Link
       href={item.href}
+      prefetch
       onClick={handleClick}
       aria-current={isActive ? "page" : undefined}
       title={collapsed ? item.label : undefined}

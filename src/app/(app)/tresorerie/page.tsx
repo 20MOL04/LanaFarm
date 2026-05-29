@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { Suspense } from "react";
 
 import { TresorerieModule } from "@/components/tresorerie/tresorerie-module";
-import { Loader } from "@/components/shared/loader";
+import { ModulePageSkeleton } from "@/components/shared/page-skeletons";
 
 export const metadata: Metadata = {
   title: "Trésorerie",
@@ -10,13 +10,7 @@ export const metadata: Metadata = {
 
 export default function TresoreriePage() {
   return (
-    <Suspense
-      fallback={
-        <div className="flex justify-center py-16">
-          <Loader size={20} label="Chargement du module Trésorerie…" />
-        </div>
-      }
-    >
+    <Suspense fallback={<ModulePageSkeleton kpiCount={4} />}>
       <TresorerieModule />
     </Suspense>
   );

@@ -42,6 +42,12 @@ import { getNotificationRepository } from "@/lib/notifications/notification-stor
 import { mergeNotificationSync } from "@/lib/notifications/notification-sync";
 import { isFarmDataRemote } from "@/lib/farm-id";
 import {
+  FarmStoreSubscriptionProvider,
+  useFarmSelector,
+} from "@/contexts/farm-store-subscription";
+import { farmStoreReducer } from "@/contexts/reducers";
+import { buildAutoTransfert } from "@/contexts/reducers/shared";
+import {
   type AppNotification,
   DEFAULT_FARM_ID,
 } from "@/types/notifications";
@@ -77,7 +83,7 @@ export type FarmStoreError = {
   meta?: Record<string, unknown>;
 };
 
-type State = {
+export type State = {
   productions: Production[];
   ventes: Vente[];
   depenses: Depense[];
@@ -103,7 +109,45 @@ type State = {
  */
 const TRANSFERT_AUTO_CONFIRM = true;
 
-type Action =
+const EMPTY_VENTES: Vente[] = [];
+const EMPTY_DEPENSES: Depense[] = [];
+const EMPTY_TRESORERIE: Tresorerie[] = [];
+const EMPTY_PRODUCTIONS: Production[] = [];
+const EMPTY_TRANSFERTS: TransfertStock[] = [];
+
+function buildHookState(fields: {
+  productions?: Production[];
+  ventes?: Vente[];
+  depenses?: Depense[];
+  tresorerie?: Tresorerie[];
+  transferts?: TransfertStock[];
+  actions: ActionLog[];
+  config: FarmConfig;
+  errors: FarmStoreError | null;
+  notifications: AppNotification[];
+}): State {
+  return {
+    productions: fields.productions ?? EMPTY_PRODUCTIONS,
+    ventes: fields.ventes ?? EMPTY_VENTES,
+    depenses: fields.depenses ?? EMPTY_DEPENSES,
+    tresorerie: fields.tresorerie ?? EMPTY_TRESORERIE,
+    transferts: fields.transferts ?? EMPTY_TRANSFERTS,
+    actions: fields.actions,
+    config: fields.config,
+    errors: fields.errors,
+    notifications: fields.notifications,
+  };
+}
+
+function useSharedStoreSlices() {
+  const actions = useFarmSelector((s) => s.actions);
+  const config = useFarmSelector((s) => s.config);
+  const errors = useFarmSelector((s) => s.errors);
+  const notifications = useFarmSelector((s) => s.notifications);
+  return { actions, config, errors, notifications };
+}
+
+export type FarmStoreAction =
   // Production
   | {
       type: "production/add";
@@ -259,1516 +303,6 @@ type Action =
       payload: { code: string; message: string; meta?: Record<string, unknown> };
     }
   | { type: "store/clearError" };
-
-function resteAVerserGlobal(state: State): number {
-  const cap = state.config.preferences.capacitePlateau;
-  return kpiResteAVerser(
-    state.ventes,
-    state.depenses,
-    state.tresorerie,
-    cap,
-    state.config
-  );
-}
-
-function resteAVerserSansEntree(state: State, excludeId: string): number {
-  const cap = state.config.preferences.capacitePlateau;
-  const tresorerie = state.tresorerie.filter(
-    (t) => t.statut === "actif" && t.id !== excludeId
-  );
-  return kpiResteAVerser(
-    state.ventes,
-    state.depenses,
-    tresorerie,
-    cap,
-    state.config
-  );
-}
-
-function setStoreError(
-  state: State,
-  payload: { code: string; message: string; meta?: Record<string, unknown> }
-): State {
-  return { ...state, errors: payload };
-}
-
-function pushLog(state: State, payload: Omit<ActionLog, "id" | "dateISO">): State {
-  const log: ActionLog = {
-    id: createId("act"),
-    dateISO: new Date().toISOString(),
-    ...payload,
-  };
-  return { ...state, actions: [log, ...state.actions] };
-}
-
-/* ===========================================================
-   Helpers transferts (utilisés en cascade par les hooks Production)
-   =========================================================== */
-
-/**
- * Construit un transfert pour une production donnée — auto-confirmé si la
- * V1 mono-site est active. Pas de side-effect : retourne l'objet pur.
- */
-function buildAutoTransfert(
-  production: Production,
-  now: string
-): TransfertStock {
-  const auto = TRANSFERT_AUTO_CONFIRM;
-  return {
-    id: createId("xfer"),
-    productionId: production.id,
-    jourEnvoiISO: production.jourISO,
-    jourReceptionISO: auto ? production.jourISO : undefined,
-    quantiteEnvoyee: production.envoyesVente,
-    quantiteRecue: auto ? production.envoyesVente : undefined,
-    ecart: auto ? 0 : undefined,
-    statut: auto ? "recu" : "en_attente",
-    autoConfirm: auto,
-    semaineId: production.semaineId,
-    createdAt: now,
-    updatedAt: now,
-  };
-}
-
-/**
- * Réconcilie les transferts liés à une production qui vient d'être modifiée
- * ou changée d'état. Stratégie :
- *  - envoyesVente passé à > 0 et aucun transfert existant → on en crée un.
- *  - envoyesVente changé sur un transfert existant non-figé (statut "en_attente"
- *    ou autoConfirm true) → on aligne quantiteEnvoyee (+ quantiteRecue si auto).
- *  - envoyesVente passé à 0 / production annulée → on marque les transferts
- *    liés en "conteste" (jamais supprimés — traçabilité).
- *  - production restaurée → transferts liés "conteste" → repassent à "recu"
- *    (si autoConfirm) ou "en_attente".
- */
-function reconcileTransfertsForProduction(
-  state: State,
-  production: Production,
-  now: string,
-  context: "update" | "cancel" | "restore"
-): State {
-  const linked = state.transferts.filter((t) => t.productionId === production.id);
-
-  // 1. Annulation → tous les transferts liés deviennent "conteste"
-  if (context === "cancel") {
-    if (linked.length === 0) return state;
-    const transferts = state.transferts.map((t) =>
-      t.productionId === production.id && t.statut !== "conteste"
-        ? {
-            ...t,
-            statut: "conteste" as TransfertStatut,
-            noteEcart: t.noteEcart ?? "Production source annulée.",
-            updatedAt: now,
-          }
-        : t
-    );
-    return { ...state, transferts };
-  }
-
-  // 2. Restauration → re-confirme les transferts contestés liés
-  if (context === "restore") {
-    if (linked.length === 0) {
-      if (production.envoyesVente > 0) {
-        return {
-          ...state,
-          transferts: [buildAutoTransfert(production, now), ...state.transferts],
-        };
-      }
-      return state;
-    }
-    const transferts = state.transferts.map((t) => {
-      if (t.productionId !== production.id) return t;
-      if (t.statut !== "conteste") return t;
-      const auto = t.autoConfirm;
-      return {
-        ...t,
-        statut: (auto ? "recu" : "en_attente") as TransfertStatut,
-        quantiteRecue: auto ? t.quantiteEnvoyee : undefined,
-        jourReceptionISO: auto ? t.jourEnvoiISO : undefined,
-        ecart: auto ? 0 : undefined,
-        noteEcart: undefined,
-        updatedAt: now,
-      };
-    });
-    return { ...state, transferts };
-  }
-
-  // 3. Mise à jour (champ envoyesVente / jourISO)
-  if (linked.length === 0) {
-    if (production.envoyesVente > 0) {
-      return {
-        ...state,
-        transferts: [buildAutoTransfert(production, now), ...state.transferts],
-      };
-    }
-    return state;
-  }
-
-  // Cas mono-site : 1 production = 1 transfert. On synchronise le 1er actif.
-  const principal = linked.find((t) => t.statut !== "conteste") ?? linked[0];
-
-  if (production.envoyesVente === 0) {
-    const transferts = state.transferts.map((t) =>
-      t.id === principal.id
-        ? {
-            ...t,
-            statut: "conteste" as TransfertStatut,
-            noteEcart: "Production mise à jour : envoi ramené à 0.",
-            updatedAt: now,
-          }
-        : t
-    );
-    return { ...state, transferts };
-  }
-
-  const auto = principal.autoConfirm;
-  const transferts = state.transferts.map((t) =>
-    t.id === principal.id
-      ? {
-          ...t,
-          jourEnvoiISO: production.jourISO,
-          jourReceptionISO: auto ? production.jourISO : t.jourReceptionISO,
-          quantiteEnvoyee: production.envoyesVente,
-          quantiteRecue: auto
-            ? production.envoyesVente
-            : t.quantiteRecue,
-          ecart: auto ? 0 : t.ecart,
-          statut: t.statut === "conteste"
-            ? ((auto ? "recu" : "en_attente") as TransfertStatut)
-            : t.statut,
-          semaineId: production.semaineId,
-          updatedAt: now,
-        }
-      : t
-  );
-  return { ...state, transferts };
-}
-
-/* ===========================================================
-   Archivage versions (R6C) — source unique pour les 4 modules
-   =========================================================== */
-
-const ARCHIVE_MOTIF_MODIFIE = "modifié";
-
-type ArchivableModule = "production" | "vente" | "depense" | "tresorerie";
-type ArchivableEntry = Production | Vente | Depense | Tresorerie;
-
-type ArchiveEntryResult<T extends ArchivableEntry> = {
-  shouldArchive: boolean;
-  archived: T | null;
-  merged: T;
-};
-
-const ARCHIVE_VALUE_KEYS: Record<ArchivableModule, readonly string[]> = {
-  production: ["production", "casses", "envoyesVente", "notes"],
-  vente: ["vendus", "cassesVente", "prix", "client"],
-  depense: ["categorie", "montant", "description"],
-  tresorerie: ["montantRecu", "depose", "methode", "note"],
-};
-
-function hasArchiveableValueChanges<T extends ArchivableEntry>(
-  module: ArchivableModule,
-  before: T,
-  patch: Partial<T>
-): boolean {
-  for (const key of ARCHIVE_VALUE_KEYS[module]) {
-    if (!(key in patch)) continue;
-    const next = (patch as Record<string, unknown>)[key];
-    const prev = (before as Record<string, unknown>)[key];
-    if (next !== prev) return true;
-  }
-  return false;
-}
-
-/** Archive l'état courant avant modification de valeurs métier (pas jourISO seul). */
-function archiveEntry<T extends ArchivableEntry>(
-  module: ArchivableModule,
-  entry: T,
-  patch: Partial<T>,
-  now: string,
-  idPrefix: string
-): ArchiveEntryResult<T> {
-  const lineageId = entry.lineageId ?? entry.id;
-  const merged = {
-    ...entry,
-    ...patch,
-    lineageId,
-    archiveMotif: undefined,
-    updatedAt: now,
-  } as T;
-
-  if (!hasArchiveableValueChanges(module, entry, patch)) {
-    return { shouldArchive: false, archived: null, merged };
-  }
-
-  const archived = {
-    ...entry,
-    id: createId(idPrefix),
-    statut: "archive" as const,
-    lineageId,
-    archiveMotif: ARCHIVE_MOTIF_MODIFIE,
-    updatedAt: now,
-  } as T;
-
-  return { shouldArchive: true, archived, merged };
-}
-
-function sharesEntryLineage(
-  active: { id: string; lineageId?: string },
-  archive: { id: string; lineageId?: string; statut: EntreeStatut }
-): boolean {
-  if (archive.statut !== "archive") return false;
-  const lineage = active.lineageId ?? active.id;
-  return (archive.lineageId ?? archive.id) === lineage;
-}
-
-function reducer(state: State, action: Action): State {
-  switch (action.type) {
-    /* -------- Productions -------- */
-    case "production/add": {
-      const jourNormalise = startOfDay(
-        new Date(action.payload.draft.jourISO)
-      ).toISOString();
-
-      const jourKey = startOfDay(new Date(jourNormalise)).getTime();
-      const existante = state.productions.find(
-        (p) =>
-          p.statut === "actif" &&
-          startOfDay(new Date(p.jourISO)).getTime() === jourKey
-      );
-      if (existante) {
-        return setStoreError(state, {
-          code: "PRODUCTION_DAY_EXISTS",
-          message:
-            'Production déjà saisie pour ce jour. Utilisez "Modifier" pour corriger l\'entrée existante.',
-          meta: { existingId: existante.id, existingDate: jourNormalise },
-        });
-      }
-
-      const s1SansErreur: State = state.errors ? { ...state, errors: null } : state;
-      const now = new Date().toISOString();
-      const entryId = createId("prod");
-      const entry: Production = {
-        id: entryId,
-        ...action.payload.draft,
-        jourISO: jourNormalise,
-        statut: "actif",
-        lineageId: entryId,
-        createdAt: now,
-        updatedAt: now,
-      };
-      let s2: State = { ...s1SansErreur, productions: [entry, ...s1SansErreur.productions] };
-      // Phase B : matérialise le transfert auto (mono-site V1).
-      if (entry.envoyesVente > 0) {
-        const xfer = buildAutoTransfert(entry, now);
-        s2 = { ...s2, transferts: [xfer, ...s2.transferts] };
-        s2 = pushLog(s2, {
-          type: "creation",
-          module: "transfert",
-          cibleId: xfer.id,
-          description: `Transfert auto : ${xfer.quantiteEnvoyee} œufs envoyés au magasin.`,
-        });
-      }
-      return pushLog(s2, {
-        type: "creation",
-        module: "production",
-        cibleId: entry.id,
-        description: `Saisie production : ${eggsToTrays(entry.production)} alvéoles ramassées.`,
-      });
-    }
-    case "production/update": {
-      const target = state.productions.find((p) => p.id === action.payload.id);
-      if (!target || target.statut !== "actif") return state;
-      const now = new Date().toISOString();
-      const { shouldArchive, archived, merged } = archiveEntry<Production>(
-        "production",
-        target,
-        action.payload.patch,
-        now,
-        "prod"
-      );
-      const updated: Production = merged;
-      let s1: State = {
-        ...state,
-        productions: [
-          ...(archived ? [archived] : []),
-          ...state.productions.map((p) => (p.id === target.id ? updated : p)),
-        ],
-      };
-      const envoyesChanged = target.envoyesVente !== updated.envoyesVente;
-      const dayChanged = target.jourISO !== updated.jourISO;
-      if (envoyesChanged || dayChanged) {
-        s1 = reconcileTransfertsForProduction(s1, updated, now, "update");
-      }
-      if (shouldArchive) {
-        s1 = pushLog(s1, {
-          type: "archivage",
-          module: "production",
-          cibleId: target.id,
-          description: `Version archivée (${ARCHIVE_MOTIF_MODIFIE}).`,
-        });
-      }
-      return pushLog(s1, {
-        type: "modification",
-        module: "production",
-        cibleId: target.id,
-        description: `Mise à jour de la saisie production.`,
-      });
-    }
-    case "production/cancel": {
-      const target = state.productions.find((p) => p.id === action.payload.id);
-      if (!target || target.statut === "annule") return state;
-      const now = new Date().toISOString();
-      const updated: Production = { ...target, statut: "annule", updatedAt: now };
-      let s1: State = {
-        ...state,
-        productions: state.productions.map((p) => (p.id === target.id ? updated : p)),
-      };
-      s1 = reconcileTransfertsForProduction(s1, updated, now, "cancel");
-      return pushLog(s1, {
-        type: "annulation",
-        module: "production",
-        cibleId: target.id,
-        description: `Saisie production annulée (soft-delete).`,
-      });
-    }
-    case "production/restore": {
-      const target = state.productions.find((p) => p.id === action.payload.id);
-      if (!target || target.statut === "actif") return state;
-      const now = new Date().toISOString();
-      const updated: Production = { ...target, statut: "actif", updatedAt: now };
-      let s1: State = {
-        ...state,
-        productions: state.productions.map((p) => (p.id === target.id ? updated : p)),
-      };
-      s1 = reconcileTransfertsForProduction(s1, updated, now, "restore");
-      return pushLog(s1, {
-        type: "restauration",
-        module: "production",
-        cibleId: target.id,
-        description: `Saisie production restaurée.`,
-      });
-    }
-    case "production/restoreVersion": {
-      const active = state.productions.find((p) => p.id === action.payload.activeId);
-      const archive = state.productions.find((p) => p.id === action.payload.archiveId);
-      if (!active || active.statut !== "actif") return state;
-      if (!archive || !sharesEntryLineage(active, archive)) return state;
-
-      const now = new Date().toISOString();
-      const { shouldArchive, archived, merged } = archiveEntry<Production>(
-        "production",
-        active,
-        {
-          production: archive.production,
-          casses: archive.casses,
-          envoyesVente: archive.envoyesVente,
-          notes: archive.notes,
-        },
-        now,
-        "prod"
-      );
-      const updated: Production = merged;
-      let s1: State = {
-        ...state,
-        productions: [
-          ...(archived ? [archived] : []),
-          ...state.productions.map((p) => (p.id === active.id ? updated : p)),
-        ],
-      };
-      const envoyesChanged = active.envoyesVente !== updated.envoyesVente;
-      const dayChanged = active.jourISO !== updated.jourISO;
-      if (envoyesChanged || dayChanged) {
-        s1 = reconcileTransfertsForProduction(s1, updated, now, "update");
-      }
-      if (shouldArchive) {
-        s1 = pushLog(s1, {
-          type: "archivage",
-          module: "production",
-          cibleId: active.id,
-          description: `Version archivée (${ARCHIVE_MOTIF_MODIFIE}).`,
-        });
-      }
-      return pushLog(s1, {
-        type: "restauration",
-        module: "production",
-        cibleId: active.id,
-        description: `Restauration d'une version archivée.`,
-      });
-    }
-
-    /* -------- Ventes -------- */
-    case "vente/add": {
-      const cap = state.config.preferences.capacitePlateau;
-      const dateRef = startOfDay(new Date(action.payload.draft.jourISO));
-      const stockDisponible = stockMagasinInstantane(
-        state.transferts,
-        state.ventes,
-        dateRef
-      );
-      const quantiteDemandee =
-        action.payload.draft.vendus + Math.max(0, action.payload.draft.cassesVente ?? 0);
-      if (quantiteDemandee > stockDisponible) {
-        return setStoreError(state, {
-          code: "STOCK_INSUFFISANT",
-          message: `Stock insuffisant. Disponible : ${eggsToTrays(stockDisponible, cap)} alv. Demandé : ${eggsToTrays(quantiteDemandee, cap)} alv.`,
-          meta: {
-            stockDisponible,
-            quantiteDemandee,
-            stockDisponibleAlv: eggsToTrays(stockDisponible, cap),
-            quantiteDemandeeAlv: eggsToTrays(quantiteDemandee, cap),
-          },
-        });
-      }
-
-      const s1SansErreur: State = state.errors ? { ...state, errors: null } : state;
-      const now = new Date().toISOString();
-      const snapshot = computeVenteSnapshot(
-        action.payload.draft,
-        s1SansErreur.productions,
-        s1SansErreur.ventes,
-        cap
-      );
-      const entryId = createId("vente");
-      const entry: Vente = {
-        id: entryId,
-        ...action.payload.draft,
-        recuFerme: snapshot.recuFerme,
-        resteVente: snapshot.resteVente,
-        montant: snapshot.montant,
-        statut: "actif",
-        lineageId: entryId,
-        createdAt: now,
-        updatedAt: now,
-      };
-      const s2: State = { ...s1SansErreur, ventes: [entry, ...s1SansErreur.ventes] };
-      const alv = eggsToTrays(entry.vendus, cap);
-      return pushLog(s2, {
-        type: "creation",
-        module: "vente",
-        cibleId: entry.id,
-        description: `Saisie vente : ${alv} alvéoles à ${formatGNF(entry.prix)}/casier.`,
-      });
-    }
-    case "vente/addDay": {
-      const drafts = action.payload.drafts.filter((d) => d.vendus > 0);
-      if (drafts.length === 0) return state;
-      const cap = state.config.preferences.capacitePlateau;
-      const dateRef = startOfDay(new Date(drafts[0].jourISO));
-      const stockDisponible = stockMagasinInstantane(
-        state.transferts,
-        state.ventes,
-        dateRef
-      );
-      const quantiteTotaleBatch = drafts.reduce(
-        (sum, d) => sum + d.vendus + Math.max(0, d.cassesVente ?? 0),
-        0
-      );
-      if (quantiteTotaleBatch > stockDisponible) {
-        return setStoreError(state, {
-          code: "STOCK_INSUFFISANT_BATCH",
-          message: `Stock insuffisant pour ce lot. Disponible : ${eggsToTrays(stockDisponible, cap)} alv. Lot total : ${eggsToTrays(quantiteTotaleBatch, cap)} alv.`,
-          meta: {
-            stockDisponible,
-            quantiteTotaleBatch,
-            stockDisponibleAlv: eggsToTrays(stockDisponible, cap),
-            quantiteTotaleBatchAlv: eggsToTrays(quantiteTotaleBatch, cap),
-            nombreLignes: drafts.length,
-          },
-        });
-      }
-
-      const s1SansErreur: State = state.errors ? { ...state, errors: null } : state;
-      const now = new Date().toISOString();
-      const entries: Vente[] = [];
-      const accumulated: Vente[] = [...s1SansErreur.ventes];
-
-      for (const draft of drafts) {
-        const snapshot = computeVenteSnapshot(
-          draft,
-          s1SansErreur.productions,
-          accumulated,
-          cap
-        );
-        const entryId = createId("vente");
-        const entry: Vente = {
-          id: entryId,
-          ...draft,
-          recuFerme: snapshot.recuFerme,
-          resteVente: snapshot.resteVente,
-          montant: snapshot.montant,
-          statut: "actif",
-          lineageId: entryId,
-          createdAt: now,
-          updatedAt: now,
-        };
-        entries.push(entry);
-        accumulated.unshift(entry);
-      }
-
-      const s2: State = { ...s1SansErreur, ventes: [...entries, ...s1SansErreur.ventes] };
-      const alvTotal = eggsToTrays(
-        entries.reduce((sum, e) => sum + e.vendus, 0),
-        cap
-      );
-      const caTotal = entries.reduce((sum, e) => sum + e.montant, 0);
-      return pushLog(s2, {
-        type: "creation",
-        module: "vente",
-        cibleId: entries[0].id,
-        description: `Ventes du jour : ${alvTotal} alvéoles — CA ${formatGNF(caTotal)} (${entries.length} ligne${entries.length > 1 ? "s" : ""}).`,
-      });
-    }
-    case "vente/update": {
-      const target = state.ventes.find((v) => v.id === action.payload.id);
-      if (!target || target.statut !== "actif") return state;
-      const cap = state.config.preferences.capacitePlateau;
-      const now = new Date().toISOString();
-      const { shouldArchive, archived, merged } = archiveEntry<Vente>(
-        "vente",
-        target,
-        action.payload.patch,
-        now,
-        "vente"
-      );
-      const autres = state.ventes.filter((v) => v.id !== target.id);
-      const snapshot = computeVenteSnapshot(
-        {
-          jourISO: merged.jourISO,
-          vendus: merged.vendus,
-          cassesVente: merged.cassesVente,
-          prix: merged.prix,
-        },
-        state.productions,
-        autres,
-        cap
-      );
-      const updated: Vente = {
-        ...merged,
-        recuFerme: snapshot.recuFerme,
-        resteVente: snapshot.resteVente,
-        montant: snapshot.montant,
-      };
-      let s1: State = {
-        ...state,
-        ventes: [
-          ...(archived ? [archived] : []),
-          ...state.ventes.map((v) => (v.id === target.id ? updated : v)),
-        ],
-      };
-      if (shouldArchive) {
-        s1 = pushLog(s1, {
-          type: "archivage",
-          module: "vente",
-          cibleId: target.id,
-          description: `Version archivée (${ARCHIVE_MOTIF_MODIFIE}).`,
-        });
-      }
-      return pushLog(s1, {
-        type: "modification",
-        module: "vente",
-        cibleId: target.id,
-        description: `Mise à jour de la saisie vente.`,
-      });
-    }
-    case "vente/cancel": {
-      const target = state.ventes.find((v) => v.id === action.payload.id);
-      if (!target || target.statut === "annule") return state;
-      const updated: Vente = { ...target, statut: "annule", updatedAt: new Date().toISOString() };
-      const s1: State = {
-        ...state,
-        ventes: state.ventes.map((v) => (v.id === target.id ? updated : v)),
-      };
-      return pushLog(s1, {
-        type: "annulation",
-        module: "vente",
-        cibleId: target.id,
-        description: `Saisie vente annulée (soft-delete).`,
-      });
-    }
-    case "vente/restore": {
-      const target = state.ventes.find((v) => v.id === action.payload.id);
-      if (!target || target.statut === "actif") return state;
-      const updated: Vente = { ...target, statut: "actif", updatedAt: new Date().toISOString() };
-      const s1: State = {
-        ...state,
-        ventes: state.ventes.map((v) => (v.id === target.id ? updated : v)),
-      };
-      return pushLog(s1, {
-        type: "restauration",
-        module: "vente",
-        cibleId: target.id,
-        description: `Saisie vente restaurée.`,
-      });
-    }
-    case "vente/restoreVersion": {
-      const active = state.ventes.find((v) => v.id === action.payload.activeId);
-      const archive = state.ventes.find((v) => v.id === action.payload.archiveId);
-      if (!active || active.statut !== "actif") return state;
-      if (!archive || !sharesEntryLineage(active, archive)) return state;
-
-      const cap = state.config.preferences.capacitePlateau;
-      const now = new Date().toISOString();
-      const { shouldArchive, archived, merged } = archiveEntry<Vente>(
-        "vente",
-        active,
-        {
-          vendus: archive.vendus,
-          cassesVente: archive.cassesVente,
-          prix: archive.prix,
-          client: archive.client,
-        },
-        now,
-        "vente"
-      );
-      const autres = state.ventes.filter((v) => v.id !== active.id);
-      const snapshot = computeVenteSnapshot(
-        {
-          jourISO: merged.jourISO,
-          vendus: merged.vendus,
-          cassesVente: merged.cassesVente,
-          prix: merged.prix,
-        },
-        state.productions,
-        autres,
-        cap
-      );
-      const updated: Vente = {
-        ...merged,
-        recuFerme: snapshot.recuFerme,
-        resteVente: snapshot.resteVente,
-        montant: snapshot.montant,
-      };
-      let s1: State = {
-        ...state,
-        ventes: [
-          ...(archived ? [archived] : []),
-          ...state.ventes.map((v) => (v.id === active.id ? updated : v)),
-        ],
-      };
-      if (shouldArchive) {
-        s1 = pushLog(s1, {
-          type: "archivage",
-          module: "vente",
-          cibleId: active.id,
-          description: `Version archivée (${ARCHIVE_MOTIF_MODIFIE}).`,
-        });
-      }
-      return pushLog(s1, {
-        type: "restauration",
-        module: "vente",
-        cibleId: active.id,
-        description: `Restauration d'une version archivée.`,
-      });
-    }
-
-    /* -------- Dépenses -------- */
-    case "depense/add": {
-      const now = new Date().toISOString();
-      const entryId = createId("dep");
-      const entry: Depense = {
-        id: entryId,
-        ...action.payload.draft,
-        statut: "actif",
-        lineageId: entryId,
-        createdAt: now,
-        updatedAt: now,
-      };
-      const s2: State = { ...state, depenses: [entry, ...state.depenses] };
-      return pushLog(s2, {
-        type: "creation",
-        module: "depense",
-        cibleId: entry.id,
-        description: `Dépense ${entry.categorie} : ${formatGNF(entry.montant)}.`,
-      });
-    }
-    case "depense/addDay": {
-      const { jourISO, lignes } = action.payload;
-      const candidates = lignes.filter(
-        (l) => l.categorie.trim().length > 0 || l.montant > 0
-      );
-      if (candidates.length === 0) return state;
-
-      const invalid = candidates.some(
-        (l) =>
-          !l.categorie.trim() ||
-          !Number.isFinite(l.montant) ||
-          l.montant <= 0
-      );
-      if (invalid) {
-        return setStoreError(state, {
-          code: "DEPENSE_BATCH_INVALID",
-          message:
-            "Chaque ligne doit avoir une catégorie et un montant supérieur à 0.",
-        });
-      }
-
-      const now = new Date().toISOString();
-      const normalized = candidates.map((l) => ({
-        categorie: l.categorie.trim(),
-        montant: Math.max(0, Math.floor(l.montant)),
-        description: l.description?.trim() ? l.description.trim() : undefined,
-      }));
-
-      const entries: Depense[] = normalized.map((l) => {
-        const entryId = createId("dep");
-        return {
-          id: entryId,
-          jourISO,
-          categorie: l.categorie,
-          montant: l.montant,
-          description: l.description,
-          statut: "actif" as const,
-          lineageId: entryId,
-          createdAt: now,
-          updatedAt: now,
-        };
-      });
-
-      const total = normalized.reduce((sum, l) => sum + l.montant, 0);
-      const s2: State = {
-        ...state,
-        errors: null,
-        depenses: [...entries, ...state.depenses],
-      };
-      return pushLog(s2, {
-        type: "creation",
-        module: "depense",
-        cibleId: entries[0]?.id ?? "batch",
-        description: `${entries.length} dépense(s) — ${formatGNF(total)}.`,
-      });
-    }
-    case "depense/update": {
-      const target = state.depenses.find((d) => d.id === action.payload.id);
-      if (!target || target.statut !== "actif") return state;
-      const now = new Date().toISOString();
-      const { shouldArchive, archived, merged } = archiveEntry<Depense>(
-        "depense",
-        target,
-        action.payload.patch,
-        now,
-        "dep"
-      );
-      const updated: Depense = merged;
-      let s1: State = {
-        ...state,
-        depenses: [
-          ...(archived ? [archived] : []),
-          ...state.depenses.map((d) => (d.id === target.id ? updated : d)),
-        ],
-      };
-      if (shouldArchive) {
-        s1 = pushLog(s1, {
-          type: "archivage",
-          module: "depense",
-          cibleId: target.id,
-          description: `Version archivée (${ARCHIVE_MOTIF_MODIFIE}).`,
-        });
-      }
-      return pushLog(s1, {
-        type: "modification",
-        module: "depense",
-        cibleId: target.id,
-        description: `Mise à jour de la dépense.`,
-      });
-    }
-    case "depense/cancel": {
-      const target = state.depenses.find((d) => d.id === action.payload.id);
-      if (!target || target.statut === "annule") return state;
-      const updated: Depense = { ...target, statut: "annule", updatedAt: new Date().toISOString() };
-      const s1: State = {
-        ...state,
-        depenses: state.depenses.map((d) => (d.id === target.id ? updated : d)),
-      };
-      return pushLog(s1, {
-        type: "annulation",
-        module: "depense",
-        cibleId: target.id,
-        description: `Dépense annulée (soft-delete).`,
-      });
-    }
-    case "depense/restore": {
-      const target = state.depenses.find((d) => d.id === action.payload.id);
-      if (!target || target.statut === "actif") return state;
-      const updated: Depense = { ...target, statut: "actif", updatedAt: new Date().toISOString() };
-      const s1: State = {
-        ...state,
-        depenses: state.depenses.map((d) => (d.id === target.id ? updated : d)),
-      };
-      return pushLog(s1, {
-        type: "restauration",
-        module: "depense",
-        cibleId: target.id,
-        description: `Dépense restaurée.`,
-      });
-    }
-    case "depense/restoreVersion": {
-      const active = state.depenses.find((d) => d.id === action.payload.activeId);
-      const archive = state.depenses.find((d) => d.id === action.payload.archiveId);
-      if (!active || active.statut !== "actif") return state;
-      if (!archive || !sharesEntryLineage(active, archive)) return state;
-
-      const now = new Date().toISOString();
-      const { shouldArchive, archived, merged } = archiveEntry<Depense>(
-        "depense",
-        active,
-        {
-          categorie: archive.categorie,
-          montant: archive.montant,
-          description: archive.description,
-        },
-        now,
-        "dep"
-      );
-      const updated: Depense = merged;
-      let s1: State = {
-        ...state,
-        depenses: [
-          ...(archived ? [archived] : []),
-          ...state.depenses.map((d) => (d.id === active.id ? updated : d)),
-        ],
-      };
-      if (shouldArchive) {
-        s1 = pushLog(s1, {
-          type: "archivage",
-          module: "depense",
-          cibleId: active.id,
-          description: `Version archivée (${ARCHIVE_MOTIF_MODIFIE}).`,
-        });
-      }
-      return pushLog(s1, {
-        type: "restauration",
-        module: "depense",
-        cibleId: active.id,
-        description: `Restauration d'une version archivée.`,
-      });
-    }
-
-    /* -------- Trésorerie -------- */
-    case "tresorerie/add": {
-      const depose = Math.max(0, Math.floor(action.payload.draft.depose));
-      const reste = resteAVerserGlobal(state);
-      if (depose > reste) {
-        return setStoreError(state, {
-          code: "VERSEMENT_DEPASSE_RESTE",
-          message: "Le versement dépasse le reste à verser.",
-          meta: { reste, depose },
-        });
-      }
-      const now = new Date().toISOString();
-      const entryId = createId("tresorerie");
-      const entry: Tresorerie = {
-        id: entryId,
-        ...action.payload.draft,
-        reste: action.payload.draft.montantRecu - action.payload.draft.depose,
-        statut: "actif",
-        lineageId: entryId,
-        createdAt: now,
-        updatedAt: now,
-      };
-      const s2: State = { ...state, tresorerie: [entry, ...state.tresorerie] };
-      return pushLog(s2, {
-        type: "creation",
-        module: "tresorerie",
-        cibleId: entry.id,
-        description: `Trésorerie ${entry.methode} : ${formatGNF(entry.depose)} / ${formatGNF(entry.montantRecu)}.`,
-      });
-    }
-    case "tresorerie/addDay": {
-      const { jourISO, lignes } = action.payload;
-      const candidates = lignes.filter(
-        (l) => l.methode.trim().length > 0 || l.montantRecu > 0
-      );
-      if (candidates.length === 0) return state;
-
-      const invalid = candidates.some(
-        (l) =>
-          !l.methode.trim() ||
-          !Number.isFinite(l.montantRecu) ||
-          l.montantRecu <= 0
-      );
-      if (invalid) {
-        return setStoreError(state, {
-          code: "TRESORERIE_BATCH_INVALID",
-          message:
-            "Chaque ligne doit avoir une méthode et un montant reçu supérieur à 0.",
-        });
-      }
-
-      const now = new Date().toISOString();
-      const normalized = candidates.map((l) => {
-        const montantRecu = Math.max(0, Math.floor(l.montantRecu));
-        return {
-          methode: l.methode.trim(),
-          montantRecu,
-          depose: montantRecu,
-          note: l.note?.trim() ? l.note.trim() : undefined,
-        };
-      });
-
-      const total = normalized.reduce((sum, l) => sum + l.montantRecu, 0);
-      const reste = resteAVerserGlobal(state);
-      if (total > reste) {
-        return setStoreError(state, {
-          code: "VERSEMENT_DEPASSE_RESTE",
-          message: "Le versement dépasse le reste à verser.",
-          meta: { reste, depose: total },
-        });
-      }
-
-      const entries: Tresorerie[] = normalized.map((l) => {
-        const entryId = createId("tresorerie");
-        return {
-          id: entryId,
-          jourISO,
-          montantRecu: l.montantRecu,
-          depose: l.depose,
-          reste: 0,
-          methode: l.methode,
-          note: l.note,
-          statut: "actif" as const,
-          lineageId: entryId,
-          createdAt: now,
-          updatedAt: now,
-        };
-      });
-
-      const s2: State = {
-        ...state,
-        errors: null,
-        tresorerie: [...entries, ...state.tresorerie],
-      };
-      return pushLog(s2, {
-        type: "creation",
-        module: "tresorerie",
-        cibleId: entries[0]?.id ?? "batch",
-        description: `${entries.length} versement(s) — ${formatGNF(total)}.`,
-      });
-    }
-    case "tresorerie/update": {
-      const target = state.tresorerie.find((d) => d.id === action.payload.id);
-      if (!target || target.statut !== "actif") return state;
-      const now = new Date().toISOString();
-      const { shouldArchive, archived, merged } = archiveEntry<Tresorerie>(
-        "tresorerie",
-        target,
-        action.payload.patch,
-        now,
-        "tresorerie"
-      );
-      const updated: Tresorerie = {
-        ...merged,
-        reste: merged.montantRecu - merged.depose,
-      };
-      const depose = Math.max(0, Math.floor(updated.depose));
-      const reste = resteAVerserSansEntree(state, target.id);
-      if (depose > reste) {
-        return setStoreError(state, {
-          code: "VERSEMENT_DEPASSE_RESTE",
-          message: "Le versement dépasse le reste à verser.",
-          meta: { reste, depose },
-        });
-      }
-      let s1: State = {
-        ...state,
-        errors: null,
-        tresorerie: [
-          ...(archived ? [archived] : []),
-          ...state.tresorerie.map((d) => (d.id === target.id ? updated : d)),
-        ],
-      };
-      if (shouldArchive) {
-        s1 = pushLog(s1, {
-          type: "archivage",
-          module: "tresorerie",
-          cibleId: target.id,
-          description: `Version archivée (${ARCHIVE_MOTIF_MODIFIE}).`,
-        });
-      }
-      return pushLog(s1, {
-        type: "modification",
-        module: "tresorerie",
-        cibleId: target.id,
-        description: `Mise à jour trésorerie.`,
-      });
-    }
-    case "tresorerie/cancel": {
-      const target = state.tresorerie.find((d) => d.id === action.payload.id);
-      if (!target || target.statut === "annule") return state;
-      const updated: Tresorerie = { ...target, statut: "annule", updatedAt: new Date().toISOString() };
-      const s1: State = {
-        ...state,
-        tresorerie: state.tresorerie.map((d) => (d.id === target.id ? updated : d)),
-      };
-      return pushLog(s1, {
-        type: "annulation",
-        module: "tresorerie",
-        cibleId: target.id,
-        description: `Saisie trésorerie annulée (soft-delete).`,
-      });
-    }
-    case "tresorerie/restore": {
-      const target = state.tresorerie.find((d) => d.id === action.payload.id);
-      if (!target || target.statut === "actif") return state;
-      const updated: Tresorerie = { ...target, statut: "actif", updatedAt: new Date().toISOString() };
-      const s1: State = {
-        ...state,
-        tresorerie: state.tresorerie.map((d) => (d.id === target.id ? updated : d)),
-      };
-      return pushLog(s1, {
-        type: "restauration",
-        module: "tresorerie",
-        cibleId: target.id,
-        description: `Saisie trésorerie restaurée.`,
-      });
-    }
-    case "tresorerie/restoreVersion": {
-      const active = state.tresorerie.find((d) => d.id === action.payload.activeId);
-      const archive = state.tresorerie.find((d) => d.id === action.payload.archiveId);
-      if (!active || active.statut !== "actif") return state;
-      if (!archive || !sharesEntryLineage(active, archive)) return state;
-
-      const now = new Date().toISOString();
-      const { shouldArchive, archived, merged } = archiveEntry<Tresorerie>(
-        "tresorerie",
-        active,
-        {
-          montantRecu: archive.montantRecu,
-          depose: archive.depose,
-          methode: archive.methode,
-          note: archive.note,
-        },
-        now,
-        "tresorerie"
-      );
-      const updated: Tresorerie = {
-        ...merged,
-        reste: merged.montantRecu - merged.depose,
-      };
-      let s1: State = {
-        ...state,
-        tresorerie: [
-          ...(archived ? [archived] : []),
-          ...state.tresorerie.map((d) => (d.id === active.id ? updated : d)),
-        ],
-      };
-      if (shouldArchive) {
-        s1 = pushLog(s1, {
-          type: "archivage",
-          module: "tresorerie",
-          cibleId: active.id,
-          description: `Version archivée (${ARCHIVE_MOTIF_MODIFIE}).`,
-        });
-      }
-      return pushLog(s1, {
-        type: "restauration",
-        module: "tresorerie",
-        cibleId: active.id,
-        description: `Restauration d'une version archivée.`,
-      });
-    }
-
-    /* -------- Transferts (Ferme → Magasin) -------- */
-    case "transfert/confirm": {
-      const target = state.transferts.find((t) => t.id === action.payload.id);
-      if (!target) return state;
-      const now = new Date().toISOString();
-      const qte = action.payload.quantiteRecue ?? target.quantiteEnvoyee;
-      const ecart = qte - target.quantiteEnvoyee;
-      const updated: TransfertStock = {
-        ...target,
-        statut: "recu",
-        quantiteRecue: qte,
-        ecart,
-        jourReceptionISO: target.jourReceptionISO ?? now,
-        noteEcart: ecart !== 0
-          ? action.payload.noteEcart ?? target.noteEcart
-          : undefined,
-        updatedAt: now,
-      };
-      const s1: State = {
-        ...state,
-        transferts: state.transferts.map((t) => (t.id === target.id ? updated : t)),
-      };
-      return pushLog(s1, {
-        type: "validation",
-        module: "transfert",
-        cibleId: target.id,
-        description: `Transfert confirmé : ${qte} œufs reçus${ecart !== 0 ? ` (écart ${ecart})` : ""}.`,
-      });
-    }
-    case "transfert/contest": {
-      const target = state.transferts.find((t) => t.id === action.payload.id);
-      if (!target) return state;
-      const now = new Date().toISOString();
-      const updated: TransfertStock = {
-        ...target,
-        statut: "conteste",
-        noteEcart: action.payload.noteEcart,
-        updatedAt: now,
-      };
-      const s1: State = {
-        ...state,
-        transferts: state.transferts.map((t) => (t.id === target.id ? updated : t)),
-      };
-      return pushLog(s1, {
-        type: "modification",
-        module: "transfert",
-        cibleId: target.id,
-        description: `Transfert contesté : ${action.payload.noteEcart}.`,
-      });
-    }
-    case "transfert/addManuel": {
-      const { jourISO, quantiteAlveoles, notes } = action.payload;
-      const dateRef = startOfDay(new Date(jourISO));
-      if (Number.isNaN(dateRef.getTime())) {
-        return setStoreError(state, {
-          code: "DATE_INVALIDE",
-          message: "Date invalide.",
-        });
-      }
-      const jourNormalise = dateRef.toISOString();
-      const cap = state.config.preferences.capacitePlateau;
-      const quantiteOeufs = traysToEggs(
-        Math.max(0, Math.floor(quantiteAlveoles)),
-        cap
-      );
-      if (quantiteOeufs <= 0) {
-        return setStoreError(state, {
-          code: "QUANTITE_INVALIDE",
-          message: "Indiquez au moins 1 alvéole à envoyer.",
-        });
-      }
-      const stockFerme = stockFermeDisponiblePourEnvoi(
-        state.productions,
-        state.transferts,
-        dateRef
-      );
-      if (quantiteOeufs > stockFerme) {
-        const dispoAlv = eggsToTrays(stockFerme, cap);
-        return setStoreError(state, {
-          code: "STOCK_FERME_INSUFFISANT",
-          message: `${KPI_LABEL.stockFerme} insuffisant. Disponible : ${dispoAlv} alv. Demandé : ${Math.floor(quantiteAlveoles)} alv.`,
-          meta: { stockFerme, quantiteOeufs, dispoAlv, quantiteAlveoles },
-        });
-      }
-      const now = new Date().toISOString();
-      const xfer: TransfertStock = {
-        id: createId("xfer"),
-        jourEnvoiISO: jourNormalise,
-        jourReceptionISO: jourNormalise,
-        quantiteEnvoyee: quantiteOeufs,
-        quantiteRecue: quantiteOeufs,
-        ecart: 0,
-        statut: "recu",
-        autoConfirm: true,
-        noteEcart: notes?.trim() ? notes.trim() : undefined,
-        createdAt: now,
-        updatedAt: now,
-      };
-      const s2: State = { ...state, transferts: [xfer, ...state.transferts], errors: null };
-      return pushLog(s2, {
-        type: "creation",
-        module: "transfert",
-        cibleId: xfer.id,
-        description: `Transfert manuel : ${Math.floor(quantiteAlveoles)} alvéoles envoyées au magasin.`,
-      });
-    }
-
-    /* -------- Configuration (Paramètres) -------- */
-    case "config/profil/update": {
-      const next: FarmConfig = {
-        ...state.config,
-        profil: { ...state.config.profil, ...action.payload.patch },
-      };
-      return pushLog(
-        { ...state, config: next },
-        {
-          type: "modification",
-          module: "semaine",
-          cibleId: "config-profil",
-          description: "Profil de la ferme mis à jour.",
-        }
-      );
-    }
-    case "config/preferences/update": {
-      const next: FarmConfig = {
-        ...state.config,
-        preferences: { ...state.config.preferences, ...action.payload.patch },
-      };
-      return pushLog(
-        { ...state, config: next },
-        {
-          type: "modification",
-          module: "semaine",
-          cibleId: "config-preferences",
-          description: "Préférences opérationnelles mises à jour.",
-        }
-      );
-    }
-    case "config/seuils/update": {
-      const next: FarmConfig = {
-        ...state.config,
-        seuils: { ...state.config.seuils, ...action.payload.patch },
-      };
-      return pushLog(
-        { ...state, config: next },
-        {
-          type: "modification",
-          module: "semaine",
-          cibleId: "config-seuils",
-          description: "Seuils & alertes mis à jour.",
-        }
-      );
-    }
-    case "config/categorie/update": {
-      const { id, patch } = action.payload;
-      const exists = state.config.listes.categoriesDepense.some((c) => c.id === id);
-      const refLabel = CATEGORIES_DEPENSES.find((c) => c.id === id)?.label;
-      const next: FarmConfig = {
-        ...state.config,
-        listes: {
-          ...state.config.listes,
-          categoriesDepense: exists
-            ? state.config.listes.categoriesDepense.map((c) =>
-                c.id === id ? { ...c, ...patch } : c
-              )
-            : [
-                ...state.config.listes.categoriesDepense,
-                {
-                  id,
-                  label: patch.label?.trim() || refLabel || id,
-                  actif: patch.actif ?? true,
-                  isDefault: true,
-                },
-              ],
-        },
-      };
-      return pushLog(
-        { ...state, config: next, errors: null },
-        {
-          type: "modification",
-          module: "semaine",
-          cibleId: `config-categorie-${id}`,
-          description: `Catégorie de dépense « ${id} » mise à jour.`,
-        }
-      );
-    }
-    case "config/categorie/add": {
-      const label = action.payload.label.trim();
-      if (!label) return state;
-      const labels = state.config.listes.categoriesDepense.map((c) => c.label);
-      const match = findClosestMatch(label, labels);
-      if (match) {
-        return setStoreError(state, {
-          code: "CATEGORIE_EXISTE",
-          message: `"${match}" existe déjà.`,
-        });
-      }
-      const newItem = {
-        id: crypto.randomUUID(),
-        label,
-        actif: true,
-        isDefault: false,
-      };
-      const next: FarmConfig = {
-        ...state.config,
-        listes: {
-          ...state.config.listes,
-          categoriesDepense: [...state.config.listes.categoriesDepense, newItem],
-        },
-      };
-      return pushLog(
-        { ...state, config: next, errors: null },
-        {
-          type: "creation",
-          module: "semaine",
-          cibleId: `config-categorie-${newItem.id}`,
-          description: `Catégorie « ${label} » ajoutée.`,
-        }
-      );
-    }
-    case "config/categorie/toggle": {
-      const { id } = action.payload;
-      const list = state.config.listes.categoriesDepense;
-      const item = list.find((c) => c.id === id);
-      if (!item) return state;
-      if (item.actif) {
-        const activeCount = list.filter((c) => c.actif).length;
-        if (activeCount <= 1) {
-          return setStoreError(state, {
-            code: "DERNIERE_CATEGORIE_ACTIVE",
-            message: "Au moins une catégorie doit rester active.",
-          });
-        }
-      }
-      const next: FarmConfig = {
-        ...state.config,
-        listes: {
-          ...state.config.listes,
-          categoriesDepense: list.map((c) =>
-            c.id === id ? { ...c, actif: !c.actif } : c
-          ),
-        },
-      };
-      return pushLog(
-        { ...state, config: next, errors: null },
-        {
-          type: "modification",
-          module: "semaine",
-          cibleId: `config-categorie-${id}`,
-          description: `Catégorie « ${item.label} » ${item.actif ? "désactivée" : "activée"}.`,
-        }
-      );
-    }
-    case "config/methode/update": {
-      const { id, patch } = action.payload;
-      const list = state.config.listes.methodesPaiement;
-      const exists = list.some((m) => m.id === id);
-      const refLabel = METHODES_TRESORERIE.find((m) => m.id === id)?.label;
-      const next: FarmConfig = {
-        ...state.config,
-        listes: {
-          ...state.config.listes,
-          methodesPaiement: exists
-            ? list.map((m) => (m.id === id ? { ...m, ...patch } : m))
-            : [
-                ...list,
-                {
-                  id,
-                  label: patch.label?.trim() || refLabel || id,
-                  actif: true,
-                  isDefault: true,
-                },
-              ],
-        },
-      };
-      return pushLog(
-        { ...state, config: next, errors: null },
-        {
-          type: "modification",
-          module: "semaine",
-          cibleId: `config-methode-${id}`,
-          description: `Méthode de paiement « ${id} » mise à jour.`,
-        }
-      );
-    }
-    case "config/methode/add": {
-      const label = action.payload.label.trim();
-      if (!label) return state;
-      const labels = state.config.listes.methodesPaiement.map((m) => m.label);
-      const match = findClosestMatch(label, labels);
-      if (match) {
-        return setStoreError(state, {
-          code: "METHODE_EXISTE",
-          message: `"${match}" existe déjà.`,
-        });
-      }
-      const newItem = {
-        id: crypto.randomUUID(),
-        label,
-        actif: true,
-        isDefault: false,
-      };
-      const next: FarmConfig = {
-        ...state.config,
-        listes: {
-          ...state.config.listes,
-          methodesPaiement: [...state.config.listes.methodesPaiement, newItem],
-        },
-      };
-      return pushLog(
-        { ...state, config: next, errors: null },
-        {
-          type: "creation",
-          module: "semaine",
-          cibleId: `config-methode-${newItem.id}`,
-          description: `Méthode « ${label} » ajoutée.`,
-        }
-      );
-    }
-    case "config/methode/toggle": {
-      const { id } = action.payload;
-      const list = state.config.listes.methodesPaiement;
-      const item = list.find((m) => m.id === id);
-      if (!item) return state;
-      if (item.actif) {
-        const activeCount = list.filter((m) => m.actif).length;
-        if (activeCount <= 1) {
-          return setStoreError(state, {
-            code: "DERNIERE_METHODE_ACTIVE",
-            message: "Au moins une méthode doit rester active.",
-          });
-        }
-      }
-      const next: FarmConfig = {
-        ...state.config,
-        listes: {
-          ...state.config.listes,
-          methodesPaiement: list.map((m) =>
-            m.id === id ? { ...m, actif: !m.actif } : m
-          ),
-        },
-      };
-      return pushLog(
-        { ...state, config: next, errors: null },
-        {
-          type: "modification",
-          module: "semaine",
-          cibleId: `config-methode-${id}`,
-          description: `Méthode « ${item.label} » ${item.actif ? "désactivée" : "activée"}.`,
-        }
-      );
-    }
-    case "farm/bootstrap":
-      return {
-        ...state,
-        productions: action.payload.productions,
-        ventes: action.payload.ventes,
-        depenses: action.payload.depenses,
-        tresorerie: action.payload.tresorerie,
-        transferts: action.payload.transferts,
-        actions: action.payload.actions,
-        config: action.payload.config,
-        errors: null,
-      };
-
-    case "notifications/hydrate":
-      return { ...state, notifications: action.payload.items };
-
-    case "notifications/set":
-      return { ...state, notifications: action.payload.items };
-
-    case "notifications/markRead": {
-      const { id, readAt } = action.payload;
-      return {
-        ...state,
-        notifications: state.notifications.map((n) =>
-          n.id === id ? { ...n, readAt } : n
-        ),
-      };
-    }
-
-    case "notifications/dismiss": {
-      const { id, dismissedAt } = action.payload;
-      return {
-        ...state,
-        notifications: state.notifications.map((n) =>
-          n.id === id ? { ...n, dismissedAt } : n
-        ),
-      };
-    }
-
-    case "store/setError":
-      return setStoreError(state, action.payload);
-
-    case "store/clearError":
-      return state.errors ? { ...state, errors: null } : state;
-
-    default:
-      return state;
-  }
-}
 
 /* ===========================================================
    Seed — mois civil en cours (lun–sam, alvéoles entières)
@@ -1987,7 +521,7 @@ function seedInitialState(): State {
    Contexte React
    =========================================================== */
 
-type Dispatch = React.Dispatch<Action>;
+type Dispatch = React.Dispatch<FarmStoreAction>;
 
 const FarmStateContext = React.createContext<State | null>(null);
 const FarmDispatchContext = React.createContext<Dispatch | null>(null);
@@ -1995,6 +529,8 @@ const FarmDispatchContext = React.createContext<Dispatch | null>(null);
 function FarmNotificationEffects() {
   const state = useFarmState();
   const dispatch = useFarmDispatch();
+  const stateRefForNotifications = React.useRef(state);
+  stateRefForNotifications.current = state;
   const [hydrated, setHydrated] = React.useState(false);
   const repo = React.useMemo(() => getNotificationRepository(), []);
 
@@ -2012,21 +548,25 @@ function FarmNotificationEffects() {
 
   React.useEffect(() => {
     if (!hydrated) return;
-    const drafts = evaluateNotificationRules({
-      productions: state.productions,
-      ventes: state.ventes,
-      depenses: state.depenses,
-      tresorerie: state.tresorerie,
-      transferts: state.transferts,
-      config: state.config,
-    });
-    const merged = mergeNotificationSync(
-      state.notifications,
-      drafts,
-      new Date().toISOString(),
-      DEFAULT_FARM_ID
-    );
-    dispatch({ type: "notifications/set", payload: { items: merged } });
+    const timer = window.setTimeout(() => {
+      const current = stateRefForNotifications.current;
+      const drafts = evaluateNotificationRules({
+        productions: current.productions,
+        ventes: current.ventes,
+        depenses: current.depenses,
+        tresorerie: current.tresorerie,
+        transferts: current.transferts,
+        config: current.config,
+      });
+      const merged = mergeNotificationSync(
+        current.notifications,
+        drafts,
+        new Date().toISOString(),
+        DEFAULT_FARM_ID
+      );
+      dispatch({ type: "notifications/set", payload: { items: merged } });
+    }, 500);
+    return () => window.clearTimeout(timer);
   }, [
     hydrated,
     state.productions,
@@ -2066,7 +606,7 @@ function createEmptyState(): State {
 
 export function FarmStoreProvider({ children }: { children: React.ReactNode }) {
   const remote = isFarmDataRemote();
-  const [state, dispatch] = React.useReducer(reducer, undefined, createEmptyState);
+  const [state, dispatch] = React.useReducer(farmStoreReducer, undefined, createEmptyState);
   const [remoteReady, setRemoteReady] = React.useState(!remote);
   const skipSave = React.useRef(true);
 
@@ -2137,8 +677,10 @@ export function FarmStoreProvider({ children }: { children: React.ReactNode }) {
   return (
     <FarmStateContext.Provider value={state}>
       <FarmDispatchContext.Provider value={dispatch}>
-        <FarmNotificationEffects />
-        {children}
+        <FarmStoreSubscriptionProvider state={state}>
+          <FarmNotificationEffects />
+          {children}
+        </FarmStoreSubscriptionProvider>
       </FarmDispatchContext.Provider>
     </FarmStateContext.Provider>
   );
@@ -2294,8 +836,24 @@ function buildCommonSelectors(state: State, dispatch: Dispatch): CommonSelectors
 }
 
 export function useProductionStore(): ProductionStore {
-  const state = useFarmState();
   const dispatch = useFarmDispatch();
+  const productions = useFarmSelector((s) => s.productions);
+  const transferts = useFarmSelector((s) => s.transferts);
+  const { actions, config, errors, notifications } = useSharedStoreSlices();
+
+  const state = React.useMemo(
+    () =>
+      buildHookState({
+        productions,
+        transferts,
+        actions,
+        config,
+        errors,
+        notifications,
+      }),
+    [productions, transferts, actions, config, errors, notifications]
+  );
+
   return React.useMemo<ProductionStore>(
     () => ({
       state,
@@ -2307,16 +865,30 @@ export function useProductionStore(): ProductionStore {
       restoreProduction: (id) => dispatch({ type: "production/restore", payload: { id } }),
       restoreProductionVersion: (activeId, archiveId) =>
         dispatch({ type: "production/restoreVersion", payload: { activeId, archiveId } }),
-      getActiveProductions: () => state.productions.filter((p) => p.statut === "actif"),
+      getActiveProductions: () => productions.filter((p) => p.statut === "actif"),
       clearError: () => dispatch({ type: "store/clearError" }),
     }),
-    [state, dispatch]
+    [state, dispatch, productions]
   );
 }
 
 export function useSalesStore(): SalesStore {
-  const state = useFarmState();
   const dispatch = useFarmDispatch();
+  const ventes = useFarmSelector((s) => s.ventes);
+  const { actions, config, errors, notifications } = useSharedStoreSlices();
+
+  const state = React.useMemo(
+    () =>
+      buildHookState({
+        ventes,
+        actions,
+        config,
+        errors,
+        notifications,
+      }),
+    [ventes, actions, config, errors, notifications]
+  );
+
   return React.useMemo<SalesStore>(
     () => ({
       state,
@@ -2329,16 +901,30 @@ export function useSalesStore(): SalesStore {
       restoreSale: (id) => dispatch({ type: "vente/restore", payload: { id } }),
       restoreSaleVersion: (activeId, archiveId) =>
         dispatch({ type: "vente/restoreVersion", payload: { activeId, archiveId } }),
-      getActiveSales: () => state.ventes.filter((v) => v.statut === "actif"),
+      getActiveSales: () => ventes.filter((v) => v.statut === "actif"),
       clearError: () => dispatch({ type: "store/clearError" }),
     }),
-    [state, dispatch]
+    [state, dispatch, ventes]
   );
 }
 
 export function useExpensesStore(): ExpensesStore {
-  const state = useFarmState();
   const dispatch = useFarmDispatch();
+  const depenses = useFarmSelector((s) => s.depenses);
+  const { actions, config, errors, notifications } = useSharedStoreSlices();
+
+  const state = React.useMemo(
+    () =>
+      buildHookState({
+        depenses,
+        actions,
+        config,
+        errors,
+        notifications,
+      }),
+    [depenses, actions, config, errors, notifications]
+  );
+
   return React.useMemo<ExpensesStore>(
     () => ({
       state,
@@ -2352,16 +938,30 @@ export function useExpensesStore(): ExpensesStore {
       restoreExpense: (id) => dispatch({ type: "depense/restore", payload: { id } }),
       restoreExpenseVersion: (activeId, archiveId) =>
         dispatch({ type: "depense/restoreVersion", payload: { activeId, archiveId } }),
-      getActiveExpenses: () => state.depenses.filter((d) => d.statut === "actif"),
+      getActiveExpenses: () => depenses.filter((d) => d.statut === "actif"),
       clearError: () => dispatch({ type: "store/clearError" }),
     }),
-    [state, dispatch]
+    [state, dispatch, depenses]
   );
 }
 
 export function useTresorerieStore(): TresorerieStore {
-  const state = useFarmState();
   const dispatch = useFarmDispatch();
+  const tresorerie = useFarmSelector((s) => s.tresorerie);
+  const { actions, config, errors, notifications } = useSharedStoreSlices();
+
+  const state = React.useMemo(
+    () =>
+      buildHookState({
+        tresorerie,
+        actions,
+        config,
+        errors,
+        notifications,
+      }),
+    [tresorerie, actions, config, errors, notifications]
+  );
+
   return React.useMemo<TresorerieStore>(
     () => ({
       state,
@@ -2375,25 +975,39 @@ export function useTresorerieStore(): TresorerieStore {
       restoreTresorerie: (id) => dispatch({ type: "tresorerie/restore", payload: { id } }),
       restoreTresorerieVersion: (activeId, archiveId) =>
         dispatch({ type: "tresorerie/restoreVersion", payload: { activeId, archiveId } }),
-      getActiveTresorerie: () => state.tresorerie.filter((d) => d.statut === "actif"),
+      getActiveTresorerie: () => tresorerie.filter((d) => d.statut === "actif"),
       clearError: () => dispatch({ type: "store/clearError" }),
     }),
-    [state, dispatch]
+    [state, dispatch, tresorerie]
   );
 }
 
 export function useTransfersStore(): TransfersStore {
-  const state = useFarmState();
   const dispatch = useFarmDispatch();
+  const transferts = useFarmSelector((s) => s.transferts);
+  const { actions, config, errors, notifications } = useSharedStoreSlices();
+
+  const state = React.useMemo(
+    () =>
+      buildHookState({
+        transferts,
+        actions,
+        config,
+        errors,
+        notifications,
+      }),
+    [transferts, actions, config, errors, notifications]
+  );
+
   return React.useMemo<TransfersStore>(
     () => ({
       state,
       ...buildCommonSelectors(state, dispatch),
-      getAllTransfers: () => state.transferts,
-      getReceivedTransfers: () => state.transferts.filter((t) => t.statut === "recu"),
-      getPendingTransfers: () => state.transferts.filter((t) => t.statut === "en_attente"),
+      getAllTransfers: () => transferts,
+      getReceivedTransfers: () => transferts.filter((t) => t.statut === "recu"),
+      getPendingTransfers: () => transferts.filter((t) => t.statut === "en_attente"),
       getTransfersByProduction: (productionId) =>
-        state.transferts.filter(
+        transferts.filter(
           (t) => t.productionId != null && t.productionId === productionId
         ),
       confirmTransfer: (id, opts) =>
@@ -2406,7 +1020,7 @@ export function useTransfersStore(): TransfersStore {
       addManualTransfer: (payload) =>
         dispatch({ type: "transfert/addManuel", payload }),
     }),
-    [state, dispatch]
+    [state, dispatch, transferts]
   );
 }
 
@@ -2432,11 +1046,12 @@ type ConfigStore = {
 };
 
 export function useConfigStore(): ConfigStore {
-  const state = useFarmState();
   const dispatch = useFarmDispatch();
+  const config = useFarmSelector((s) => s.config);
+  const errors = useFarmSelector((s) => s.errors);
   return React.useMemo<ConfigStore>(
     () => ({
-      config: state.config,
+      config,
       updateProfil: (patch) =>
         dispatch({ type: "config/profil/update", payload: { patch } }),
       updatePreferences: (patch) =>
@@ -2449,7 +1064,7 @@ export function useConfigStore(): ConfigStore {
         dispatch({ type: "config/categorie/add", payload: { label } }),
       toggleCategorie: (id) =>
         dispatch({ type: "config/categorie/toggle", payload: { id } }),
-      storeError: state.errors,
+      storeError: errors,
       clearStoreError: () => dispatch({ type: "store/clearError" }),
       updateMethode: (id, patch) =>
         dispatch({ type: "config/methode/update", payload: { id, patch } }),
@@ -2458,7 +1073,7 @@ export function useConfigStore(): ConfigStore {
       toggleMethode: (id) =>
         dispatch({ type: "config/methode/toggle", payload: { id } }),
     }),
-    [state.config, state.errors, dispatch]
+    [config, errors, dispatch]
   );
 }
 
@@ -2467,12 +1082,12 @@ export function useConfigStore(): ConfigStore {
  * destiné aux consommateurs qui n'ont pas besoin du dispatch (Dashboard, Rapports).
  */
 export function useFarmConfig(): FarmConfig {
-  return useFarmState().config;
+  return useFarmSelector((s) => s.config);
 }
 
 /** Accès brut pour la lecture cross-modules (Dashboard, Rapports). */
 export function useFarmState_unsafe(): State {
-  return useFarmState();
+  return useFarmSelector((s) => s);
 }
 
 type NotificationsStore = {
@@ -2482,11 +1097,11 @@ type NotificationsStore = {
 };
 
 export function useNotificationsStore(): NotificationsStore {
-  const state = useFarmState();
   const dispatch = useFarmDispatch();
+  const notifications = useFarmSelector((s) => s.notifications);
   return React.useMemo(
     () => ({
-      notifications: state.notifications,
+      notifications,
       markRead: (id) =>
         dispatch({
           type: "notifications/markRead",
@@ -2498,6 +1113,6 @@ export function useNotificationsStore(): NotificationsStore {
           payload: { id, dismissedAt: new Date().toISOString() },
         }),
     }),
-    [state.notifications, dispatch]
+    [notifications, dispatch]
   );
 }

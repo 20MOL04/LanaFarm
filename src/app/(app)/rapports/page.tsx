@@ -1,8 +1,18 @@
 import type { Metadata } from "next";
+import dynamic from "next/dynamic";
 import { Suspense } from "react";
 
-import { ReportsModule } from "@/components/reports/reports-module";
-import { Loader } from "@/components/shared/loader";
+import { ModulePageSkeleton } from "@/components/shared/page-skeletons";
+
+const ReportsModule = dynamic(
+  () =>
+    import("@/components/reports/reports-module").then((m) => ({
+      default: m.ReportsModule,
+    })),
+  {
+    loading: () => <ModulePageSkeleton kpiCount={4} />,
+  }
+);
 
 export const metadata: Metadata = {
   title: "Rapports",
@@ -10,13 +20,7 @@ export const metadata: Metadata = {
 
 export default function RapportsPage() {
   return (
-    <Suspense
-      fallback={
-        <div className="flex justify-center py-16">
-          <Loader size={20} label="Chargement des rapports…" />
-        </div>
-      }
-    >
+    <Suspense fallback={<ModulePageSkeleton kpiCount={4} />}>
       <ReportsModule />
     </Suspense>
   );

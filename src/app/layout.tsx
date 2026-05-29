@@ -20,10 +20,6 @@ export const metadata: Metadata = {
   applicationName: site.name,
   authors: [{ name: "LanaFarm" }],
   formatDetection: { telephone: false },
-  icons: {
-    icon: [{ url: "/logo.png", type: "image/png" }],
-    apple: [{ url: "/logo.png", type: "image/png" }],
-  },
 };
 
 export const viewport: Viewport = {

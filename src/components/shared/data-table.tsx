@@ -40,6 +40,57 @@ type DataTableProps<T> = {
   caption?: string;
 };
 
+type DataTableRowProps<T> = {
+  row: T;
+  index: number;
+  columns: DataTableColumn<T>[];
+  rowClassName?: (row: T, index: number) => string | undefined;
+};
+
+function DataTableRowInner<T>({
+  row,
+  index,
+  columns,
+  rowClassName,
+}: DataTableRowProps<T>) {
+  return (
+    <tr
+      className={cn(
+        "cursor-pointer border-b border-border transition-colors duration-150 last:border-b-0",
+        "hover:bg-accent-blue-soft/40",
+        rowClassName?.(row, index)
+      )}
+    >
+      {columns.map((col) => (
+        <td
+          key={col.key}
+          className={cn(
+            "px-2 py-2 text-foreground sm:px-3",
+            !col.noTruncate && "overflow-hidden",
+            col.hideBelow && hideClass[col.hideBelow],
+            col.primary && "font-semibold",
+            col.align === "center" && "text-center",
+            (!col.align || col.align === "left" || col.align === "right") &&
+              "text-left tabular-nums",
+            col.className
+          )}
+        >
+          <div
+            className={cn(
+              "min-w-0 max-w-full",
+              !col.noTruncate && "[&>*]:truncate"
+            )}
+          >
+            {col.cell(row, index)}
+          </div>
+        </td>
+      ))}
+    </tr>
+  );
+}
+
+const DataTableRow = React.memo(DataTableRowInner) as typeof DataTableRowInner;
+
 export function DataTable<T>({
   columns,
   data,
@@ -113,39 +164,13 @@ export function DataTable<T>({
         </thead>
         <tbody>
           {data.map((row, index) => (
-            <tr
+            <DataTableRow
               key={rowKey(row, index)}
-              className={cn(
-                "cursor-pointer border-b border-border transition-colors duration-150 last:border-b-0",
-                "hover:bg-accent-blue-soft/40",
-                rowClassName?.(row, index)
-              )}
-            >
-              {columns.map((col) => (
-                <td
-                  key={col.key}
-                  className={cn(
-                    "px-2 py-2 text-foreground sm:px-3",
-                    !col.noTruncate && "overflow-hidden",
-                    col.hideBelow && hideClass[col.hideBelow],
-                    col.primary && "font-semibold",
-                    col.align === "center" && "text-center",
-                    (!col.align || col.align === "left" || col.align === "right") &&
-                      "text-left tabular-nums",
-                    col.className
-                  )}
-                >
-                  <div
-                    className={cn(
-                      "min-w-0 max-w-full",
-                      !col.noTruncate && "[&>*]:truncate"
-                    )}
-                  >
-                    {col.cell(row, index)}
-                  </div>
-                </td>
-              ))}
-            </tr>
+              row={row}
+              index={index}
+              columns={columns}
+              rowClassName={rowClassName}
+            />
           ))}
         </tbody>
       </table>

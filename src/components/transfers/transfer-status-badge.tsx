@@ -18,7 +18,7 @@ const META: Record<
   conteste: { label: "Contesté", tone: "danger", icon: AlertTriangle },
 };
 
-export function TransferStatusBadge({ status, withIcon = true }: Props) {
+function TransferStatusBadgeComponent({ status, withIcon = true }: Props) {
   const meta = META[status];
   const Icon = meta.icon;
   return (
@@ -28,3 +28,5 @@ export function TransferStatusBadge({ status, withIcon = true }: Props) {
     </Badge>
   );
 }
+
+export const TransferStatusBadge = React.memo(TransferStatusBadgeComponent);

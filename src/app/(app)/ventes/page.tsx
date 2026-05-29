@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { Suspense } from "react";
 
 import { SalesModule } from "@/components/sales/sales-module";
-import { Loader } from "@/components/shared/loader";
+import { ModulePageSkeleton } from "@/components/shared/page-skeletons";
 
 export const metadata: Metadata = {
   title: "Ventes",
@@ -10,13 +10,7 @@ export const metadata: Metadata = {
 
 export default function VentesPage() {
   return (
-    <Suspense
-      fallback={
-        <div className="flex justify-center py-16">
-          <Loader size={20} label="Chargement du module Ventes…" />
-        </div>
-      }
-    >
+    <Suspense fallback={<ModulePageSkeleton kpiCount={4} />}>
       <SalesModule />
     </Suspense>
   );

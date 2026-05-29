@@ -1,3 +1,5 @@
+import * as React from "react";
+
 import { Badge } from "@/components/ui/badge";
 import {
   formatAggregatedStatutTitle,
@@ -28,10 +30,7 @@ type Props = {
   masculine?: boolean;
 };
 
-/**
- * Badge de statut d'une entrée métier (actif → rien affiché).
- */
-export function EntryStatusBadge({
+function EntryStatusBadgeComponent({
   statut,
   size = "default",
   masculine = false,
@@ -56,8 +55,9 @@ export function EntryStatusBadge({
   return null;
 }
 
-/** Badge statut agrégé d'un jour (mixte → Partiel). */
-export function DayGroupStatusBadge({
+export const EntryStatusBadge = React.memo(EntryStatusBadgeComponent);
+
+function DayGroupStatusBadgeComponent({
   group,
   masculine = false,
   size = "default",
@@ -96,3 +96,5 @@ export function DayGroupStatusBadge({
   }
   return null;
 }
+
+export const DayGroupStatusBadge = React.memo(DayGroupStatusBadgeComponent);

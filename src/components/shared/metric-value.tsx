@@ -24,7 +24,7 @@ type MetricValueProps = {
 /**
  * Valeur métrique : chiffre dominant + unité discrète (pas la même taille).
  */
-export function MetricValue({
+function MetricValueComponent({
   amount,
   unit,
   label,
@@ -53,3 +53,5 @@ export function MetricValue({
     </span>
   );
 }
+
+export const MetricValue = React.memo(MetricValueComponent);

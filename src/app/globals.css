@@ -184,6 +184,10 @@ body {
 
 /* iOS : pas de zoom auto si police < 16px sur les champs */
 @media (max-width: 767px) {
+  :root {
+    --topbar-height: 64px;
+  }
+
   input,
   textarea,
   select {

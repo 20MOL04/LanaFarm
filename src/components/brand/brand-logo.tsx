@@ -61,6 +61,36 @@ export function BrandLogo({
     );
   }
 
+  if (showWordmark) {
+    const textPx = 20;
+    const iconPx = 22;
+
+    return (
+      <span
+        className={cn("inline-flex items-center gap-2.5 md:gap-2", className)}
+        aria-label={site.name}
+      >
+        <span className="flex h-5 w-5 shrink-0 items-center justify-center md:h-4 md:w-4">
+          <Image
+            src="/logo.png"
+            alt=""
+            width={iconPx}
+            height={iconPx}
+            priority={priority}
+            className="h-full w-full shrink-0 rounded-[18%] object-contain"
+            sizes={`${iconPx}px`}
+          />
+        </span>
+        <span
+          className="truncate font-bold leading-none tracking-tight"
+          style={{ fontSize: `${textPx}px` }}
+        >
+          {site.name}
+        </span>
+      </span>
+    );
+  }
+
   return (
     <span
       className={cn("inline-flex items-center gap-2.5", className)}
@@ -75,11 +105,6 @@ export function BrandLogo({
         className="shrink-0 rounded-[22%] object-contain"
         sizes={`${px}px`}
       />
-      {showWordmark ? (
-        <span className="truncate text-sm font-semibold leading-none tracking-tight">
-          {site.name}
-        </span>
-      ) : null}
     </span>
   );
 }

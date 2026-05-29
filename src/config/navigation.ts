@@ -5,6 +5,7 @@
 
 import {
   BarChart3,
+  BookOpen,
   ClipboardList,
   Egg,
   History,
@@ -84,6 +85,12 @@ export const navigation: NavGroup[] = [
         href: "/historique",
         icon: History,
         description: "Semaines passées",
+      },
+      {
+        label: "Guide",
+        href: "/guide",
+        icon: BookOpen,
+        description: "Aide et mode d'emploi",
       },
       {
         label: "Paramètres",

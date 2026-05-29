@@ -53,7 +53,7 @@ export type KpiCardProps = {
   className?: string;
 };
 
-export function KpiCard({
+function KpiCardComponent({
   label,
   value,
   amount,
@@ -139,6 +139,8 @@ export function KpiCard({
     </div>
   );
 }
+
+export const KpiCard = React.memo(KpiCardComponent);
 
 function KpiTrendBadge({ trend }: { trend: KpiTrend }) {
   const isUp = trend.value > 0;

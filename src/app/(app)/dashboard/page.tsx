@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { Suspense } from "react";
 
 import { DashboardModule } from "@/components/dashboard/dashboard-module";
-import { Loader } from "@/components/shared/loader";
+import { DashboardSkeleton } from "@/components/shared/page-skeletons";
 
 export const metadata: Metadata = {
   title: "Dashboard",
@@ -10,13 +10,7 @@ export const metadata: Metadata = {
 
 export default function DashboardPage() {
   return (
-    <Suspense
-      fallback={
-        <div className="flex justify-center py-16">
-          <Loader size={20} label="Chargement du Dashboard…" />
-        </div>
-      }
-    >
+    <Suspense fallback={<DashboardSkeleton />}>
       <DashboardModule />
     </Suspense>
   );

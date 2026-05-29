@@ -19,7 +19,7 @@ type Props = {
  * Badge unifié pour les catégories de dépenses.
  * Libellé depuis la config admin ; icône / ton depuis category-meta.
  */
-export function CategoryBadge({ category, withIcon = true }: Props) {
+function CategoryBadgeComponent({ category, withIcon = true }: Props) {
   const config = useFarmConfig();
   const categories = config.listes.categoriesDepense;
   const label = resolveCategorieLabel(category, categories);
@@ -32,3 +32,5 @@ export function CategoryBadge({ category, withIcon = true }: Props) {
     </Badge>
   );
 }
+
+export const CategoryBadge = React.memo(CategoryBadgeComponent);

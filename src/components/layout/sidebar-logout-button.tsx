@@ -45,8 +45,8 @@ export function SidebarLogoutButton({ collapsed }: Props) {
         title="Se déconnecter"
         aria-label="Se déconnecter"
         className={cn(
-          "flex w-full items-center gap-2 rounded-sm px-3",
-          "text-base font-semibold md:px-2 md:text-nav md:font-medium",
+          "flex w-full items-center gap-3 rounded-sm px-3",
+          "text-base font-semibold md:gap-2.5 md:px-2 md:text-nav md:font-medium",
           "min-h-11 md:min-h-0 md:py-1.5",
           "text-white/90 transition-colors",
           "bg-white/10 hover:bg-white/20 hover:text-white",
@@ -54,7 +54,7 @@ export function SidebarLogoutButton({ collapsed }: Props) {
           collapsed && "justify-center md:min-h-0 md:bg-transparent md:hover:bg-sidebar-hover"
         )}
       >
-        <LogOut className="h-4 w-4 shrink-0" />
+        <LogOut className="h-5 w-5 shrink-0 md:h-4 md:w-4" />
         {!collapsed ? (
           <span>{loading ? "Déconnexion…" : "Se déconnecter"}</span>
         ) : null}

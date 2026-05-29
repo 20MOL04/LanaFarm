@@ -15,8 +15,15 @@ import { cn } from "@/lib/utils";
 /**
  * Sélecteur de plage global — presets courts + personnalisé (Du/Au).
  */
-export function GlobalDateRange({ className }: { className?: string }) {
+export function GlobalDateRange({
+  className,
+  variant = "default",
+}: {
+  className?: string;
+  variant?: "default" | "topbar";
+}) {
   const { range, presetId, presets, setPreset, setCustomRange } = useDateRange();
+  const onTopbar = variant === "topbar";
   const [open, setOpen] = React.useState(false);
   const [customFrom, setCustomFrom] = React.useState(() => toIsoDate(range.from));
   const [customTo, setCustomTo] = React.useState(() => toIsoDate(range.to));
@@ -39,15 +46,27 @@ export function GlobalDateRange({ className }: { className?: string }) {
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger
         className={cn(
-          "inline-flex h-9 max-w-full min-w-0 items-center gap-1.5 rounded-button border border-border bg-card px-2.5 text-body-sm text-foreground sm:px-3",
-          "hover:bg-card-muted transition-colors",
-          "focus:outline-none focus:ring-2 focus:ring-accent-blue/40",
+          "inline-flex h-9 max-w-full min-w-0 items-center gap-1.5 rounded-button border px-2.5 text-body-sm sm:px-3",
+          "transition-colors focus:outline-none focus:ring-2 focus:ring-accent-blue/40",
+          onTopbar
+            ? "border-white/35 bg-white/15 text-white hover:bg-white/20 focus:ring-white/30"
+            : "border-border bg-card text-foreground hover:bg-card-muted",
           className
         )}
       >
-        <Calendar className="h-4 w-4 shrink-0 text-muted" />
+        <Calendar
+          className={cn(
+            "h-4 w-4 shrink-0",
+            onTopbar ? "text-white/85" : "text-muted"
+          )}
+        />
         <span className="min-w-0 truncate font-medium">{formatRange(range)}</span>
-        <ChevronDown className="h-4 w-4 shrink-0 text-muted" />
+        <ChevronDown
+          className={cn(
+            "h-4 w-4 shrink-0",
+            onTopbar ? "text-white/85" : "text-muted"
+          )}
+        />
       </PopoverTrigger>
 
       <PopoverContent className="w-[min(100vw-1.5rem,18rem)] p-0" align="end">

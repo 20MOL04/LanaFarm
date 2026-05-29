@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { Suspense } from "react";
 
 import { HistoryModule } from "@/components/history/history-module";
-import { Loader } from "@/components/shared/loader";
+import { ModulePageSkeleton } from "@/components/shared/page-skeletons";
 
 export const metadata: Metadata = {
   title: "Historique",
@@ -10,13 +10,7 @@ export const metadata: Metadata = {
 
 export default function HistoriquePage() {
   return (
-    <Suspense
-      fallback={
-        <div className="flex justify-center py-16">
-          <Loader size={20} label="Chargement de l'historique…" />
-        </div>
-      }
-    >
+    <Suspense fallback={<ModulePageSkeleton kpiCount={0} />}>
       <HistoryModule />
     </Suspense>
   );

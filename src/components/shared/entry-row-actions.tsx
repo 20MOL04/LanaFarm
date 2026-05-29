@@ -30,7 +30,7 @@ type Props = {
  * Menu d'actions commun aux lignes Production / Ventes / Dépenses / Trésorerie.
  * Le dialog Historique reste fourni par le wrapper module (`children`).
  */
-export function EntryRowActions({
+function EntryRowActionsComponent({
   statut,
   labels,
   onEdit,
@@ -81,3 +81,5 @@ export function EntryRowActions({
     </>
   );
 }
+
+export const EntryRowActions = React.memo(EntryRowActionsComponent);

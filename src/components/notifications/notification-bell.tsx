@@ -16,7 +16,11 @@ import { countUnreadNotifications } from "@/lib/notifications/notification-sync"
 import { cn } from "@/lib/utils";
 import type { AppNotification } from "@/types/notifications";
 
-export function NotificationBell() {
+export function NotificationBell({
+  variant = "default",
+}: {
+  variant?: "default" | "topbar";
+}) {
   const { notifications, markRead } = useNotificationsStore();
   const [open, setOpen] = React.useState(false);
   const [detail, setDetail] = React.useState<AppNotification | null>(null);
@@ -34,21 +38,26 @@ export function NotificationBell() {
     setOpen(false);
   };
 
+  const onTopbar = variant === "topbar";
+
   return (
     <>
       <Popover open={open} onOpenChange={setOpen}>
         <PopoverTrigger asChild>
           <Button
             variant="ghost"
-            size="icon-sm"
+            size={onTopbar ? "icon" : "icon-sm"}
             aria-label={
               unread > 0
                 ? `Notifications, ${unread} non lue${unread > 1 ? "s" : ""}`
                 : "Notifications"
             }
-            className="relative"
+            className={cn(
+              "relative",
+              onTopbar && "text-white hover:bg-white/15 hover:text-white"
+            )}
           >
-            <Bell className="h-4 w-4" />
+            <Bell className={onTopbar ? "h-5 w-5" : "h-4 w-4"} />
             {badge ? (
               <span
                 className={cn(

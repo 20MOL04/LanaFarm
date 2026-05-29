@@ -33,8 +33,6 @@ import { useTransfersInRange } from "@/hooks/use-transfers-in-range";
 import { buildActivityTimeline } from "@/lib/dashboard-calc";
 import { formatRange } from "@/lib/date-ranges";
 import { createReportDocument } from "@/lib/reports/create-report-document";
-import { exportReportToExcel } from "@/lib/reports/report-excel";
-import { downloadReportPdf } from "@/lib/reports/report-pdf";
 import {
   buildReportPayload,
   buildReportSnapshot,
@@ -213,6 +211,16 @@ export function ReportsModule() {
     window.print();
   }, []);
 
+  const handleExportExcel = React.useCallback(async (payload: ReportPayload) => {
+    const { exportReportToExcel } = await import("@/lib/reports/report-excel");
+    await exportReportToExcel(payload);
+  }, []);
+
+  const handleExportPdf = React.useCallback(async (payload: ReportPayload) => {
+    const { downloadReportPdf } = await import("@/lib/reports/report-pdf");
+    await downloadReportPdf(payload);
+  }, []);
+
   return (
     <>
       <PageHeader
@@ -249,8 +257,8 @@ export function ReportsModule() {
         archivedMode={!!archivedDoc}
         onGenerate={handleGenerate}
         onPrint={handlePrint}
-        onExcel={() => void exportReportToExcel(exportPayload())}
-        onPdf={() => void downloadReportPdf(exportPayload())}
+        onExcel={() => void handleExportExcel(exportPayload())}
+        onPdf={() => void handleExportPdf(exportPayload())}
       />
 
       <div id="print-zone" className="space-y-4 print:space-y-4">
@@ -292,8 +300,8 @@ export function ReportsModule() {
           items={recent}
           activeId={archivedDoc?.id ?? null}
           onSelect={handleSelectArchived}
-          onExportExcel={(doc) => void exportReportToExcel(doc.payload)}
-          onExportPdf={(doc) => void downloadReportPdf(doc.payload)}
+          onExportExcel={(doc) => void handleExportExcel(doc.payload)}
+          onExportPdf={(doc) => void handleExportPdf(doc.payload)}
           onPrint={(doc) => {
             setArchivedDoc(doc);
             setCustomRange({
