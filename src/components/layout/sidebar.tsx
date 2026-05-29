@@ -23,6 +23,8 @@ import { cn } from "@/lib/utils";
 export function Sidebar() {
   const pathname = usePathname();
   const { collapsed, toggleCollapsed, mobileOpen, closeMobile } = useSidebar();
+  /** Sur mobile drawer : toujours menu déplié (libellés visibles). */
+  const menuCollapsed = collapsed && !mobileOpen;
 
   return (
     <>
@@ -44,23 +46,23 @@ export function Sidebar() {
           "bg-sidebar text-sidebar-foreground shadow-sidebar",
           "border-0 outline-none",
           "transition-[width,transform] duration-200 ease-out",
-          "w-[min(280px,100vw)] -translate-x-full md:translate-x-0",
+          "w-[min(300px,88vw)] -translate-x-full md:translate-x-0",
           mobileOpen && "translate-x-0",
           "md:sticky md:top-0 md:max-h-screen md:h-screen",
           collapsed ? "md:w-[var(--sidebar-width-collapsed)]" : "md:w-[var(--sidebar-width)]"
         )}
       >
         <SidebarHeader
-          collapsed={collapsed}
+          collapsed={menuCollapsed}
           onCloseMobile={closeMobile}
           onToggleCollapsed={toggleCollapsed}
         />
         <SidebarMenu
           pathname={pathname}
-          collapsed={collapsed}
+          collapsed={menuCollapsed}
           onNavigate={closeMobile}
         />
-        <SidebarLogoutButton collapsed={collapsed && !mobileOpen} />
+        <SidebarLogoutButton collapsed={menuCollapsed} />
       </aside>
     </>
   );
@@ -86,7 +88,7 @@ function SidebarHeader({
         "h-[var(--topbar-height)]",
         collapsed
           ? "flex-col items-center justify-center gap-0.5 px-1 md:gap-1"
-          : "items-center gap-2 px-3 md:px-2"
+          : "items-center gap-2 px-4 md:px-2"
       )}
     >
       {!collapsed ? (
@@ -133,13 +135,13 @@ function SidebarHeader({
         onClick={onCloseMobile}
         aria-label="Fermer le menu"
         className={cn(
-          "flex h-8 w-8 shrink-0 items-center justify-center rounded-sm",
+          "flex h-11 w-11 shrink-0 items-center justify-center rounded-md",
           "text-sidebar-muted hover:bg-sidebar-hover hover:text-white",
           "md:hidden",
           collapsed && "md:hidden"
         )}
       >
-        <X className="h-4 w-4" />
+        <X className="h-6 w-6" />
       </button>
     </div>
   );
@@ -164,7 +166,8 @@ function SidebarMenu({
     <nav
       aria-label="Navigation"
       className={cn(
-        "flex min-h-0 flex-1 flex-col overflow-x-hidden overflow-y-auto px-2 py-2.5 md:py-2",
+        "flex min-h-0 flex-1 flex-col overflow-x-hidden overflow-y-auto px-3 py-2.5",
+        "md:px-2 md:py-2",
         "[scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden"
       )}
     >
@@ -192,8 +195,8 @@ function SidebarNavGroups({
   return (
     <ul
       className={cn(
-        "flex flex-1 flex-col",
-        collapsed ? "gap-2" : "justify-between gap-3 md:gap-2.5"
+        "flex flex-col",
+        collapsed ? "gap-2" : "gap-3 md:gap-3"
       )}
     >
       {groups.map((group, index) => {
@@ -205,17 +208,22 @@ function SidebarNavGroups({
             className={cn(
               isAssistance &&
                 !collapsed &&
-                "border-t border-sidebar-border/40 pt-2.5 md:pt-2"
+                "mt-1 border-t border-sidebar-border pt-3 md:mt-0 md:border-sidebar-border/50 md:pt-2.5"
             )}
           >
             {!collapsed ? (
-              <p className="px-2 pb-1 text-micro font-semibold uppercase tracking-wide text-sidebar-muted">
+              <p
+                className={cn(
+                  "px-1 pb-1 text-sm font-semibold uppercase tracking-wide text-sidebar-muted",
+                  "md:px-2 md:pb-1 md:text-micro"
+                )}
+              >
                 {group.title}
               </p>
             ) : index > 0 ? (
               <div className="mx-2 my-1.5 h-px bg-sidebar-border/80" />
             ) : null}
-            <ul className="space-y-0">
+            <ul className="space-y-0.5 md:space-y-0">
               {group.items.map((item) => (
                 <li key={item.href}>
                   <SidebarLink
@@ -291,16 +299,17 @@ function SidebarLink({
       aria-current={isActive ? "page" : undefined}
       title={collapsed ? item.label : undefined}
       className={cn(
-        "group flex items-center gap-2.5 rounded-sm px-2",
-        "py-[0.375rem] text-nav font-medium leading-snug",
+        "group flex min-h-[2.75rem] items-center gap-3 rounded-md px-3 py-2",
+        "text-lg font-semibold leading-tight",
+        "md:min-h-0 md:gap-2.5 md:rounded-sm md:px-2 md:py-[0.4375rem] md:text-nav md:font-medium",
         "transition-colors",
         collapsed ? "justify-center md:justify-center" : "justify-start",
         isActive
-          ? "bg-sidebar-active text-sidebar-active-foreground md:font-semibold"
+          ? "bg-sidebar-active text-sidebar-active-foreground"
           : "text-sidebar-foreground hover:bg-sidebar-hover hover:text-white"
       )}
     >
-      <Icon className="h-4 w-4 shrink-0" />
+      <Icon className="h-6 w-6 shrink-0 md:h-4 md:w-4" />
       {!collapsed ? <span className="truncate">{item.label}</span> : null}
     </Link>
   );
